@@ -314,7 +314,12 @@ test('refines radical forms without changing the radical number and shows the ap
     await add.click();
     await expect(cell(cp)).toBeVisible();
     for (const [, other] of variants) if (other !== cp) await expect(cell(other)).toHaveCount(0);
-    await expect(page.locator('.condition-chips')).toContainText(suffix || '枝番なし');
+    await expect(
+      page.getByRole('button', {
+        name: `康熙部首: 212${suffix} を解除`,
+        exact: true,
+      }),
+    ).toBeVisible();
     await expect(add).toBeDisabled();
   }
   await form.selectOption('any');
@@ -324,4 +329,64 @@ test('refines radical forms without changing the radical number and shows the ap
   await page.getByRole('button', { name: /康熙部首: .* を解除/ }).click();
   await expect(page.locator('.condition-chips')).not.toContainText('康熙部首');
   await expect(page.locator('.condition-chip')).toHaveCount(1);
+});
+
+test('offers only defined radical forms and resets incompatible draft forms', async ({ page }) => {
+  const requested: string[] = [];
+  page.on('request', (request) => requested.push(request.url()));
+  await page.goto('/');
+  await searchMethod(page, 'han');
+  const radical = page.getByLabel('康熙部首', { exact: true });
+  const form = page.getByLabel('部首の形（枝番）', { exact: true });
+  const add = page.getByRole('button', { name: '康熙部首の条件を追加', exact: true });
+  const expectForms = async (values: string[]) =>
+    expect(
+      await form
+        .locator('option')
+        .evaluateAll((options: HTMLOptionElement[]) => options.map((option) => option.value)),
+    ).toEqual(values);
+  await expect(form).toBeDisabled();
+  await expect(add).toBeDisabled();
+  await expectForms(['any']);
+  await radical.selectOption('85');
+  await expect(form).toBeEnabled();
+  await expectForms(['any', '']);
+  await radical.selectOption('208');
+  await expectForms(['any', '', "''"]);
+  await form.selectOption("''");
+  await radical.selectOption('212');
+  await expectForms(['any', '', "'", "''", "'''"]);
+  await expect(form).toHaveValue("''");
+  await form.selectOption("'''");
+  // Inspecting definitions must not fetch and parse the full Han search index.
+  expect(requested.some((url) => url.endsWith('/data/han-index.json'))).toBe(false);
+  await add.click();
+  const chip = page.getByRole('button', { name: "康熙部首: 212''' を解除", exact: true });
+  await expect(chip).toBeVisible();
+  await radical.selectOption('85');
+  await expectForms(['any', '']);
+  await expect(form).toHaveValue('any');
+  await expect(chip).toBeVisible(); // Editing the draft alone does not apply it.
+  await add.click();
+  await expect(
+    page.getByRole('button', { name: '康熙部首: 85 を解除', exact: true }),
+  ).toBeVisible();
+  await expect(chip).toHaveCount(0);
+  await radical.selectOption('212');
+  await expect(form).toHaveValue('any'); // Do not resurrect the previous incompatible suffix.
+  await form.selectOption("''");
+  await radical.selectOption('');
+  await expect(form).toBeDisabled();
+  await expect(form).toHaveValue('any');
+  await expect(add).toBeDisabled();
+  await radical.selectOption('90');
+  await expectForms(['any', '', "'"]);
+  await form.selectOption("'");
+  await add.click();
+  await page.getByRole('button', { name: '文字マップ', exact: true }).click();
+  await searchMethod(page, 'han');
+  await expect(radical).toHaveValue('90');
+  await expect(form).toHaveValue("'");
+  await expectForms(['any', '', "'"]);
+  await expect(add).toBeDisabled();
 });

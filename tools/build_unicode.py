@@ -128,6 +128,11 @@ def build(update_lock=False):
         elif current and line.startswith(("\t=", "\t*", "\tx", "\t%")):
             notes[current].append(line.strip())
 
+    radical_forms = defaultdict(list)
+    for row in fields(read("CJKRadicals.txt")):
+        number = row[0].rstrip("'")
+        radical_forms[number].append(row[0][len(number):])
+
     unihan = defaultdict(dict)
     archive = zipfile.ZipFile(io.BytesIO(blobs["Unihan.zip"]))
     for name in sorted(archive.namelist()):
@@ -159,7 +164,7 @@ def build(update_lock=False):
                           "version": description[1], "group": group, "subgroup": subgroup})
 
     core = {"version": VERSION, "emojiVersion": emoji_version, "records": records, "names": names, "aliases": dict(aliases),
-            "properties": props, "defaults": defaults, "labels": dict(labels), "notes": dict(notes)}
+            "properties": props, "defaults": defaults, "labels": dict(labels), "notes": dict(notes), "radicalForms": dict(radical_forms)}
     OUTPUT.mkdir(parents=True, exist_ok=True)
 
     def write(name, value):

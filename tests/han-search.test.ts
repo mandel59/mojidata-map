@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { expect, test } from 'vitest';
-import { searchHan, type HanRow } from '../src/core/unicode';
+import { searchHan, type HanRow, type UnicodeData } from '../src/core/unicode';
 import { hasHanConditions } from '../src/core/searchConditions';
 
 const { fields, rows } = JSON.parse(readFileSync('public/data/han-index.json', 'utf8')) as {
@@ -81,4 +81,20 @@ test('combines total strokes with residual strokes and readings, and triggers Ha
   expect(searchHan(water, { ...query, totalStrokes: '3' })).toEqual([]);
   expect(hasHanConditions({ totalStrokes: '12' })).toBe(true);
   expect(hasHanConditions({ totalStrokes: '' })).toBe(false);
+});
+
+test('defines only the radical and suffix combinations found in Unicode 18', () => {
+  const data: UnicodeData = JSON.parse(readFileSync('public/data/unicode.json', 'utf8'));
+  const definitions = Object.entries(data.radicalForms).flatMap(([radical, forms]) =>
+    forms.map((suffix) => radical + suffix),
+  );
+  const used = new Set(rows.flatMap((row) => row[1].split(' ').map((rs) => rs.split('.')[0])));
+  expect(Object.keys(data.radicalForms)).toHaveLength(214);
+  expect(definitions).toHaveLength(246);
+  expect(new Set(definitions)).toEqual(used);
+  expect(data.radicalForms['85']).toEqual(['']);
+  expect(data.radicalForms['90']).toEqual(['', "'"]);
+  // The non-Chinese form exists without a Chinese simplified form for radical 208.
+  expect(data.radicalForms['208']).toEqual(['', "''"]);
+  expect(data.radicalForms['212']).toEqual(['', "'", "''", "'''"]);
 });

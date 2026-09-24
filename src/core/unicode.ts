@@ -1,5 +1,6 @@
 export type Range = [number, number, string];
 export type CharacterRecord = [number, number, ...string[]];
+export type RadicalForm = '' | "'" | "''" | "'''";
 export interface UnicodeData {
   version: string;
   emojiVersion: string;
@@ -10,6 +11,7 @@ export interface UnicodeData {
   defaults: Record<string, Range[]>;
   labels: Record<string, Record<string, string>>;
   notes: Record<string, string[]>;
+  radicalForms: Record<string, RadicalForm[]>;
 }
 
 export const MAX_CP = 0x10ffff;
@@ -205,7 +207,7 @@ export type HanRow = [
 export interface HanQuery {
   radical?: string;
   // undefined includes all forms; the empty string requires the traditional form.
-  radicalForm?: '' | "'" | "''" | "'''";
+  radicalForm?: RadicalForm;
   strokes?: string;
   totalStrokes?: string;
   reading?: string;

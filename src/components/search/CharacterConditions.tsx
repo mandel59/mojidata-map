@@ -73,9 +73,15 @@ export const CharacterConditions = memo(function CharacterConditions({
   const id = useId();
   const [category, setCategory] = useState(0);
   const [expanded, setExpanded] = useState(() => !matchMedia('(max-width: 600px)').matches);
-  const [draft, setDraft] = useState<Partial<Record<Field, string>>>({});
+  const [draft, setDraft] = useState<Partial<Record<Field, string>>>(() =>
+    query.radical ? { radical: query.radical } : {},
+  );
   const [language, setLanguage] = useState<CharacterQuery['language']>('mandarin');
   const [radicalForm, setRadicalForm] = useState<CharacterQuery['radicalForm']>(query.radicalForm);
+  const availableRadicalForms: readonly string[] = db.data.radicalForms[draft.radical ?? ''] ?? [];
+  const validRadical =
+    availableRadicalForms.length > 0 &&
+    (radicalForm === undefined || availableRadicalForms.includes(radicalForm));
   const languages = {
     mandarin: '普通話 (Pinyin)',
     cantonese: '広東語 (Jyutping)',
@@ -118,6 +124,9 @@ export const CharacterConditions = memo(function CharacterConditions({
           : key === 'wholeWord'
             ? '単語全体で一致'
             : value;
+  const radicalSuffix =
+    query.radicalForm ??
+    ((db.data.radicalForms[query.radical ?? '']?.length ?? 0) > 1 ? '（すべての形）' : '');
   const conditions = (Object.keys(labels) as (keyof typeof labels)[]).flatMap((key) => {
     if (key === 'binary')
       return (query.binary ?? []).map((value) => ({
@@ -126,8 +135,8 @@ export const CharacterConditions = memo(function CharacterConditions({
       }));
     const value = query[key];
     if (key === 'aliases' ? value !== false : !value) return [];
-    const detail = key === 'radical' ? ` / ${radicalForms[query.radicalForm ?? 'any']}` : '';
-    return [{ id: key, label: `${labels[key]}: ${valueLabel(key, String(value))}${detail}` }];
+    const display = key === 'radical' ? `${value}${radicalSuffix}` : valueLabel(key, String(value));
+    return [{ id: key, label: `${labels[key]}: ${display}` }];
   });
   function moveTab(event: KeyboardEvent<HTMLButtonElement>, index: number) {
     const next =
@@ -209,7 +218,7 @@ export const CharacterConditions = memo(function CharacterConditions({
                       key={key}
                       onSubmit={(event) => {
                         event.preventDefault();
-                        if (!value) return;
+                        if (!value || (key === 'radical' && !validRadical)) return;
                         if (key === 'binary') {
                           if (query.binary?.includes(value)) return;
                           onApply({ binary: [...(query.binary ?? []), value] });
@@ -274,7 +283,16 @@ export const CharacterConditions = memo(function CharacterConditions({
                         <select
                           id={`${id}-${key}`}
                           value={value}
-                          onChange={(event) => setDraft({ ...draft, [key]: event.target.value })}
+                          onChange={(event) => {
+                            const next = event.target.value;
+                            setDraft({ ...draft, [key]: next });
+                            if (
+                              key === 'radical' &&
+                              radicalForm !== undefined &&
+                              !db.data.radicalForms[next]?.includes(radicalForm)
+                            )
+                              setRadicalForm(undefined);
+                          }}
                         >
                           <option value="">条件の値を選択…</option>
                           {options[key].map((value) => (
@@ -297,6 +315,7 @@ export const CharacterConditions = memo(function CharacterConditions({
                           <select
                             id={`${id}-radical-form`}
                             value={radicalForm ?? 'any'}
+                            disabled={!availableRadicalForms.length}
                             onChange={(event) =>
                               setRadicalForm(
                                 event.target.value === 'any'
@@ -305,11 +324,16 @@ export const CharacterConditions = memo(function CharacterConditions({
                               )
                             }
                           >
-                            {Object.entries(radicalForms).map(([value, label]) => (
-                              <option key={value} value={value}>
-                                {label}
-                              </option>
-                            ))}
+                            {Object.entries(radicalForms)
+                              .filter(
+                                ([value]) =>
+                                  value === 'any' || availableRadicalForms.includes(value),
+                              )
+                              .map(([value, label]) => (
+                                <option key={value} value={value}>
+                                  {label}
+                                </option>
+                              ))}
                           </select>
                         </>
                       )}
@@ -317,6 +341,7 @@ export const CharacterConditions = memo(function CharacterConditions({
                         aria-label={`${labels[key]}の条件を追加`}
                         disabled={
                           !value.trim() ||
+                          (key === 'radical' && !validRadical) ||
                           (key === 'binary' && query.binary?.includes(value)) ||
                           (String(current) === value &&
                             (key !== 'reading' || query.language === language) &&
