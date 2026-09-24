@@ -30,6 +30,8 @@ const Statistics = lazy(() =>
 );
 type Tab = 'map' | 'search' | 'sequences' | 'fonts' | 'statistics' | 'bookmarks';
 const PAGE_SIZE = 128;
+const isMac = navigator.platform.startsWith('Mac');
+const searchShortcut = isMac ? 'Cmd+Option+Shift+F' : 'Ctrl+Shift+F';
 const planeNames: Record<number, string> = {
   0: 'BMP',
   1: 'SMP',
@@ -134,7 +136,19 @@ export default function App({ db }: { db: UnicodeDatabase }) {
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if (document.querySelector('dialog[open]')) return;
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
+      const searchModifiers = isMac
+        ? event.metaKey && event.altKey && !event.ctrlKey
+        : event.ctrlKey && !event.metaKey && !event.altKey;
+      // Option changes event.key on macOS; use the physical F key there.
+      const searchKey = isMac ? event.code === 'KeyF' : event.key.toLowerCase() === 'f';
+      if (
+        searchModifiers &&
+        event.shiftKey &&
+        searchKey &&
+        !event.isComposing &&
+        !event.defaultPrevented &&
+        !event.getModifierState('AltGraph')
+      ) {
         event.preventDefault();
         document
           .querySelectorAll<HTMLElement>(':popover-open')
@@ -312,7 +326,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
               文字マップの検索は現在位置の次の一致へ移動し、末尾から先頭へ戻ります。同じ条件で検索を繰り返すと順に移動できます。
             </p>
             <p>
-              Ctrl/Cmd+F: 文字検索へ移動 / 編集バッファ内の F2:
+              {searchShortcut}: 文字検索へ移動 / 編集バッファ内の F2:
               カーソル位置の文字を探す。設定、ブックマーク、編集テキストはこの端末に保存します。
             </p>
             <p>

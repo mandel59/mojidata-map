@@ -27,7 +27,7 @@ test('shows map navigation only in the map and preserves search results across t
   await page.getByRole('button', { name: '文字マップ', exact: true }).click();
   await expect(page.locator('.character-cell.selected')).toHaveAttribute('data-cp', String(0x3080));
   await page.getByRole('button', { name: 'フォント', exact: true }).click();
-  await page.keyboard.press('Control+f');
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+Alt+Shift+f' : 'Control+Shift+f');
   await expect(page.getByLabel('文字を検索', { exact: true })).toBeFocused();
   await expect(page.getByLabel('文字を検索', { exact: true })).toHaveValue('GREEK');
   await page.getByRole('button', { name: '文字マップ', exact: true }).click();
