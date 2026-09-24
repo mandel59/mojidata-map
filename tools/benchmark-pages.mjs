@@ -34,7 +34,7 @@ try {
                     ? 'editor'
                     : 'bookmarked' in props
                       ? 'details'
-                      : props.setFamily
+                      : props.onShow
                         ? 'font'
                         : props.filters
                           ? 'advancedSearch'

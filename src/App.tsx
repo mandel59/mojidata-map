@@ -10,6 +10,7 @@ import { CodePointNavigation } from './components/CodePointNavigation';
 import { useCharacterSearch } from './useCharacterSearch';
 import { BlockNavigation } from './components/BlockNavigation';
 import { CharacterDisplay } from './components/CharacterDisplay';
+import { BlockFontSettings } from './components/BlockFontSettings';
 import { CharacterGrid } from './components/CharacterGrid';
 import { CharacterDetails } from './components/CharacterDetails';
 import { Editor, type EditorHandle } from './components/Editor';
@@ -210,7 +211,6 @@ export default function App({ db }: { db: UnicodeDatabase }) {
     });
   }, [detailCp, prefs.bookmarks, update]);
   const setBuffer = useCallback((buffer: string) => update({ buffer }), [update]);
-  const setFont = useCallback((font: string) => update({ font }), [update]);
   const setComposite = useCallback(
     (composite: Record<string, string>) => update({ composite }),
     [update],
@@ -375,18 +375,26 @@ export default function App({ db }: { db: UnicodeDatabase }) {
           size={prefs.size}
           onSizeCommit={setSize}
           fontControls={
-            <label>
-              表示フォント（名前を入力）
-              <input
-                type="text"
-                aria-label="表示フォント"
-                placeholder="例: Yu Gothic"
-                autoComplete="off"
-                spellCheck={false}
-                value={prefs.font}
-                onChange={(event) => update({ font: event.target.value })}
+            <>
+              <label>
+                表示フォント（名前を入力）
+                <input
+                  type="text"
+                  aria-label="表示フォント"
+                  placeholder="例: Yu Gothic"
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={prefs.font}
+                  onChange={(event) => update({ font: event.target.value })}
+                />
+              </label>
+              <BlockFontSettings
+                db={db}
+                composite={prefs.composite}
+                onChange={setComposite}
+                notify={notify}
               />
-            </label>
+            </>
           }
           colorControl={
             <select
@@ -414,10 +422,6 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                   db={db}
                   // Retain the loaded font, but only inspect selection while visible.
                   cp={tab === 'fonts' ? selected : 0}
-                  family={prefs.font}
-                  setFamily={setFont}
-                  composite={prefs.composite}
-                  setComposite={setComposite}
                   notify={notify}
                   onShow={showResults}
                   onSelect={setSelected}

@@ -6,25 +6,12 @@ import { download, type LocalFont } from '../platform';
 interface Props {
   db: UnicodeDatabase;
   cp: number;
-  family: string;
-  setFamily(value: string): void;
-  composite: Record<string, string>;
-  setComposite(value: Record<string, string>): void;
   notify(message: string): void;
   onShow(points: number[], title: string): void;
   onSelect(cp: number): void;
 }
-export const FontPanel = memo(function FontPanel({
-  db,
-  cp,
-  family,
-  setFamily,
-  composite,
-  setComposite,
-  notify,
-  onShow,
-  onSelect,
-}: Props) {
+export const FontPanel = memo(function FontPanel({ db, cp, notify, onShow, onSelect }: Props) {
+  const [family, setFamily] = useState('serif');
   const [fonts, setFonts] = useState<Font[]>([]);
   const addedFaces = useRef<FontFace[]>([]);
   const [index, setIndex] = useState(0);
@@ -32,8 +19,6 @@ export const FontPanel = memo(function FontPanel({
   const [localIndex, setLocalIndex] = useState('');
   const [sample, setSample] = useState('office العربية 日本語');
   const [features, setFeatures] = useState('kern, liga');
-  const [block, setBlock] = useState('Basic Latin');
-  const [mapping, setMapping] = useState('');
   const [busy, setBusy] = useState(false);
   const [glyphCode, setGlyphCode] = useState('0041');
   const font = fonts[index];
@@ -51,7 +36,8 @@ export const FontPanel = memo(function FontPanel({
       if (!list.length) throw new Error('フォントが含まれていません。');
       setFonts(list);
       setIndex(0);
-      const cssName = `Mojidata Imported ${Date.now()}`;
+      // Keep every word a valid CSS identifier, including the timestamp.
+      const cssName = `Mojidata Imported Font${Date.now()}`;
       try {
         const face = await new FontFace(cssName, bytes).load();
         document.fonts.add(face);
@@ -60,7 +46,7 @@ export const FontPanel = memo(function FontPanel({
         notify(`${label} を読み込みました。`);
       } catch {
         notify(
-          '解析は完了しました。ブラウザで表示できない形式のため、文字表のフォントは変更していません。',
+          '解析は完了しました。ブラウザで表示できない形式のため、プレビューのフォントは変更していません。',
         );
       }
     } catch (error) {
@@ -157,7 +143,10 @@ export const FontPanel = memo(function FontPanel({
       <div className="tool-title">
         <span className="eyebrow">TYPE LAB</span>
         <h2>フォントを調べる</h2>
-        <p>文字の収録範囲、グリフの輪郭、OpenType の置換結果を確認します。</p>
+        <p>
+          文字の収録範囲、グリフの輪郭、OpenType
+          の置換結果を確認します。このタブで選んだフォントはプレビューとPNG出力に使用します。
+        </p>
       </div>
       <div className="button-row">
         <label className="file-button">
@@ -220,7 +209,7 @@ export const FontPanel = memo(function FontPanel({
         </div>
       )}
       <p className="muted">
-        通常の文字表・PNG は OS のフォールバックを含みます。cmap の収録判定・SVG
+        プレビュー・PNG は OS のフォールバックを含みます。cmap の収録判定・SVG
         は解析したフォントそのものに基づきます。読み込んだファイルは外部へ送信しません。
       </p>
       {font && (
@@ -235,7 +224,7 @@ export const FontPanel = memo(function FontPanel({
                   </option>
                 ))}
               </select>
-              <small>文字表は先頭のフェイスで表示します。</small>
+              <small>プレビュー・PNGは先頭のフェイスで表示します。</small>
             </label>
           )}
           <form
@@ -419,59 +408,6 @@ export const FontPanel = memo(function FontPanel({
           </details>
         </>
       )}
-      <details open>
-        <summary>ブロックごとのフォント設定</summary>
-        <div className="filter-fields">
-          <label>
-            ブロック
-            <select
-              value={block}
-              onChange={(event) => {
-                setBlock(event.target.value);
-                setMapping(composite[event.target.value] ?? '');
-              }}
-            >
-              {db.data.properties.Block.map(([, , name]) => (
-                <option key={name}>{name}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            フォント名
-            <input
-              value={mapping}
-              placeholder="例: Yu Mincho"
-              onChange={(event) => setMapping(event.target.value)}
-            />
-          </label>
-          <button
-            onClick={() => {
-              const next = { ...composite };
-              if (mapping.trim()) next[block] = mapping.trim();
-              else delete next[block];
-              setComposite(next);
-              notify('ブロックのフォント設定を保存しました。');
-            }}
-          >
-            設定を保存
-          </button>
-        </div>
-        {Object.entries(composite).map(([block, value]) => (
-          <p key={block}>
-            {block}: {value}{' '}
-            <button
-              aria-label={`${block} の設定を削除`}
-              onClick={() => {
-                const next = { ...composite };
-                delete next[block];
-                setComposite(next);
-              }}
-            >
-              解除
-            </button>
-          </p>
-        ))}
-      </details>
     </section>
   );
 });
