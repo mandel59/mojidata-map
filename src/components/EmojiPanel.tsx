@@ -3,10 +3,11 @@ import { loadData, type Emoji } from '../data';
 import { codeLabel } from '../core/unicode';
 import { copyText } from '../platform';
 interface Props {
+  version: string;
   onInsert(text: string): void;
   notify(message: string): void;
 }
-export function EmojiPanel({ onInsert, notify }: Props) {
+export function EmojiPanel({ version, onInsert, notify }: Props) {
   const [all, setAll] = useState<Emoji[]>([]);
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState('');
@@ -43,7 +44,7 @@ export function EmojiPanel({ onInsert, notify }: Props) {
       <div className="tool-title">
         <span className="eyebrow">EMOJI COLLECTION</span>
         <h2>絵文字を探す</h2>
-        <p>Unicode Emoji 17.0 の単体・肌色・国旗・ZWJ シーケンス。</p>
+        <p>Unicode Emoji {version} の単体・肌色・国旗・ZWJ シーケンス。</p>
       </div>
       <div className="filter-fields">
         <label>

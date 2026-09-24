@@ -126,3 +126,21 @@ test('inspects a real font, exports outlines, and keeps the font across tabs', a
   await page.getByRole('button', { name: 'フォント', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Liberation Sans', exact: true })).toBeVisible();
 });
+
+test('uses Unicode 18 in search, statistics and the emoji picker', async ({ page }) => {
+  await expect(page.getByText('Unicode 18.0.0', { exact: true })).toBeVisible();
+  await page.getByLabel('文字を検索', { exact: true }).fill('UAE DIRHAM SIGN');
+  await page.getByRole('button', { name: '検索', exact: true }).click();
+  await page.getByRole('button', { name: 'U+20C3 UAE DIRHAM SIGN', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'UAE DIRHAM SIGN', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Unicode データ', exact: true }).click();
+  await expect(page.getByText('18.0.0', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '絵文字', exact: true }).click();
+  await expect(
+    page.getByText('Unicode Emoji 18.0 の単体・肌色・国旗・ZWJ シーケンス。', { exact: true }),
+  ).toBeVisible();
+  await page.getByLabel('英語の名前').fill('cracking face');
+  await page.getByRole('button', { name: 'cracking face', exact: true }).click();
+  await page.getByRole('button', { name: '絵文字を追加', exact: true }).click();
+  await expect(page.getByLabel('編集テキスト')).toHaveValue(String.fromCodePoint(0x1faeb));
+});

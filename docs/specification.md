@@ -45,7 +45,7 @@
 
 ## 実装方針
 
-- Unicode 17.0.0 **正式版**の UCD / Unihan / Emoji データを公式配布から取得する。ベータ版との差分はあり得る。BabelMap の内部データや画像はアプリへ転用しない。
+- Unicode 18.0.0 **正式版**の UCD / Unihan / Emoji データを公式配布から取得する。ベータ版との差分はあり得る。BabelMap の内部データや画像はアプリへ転用しない。
 - U+0000–U+10FFFF を閲覧対象とする。サロゲートはコードポイントとして情報表示できても、文字として挿入・コピーしない。私用・未割当・非文字を明確に区別する。
 - 文字表はページ単位で描画し、全コードポイントの DOM 展開を避ける。検索は Worker に分離する。
 - ブラウザのフォントフォールバックと BabelMap の厳密なグリフ描画は異なる。通常表示と、読み込んだフォントの cmap に基づくカバレッジ検査を区別する。
@@ -57,6 +57,6 @@
 - [BabelMap 公式概要](https://www.babelstone.co.uk/Software/BabelMap.html)
 - [公式ヘルプ索引](https://www.babelstone.co.uk/Software/BabelMap_Help.html)
 - [ベータ配布ページ](https://www.babelstone.co.uk/Software/Beta.html)
-- [Unicode 17.0.0 UCD](https://www.unicode.org/Public/17.0.0/ucd/)
+- [Unicode 18.0.0 UCD](https://www.unicode.org/Public/18.0.0/ucd/)
 
 公式ページの保守状況の記述はユーザー指示と一致するとは限らない。開発判断は指定配布物の機能を基準に行う。

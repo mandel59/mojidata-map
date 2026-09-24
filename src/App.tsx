@@ -454,7 +454,9 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                 />
               </div>
             )}
-            {tab === 'emoji' && <EmojiPanel onInsert={insert} notify={notify} />}
+            {tab === 'emoji' && (
+              <EmojiPanel version={db.data.emojiVersion} onInsert={insert} notify={notify} />
+            )}
             {tab === 'statistics' && <Statistics db={db} onLocate={locate} />}
             {(tab === 'map' || tab === 'han' || tab === 'bookmarks') && (
               <>

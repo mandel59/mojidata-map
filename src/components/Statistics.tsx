@@ -75,7 +75,7 @@ export function Statistics({ db, onLocate }: { db: UnicodeDatabase; onLocate(cp:
           <span>区分</span>
         </div>
         <div>
-          <strong>17.0</strong>
+          <strong>{db.data.version}</strong>
           <span>Unicode バージョン</span>
         </div>
       </div>

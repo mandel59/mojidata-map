@@ -10,7 +10,7 @@ import zipfile
 from collections import defaultdict
 from pathlib import Path
 
-VERSION = "17.0.0"
+VERSION = "18.0.0"
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / "var" / "unicode" / VERSION
 OUTPUT = ROOT / "public" / "data"
@@ -38,6 +38,8 @@ def interval(raw):
 def build(update_lock=False):
     CACHE.mkdir(parents=True, exist_ok=True)
     old = json.loads(LOCK.read_text()) if LOCK.exists() else {}
+    if old and not update_lock and old.get("version") != VERSION:
+        raise ValueError("Source version mismatch; review before --update-lock")
     sources, blobs = {}, {}
     for name, url in SOURCES.items():
         path = CACHE / name
@@ -57,6 +59,13 @@ def build(update_lock=False):
 
     def read(name):
         return ucd.read(name).decode("utf-8-sig")
+
+    if f"final data files for version {VERSION}" not in read("ReadMe.txt"):
+        raise ValueError("UCD archive is not the requested final Unicode version")
+    emoji_header = re.search(r"^# Version: ([\d.]+)$", blobs["emoji-test.txt"].decode("utf-8"), re.MULTILINE)
+    emoji_version = ".".join(VERSION.split(".")[:2])
+    if not emoji_header or emoji_header[1] != emoji_version:
+        raise ValueError("Emoji data version does not match the requested Unicode version")
 
     records, first = [], None
     for row in fields(read("UnicodeData.txt")):
@@ -124,7 +133,10 @@ def build(update_lock=False):
     for name in sorted(archive.namelist()):
         if not name.endswith(".txt"):
             continue
-        for line in archive.read(name).decode("utf-8").splitlines():
+        text = archive.read(name).decode("utf-8")
+        if not re.search(rf"^# Unicode Version {re.escape(VERSION)}$", text, re.MULTILINE):
+            raise ValueError(f"Unihan data version mismatch: {name}")
+        for line in text.splitlines():
             if line.startswith("U+"):
                 cp, prop, value = line.split("\t", 2)
                 unihan[cp[2:]][prop] = value
@@ -146,7 +158,7 @@ def build(update_lock=False):
             emoji.append({"cps": [int(c, 16) for c in codes.split()], "name": description[2],
                           "version": description[1], "group": group, "subgroup": subgroup})
 
-    core = {"version": VERSION, "records": records, "names": names, "aliases": dict(aliases),
+    core = {"version": VERSION, "emojiVersion": emoji_version, "records": records, "names": names, "aliases": dict(aliases),
             "properties": props, "defaults": defaults, "labels": dict(labels), "notes": dict(notes)}
     OUTPUT.mkdir(parents=True, exist_ok=True)
 
@@ -162,7 +174,7 @@ def build(update_lock=False):
     for shard, values in sorted(shards.items()):
         write(f"unihan/{shard}.json", values)
     (OUTPUT / "LICENSE-UNICODE.txt").write_bytes(blobs["license.txt"])
-    manifest = {"unicodeVersion": VERSION, "sources": sources, "counts": {
+    manifest = {"unicodeVersion": VERSION, "emojiVersion": emoji_version, "sources": sources, "counts": {
         "records": len(records), "nameRanges": len(names), "blocks": len(props["Block"]),
         "unihanCharacters": len(unihan), "emojiSequences": len(emoji)}, "unihanShards": sorted(shards)}
     write("manifest.json", manifest)

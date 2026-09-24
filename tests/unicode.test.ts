@@ -12,7 +12,57 @@ import { encodeFile, encodeText, textStats } from '../src/core/encoding';
 const data: UnicodeData = JSON.parse(readFileSync('public/data/unicode.json', 'utf8'));
 const db = new UnicodeDatabase(data);
 
-describe('official Unicode 17 data', () => {
+describe('official Unicode 18 data', () => {
+  test('pins the final Unicode and Emoji versions and complete repertoire', () => {
+    const manifest = JSON.parse(readFileSync('public/data/manifest.json', 'utf8'));
+    const sources = JSON.parse(readFileSync('tools/unicode-sources.json', 'utf8'));
+    expect(data.version).toBe('18.0.0');
+    expect(data.emojiVersion).toBe('18.0');
+    expect(manifest.unicodeVersion).toBe(data.version);
+    expect(manifest.emojiVersion).toBe(data.emojiVersion);
+    expect(sources.version).toBe(data.version);
+    expect(manifest.sources).toEqual(sources.sources);
+    expect(data.properties.Block).toHaveLength(353);
+    const additions = data.properties.Age.filter(([, , age]) => age === '18.0');
+    expect(additions.reduce((sum, [first, last]) => sum + last - first + 1, 0)).toBe(13007);
+    const characters = data.records.filter(
+      ([, , category]) => !['Cc', 'Cs', 'Co'].includes(category),
+    );
+    expect(characters.reduce((sum, [first, last]) => sum + last - first + 1, 0)).toBe(172808);
+  });
+  test('finds Unicode 18 scripts, currency symbols and the extended CJK range', () => {
+    for (const [cp, name, script] of [
+      [0x20c3, 'UAE DIRHAM SIGN', 'Common'],
+      [0x18e00, 'JURCHEN CHARACTER-18E00', 'Jurchen'],
+      [0x3d000, 'SMALL SEAL CHARACTER-3D000', 'Seal'],
+      [0x3fc3f, 'SMALL SEAL CHARACTER-3FC3F', 'Seal'],
+      [0x125a8, 'CUNEIFORM NUMERIC SIGN ONE N56', 'Proto_Cuneiform'],
+      [0x2b81e, 'CJK UNIFIED IDEOGRAPH-2B81E', 'Han'],
+    ] as const) {
+      expect(db.name(cp)).toBe(name);
+      expect(db.property(cp, 'Script')).toBe(script);
+      expect(db.property(cp, 'Age')).toBe('18.0');
+    }
+    expect(db.category(0x3fc40)).toBe('Cn');
+    expect(searchCharacters(db, { text: 'UAE DIRHAM', age: '18.0', category: 'Sc' })).toEqual([
+      0x20c3,
+    ]);
+  });
+  test('includes new emoji sequences and updated Unihan properties', () => {
+    const emoji = JSON.parse(readFileSync('public/data/emoji.json', 'utf8'));
+    expect(emoji).toHaveLength(3963);
+    expect(emoji).toContainEqual(
+      expect.objectContaining({ cps: [0x1faeb], name: 'cracking face', version: '18.0' }),
+    );
+    expect(emoji).toContainEqual(
+      expect.objectContaining({ cps: [0x1faf9, 0x1f3fb], version: '18.0' }),
+    );
+    const extensionD = JSON.parse(readFileSync('public/data/unihan/02b.json', 'utf8'));
+    expect(extensionD['2B81E'].kRSUnicode).toBe('72.4');
+    const unified = JSON.parse(readFileSync('public/data/unihan/009.json', 'utf8'));
+    expect(unified['905E'].kJapaneseNewVariant).toBe('U+9013');
+    expect(unified['905E']).not.toHaveProperty('kIRGKangXi');
+  });
   test('range tables are sorted and do not overlap', () => {
     for (const ranges of [data.records, data.names, ...Object.values(data.properties)]) {
       for (let i = 1; i < ranges.length; i++) {

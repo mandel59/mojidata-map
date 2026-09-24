@@ -2,6 +2,7 @@ export type Range = [number, number, string];
 export type CharacterRecord = [number, number, ...string[]];
 export interface UnicodeData {
   version: string;
+  emojiVersion: string;
   records: CharacterRecord[];
   names: Range[];
   aliases: Record<string, [string, string][]>;
