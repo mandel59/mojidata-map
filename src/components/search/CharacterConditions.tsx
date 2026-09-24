@@ -50,9 +50,9 @@ const categories: { id: string; label: string; fields: Field[] }[] = [
 const radicalForms = {
   any: 'すべての形',
   '': '枝番なし（伝統形）',
-  "'": "'（中国の簡略形）",
-  "''": "''（中国以外の簡略形）",
-  "'''": "'''（中国以外の別の簡略形）",
+  "'": "'（簡略形1）",
+  "''": "''（簡略形2）",
+  "'''": "'''（簡略形3）",
 };
 
 export const CharacterConditions = memo(function CharacterConditions({
