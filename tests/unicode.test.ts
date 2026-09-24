@@ -1,6 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
-import { UnicodeDatabase, parseCodePoint, searchCharacters, searchHan, type UnicodeData, type HanRow } from '../src/core/unicode';
+import {
+  UnicodeDatabase,
+  parseCodePoint,
+  searchCharacters,
+  searchHan,
+  type UnicodeData,
+  type HanRow,
+} from '../src/core/unicode';
 import { encodeFile, encodeText, textStats } from '../src/core/encoding';
 const data: UnicodeData = JSON.parse(readFileSync('public/data/unicode.json', 'utf8'));
 const db = new UnicodeDatabase(data);
@@ -45,7 +52,8 @@ test('strict code point parser rejects trailing garbage and out of range values'
   expect(parseCodePoint('128512', 10)).toBe(0x1f600);
   expect(parseCodePoint('&#x1F600;')).toBe(0x1f600);
   expect(parseCodePoint('\\u{1F600}')).toBe(0x1f600);
-  for (const text of ['110000', '-1', '41zz', '0x', '', 'U+1F600 nope']) expect(parseCodePoint(text)).toBeNull();
+  for (const text of ['110000', '-1', '41zz', '0x', '', 'U+1F600 nope'])
+    expect(parseCodePoint(text)).toBeNull();
 });
 
 test('supplementary encodings and file byte order preserve Unicode scalars', () => {
@@ -61,7 +69,9 @@ test('supplementary encodings and file byte order preserve Unicode scalars', () 
 });
 
 test('Unihan radical-stroke pairs and readings use real data', () => {
-  const { rows } = JSON.parse(readFileSync('public/data/han-index.json', 'utf8')) as { rows: HanRow[] };
+  const { rows } = JSON.parse(readFileSync('public/data/han-index.json', 'utf8')) as {
+    rows: HanRow[];
+  };
   expect(searchHan(rows, { radical: '85', strokes: '11' })).toContain(0x6f22);
   expect(searchHan(rows, { reading: 'zhong', language: 'mandarin' })).toContain(0x4e2d);
   expect(searchHan(rows, { reading: 'zung1', language: 'cantonese' })).toContain(0x4e2d);
