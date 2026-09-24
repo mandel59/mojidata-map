@@ -14,7 +14,9 @@ import { CharacterGrid } from './components/CharacterGrid';
 import { CharacterDetails } from './components/CharacterDetails';
 import { Editor, type EditorHandle } from './components/Editor';
 import { usePreferences } from './preferences';
-import { download } from './platform';
+import { download, type AboutSection } from './platform';
+import { AboutDialog } from './components/AboutDialog';
+import { version as appVersion } from '../package.json';
 const FontPanel = lazy(() =>
   import('./components/FontPanel').then((module) => ({ default: module.FontPanel })),
 );
@@ -59,6 +61,8 @@ export default function App({ db }: { db: UnicodeDatabase }) {
   const [allPlanes, setAllPlanes] = useState(false);
   const [alwaysOnTop, setAlwaysOnTop] = useState(false);
   const [help, setHelp] = useState(false);
+  const [about, setAbout] = useState<AboutSection | null>(null);
+  useEffect(() => window.mojidata?.onOpenAbout(setAbout), []);
   const [fontOpened, setFontOpened] = useState(false);
   const requestId = useRef(0);
   const worker = useRef<Worker | null>(null);
@@ -109,6 +113,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
   }, [prefs.dark]);
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
+      if (document.querySelector('dialog[open]')) return;
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
         event.preventDefault();
         searchInput.current?.focus();
@@ -286,7 +291,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
             未収録の字形には表示用フォントが必要です。「◌」「␣」「·」などは結合文字・空白・未割当の表示補助です。実際に追加される文字には補助記号は含まれません。
           </p>
           <p>
-            バージョン 0.1。BabelMap
+            バージョン {appVersion}。BabelMap
             の全機能との互換性は開発中です。文字の歴史データ、IVD、彝文字・西夏文字の専用検索、Windows
             固有の描画・トレイ機能は未対応です。
           </p>
@@ -782,10 +787,25 @@ export default function App({ db }: { db: UnicodeDatabase }) {
         notify={notify}
         handle={editor}
       />
+      {about && (
+        <AboutDialog db={db} section={about} onSection={setAbout} onClose={() => setAbout(null)} />
+      )}
       <footer className="app-footer">
         <span>
-          Mojidata Map <small>0.1.0</small>
+          Mojidata Map <small>{appVersion}</small>
         </span>
+        <nav className="footer-links" aria-label="アプリ情報">
+          <button className="text-button" aria-haspopup="dialog" onClick={() => setAbout('about')}>
+            アプリについて
+          </button>
+          <button
+            className="text-button"
+            aria-haspopup="dialog"
+            onClick={() => setAbout('credits')}
+          >
+            クレジット
+          </button>
+        </nav>
         <span>
           Unicode data © Unicode, Inc. ·{' '}
           <a

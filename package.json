@@ -21,7 +21,10 @@
     "desktop:win": "npm run build && electron-builder --win zip --x64",
     "format": "prettier --write src desktop tools/*.mjs tests *.ts *.json",
     "format:check": "prettier --check src desktop tools/*.mjs tests *.ts *.json",
-    "test:desktop": "node tools/smoke-desktop.mjs"
+    "test:desktop": "node tools/smoke-desktop.mjs",
+    "credits:generate": "node tools/build-credits.mjs",
+    "prebuild": "npm run credits:generate",
+    "predev": "npm run credits:generate"
   },
   "build": {
     "appId": "org.mojidata.map",

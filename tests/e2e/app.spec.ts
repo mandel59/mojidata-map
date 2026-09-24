@@ -1,3 +1,5 @@
+import packageMetadata from '../../package.json' with { type: 'json' };
+const appVersion = packageMetadata.version;
 import { test, expect } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
@@ -200,4 +202,81 @@ test('keeps size across keyboard edits, tab switches and grid navigation', async
   await page.reload();
   await expect(size).toHaveValue('63');
   await expect(glyph).toHaveCSS('font-size', '63px');
+});
+
+test('opens About, switches its tabs with the keyboard and restores focus and editing state', async ({
+  page,
+}) => {
+  await page.getByLabel('編集テキスト').fill('アプリ情報の確認');
+  const opener = page.getByRole('button', { name: 'アプリについて', exact: true });
+  await opener.click();
+  const dialog = page.getByRole('dialog', { name: 'アプリ情報', exact: true });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText(appVersion, { exact: true })).toBeVisible();
+  await expect(dialog.getByText('18.0.0', { exact: true })).toBeVisible();
+  await expect(dialog.getByText('18.0', { exact: true })).toBeVisible();
+  await expect(dialog.getByText('Web 版', { exact: true })).toBeVisible();
+  await dialog.getByRole('tab', { name: 'アプリについて' }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(dialog.getByRole('tab', { name: 'クレジット' })).toBeFocused();
+  await expect(dialog.getByRole('tab', { name: 'クレジット' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await page.keyboard.press('Home');
+  await expect(dialog.getByRole('tab', { name: 'アプリについて' })).toBeFocused();
+  await dialog.getByRole('button', { name: 'アプリ情報を閉じる' }).focus();
+  // A modal dialog makes the background inert, including scripted focus attempts.
+  await page.getByLabel('編集テキスト').evaluate((element: HTMLTextAreaElement) => element.focus());
+  await expect(dialog.getByRole('button', { name: 'アプリ情報を閉じる' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(opener).toBeFocused();
+  await expect(page.getByLabel('編集テキスト')).toHaveValue('アプリ情報の確認');
+});
+
+test('shows bundled credits and license text on narrow screens in both themes', async ({
+  page,
+}) => {
+  await page.route('https://**', (route) => route.abort());
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: '配色を切り替え', exact: true }).click();
+  await page.getByRole('button', { name: 'クレジット', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'アプリ情報', exact: true });
+  await expect(dialog.getByRole('link', { name: 'BabelMap', exact: true })).toHaveAttribute(
+    'href',
+    'https://www.babelstone.co.uk/Software/BabelMap.html',
+  );
+  await expect(dialog.getByRole('link', { name: 'fontkit', exact: true })).toBeVisible();
+  await dialog.getByText('Unicode ライセンス全文', { exact: true }).click();
+  await expect(dialog.locator('.license-text').first()).toContainText('UNICODE LICENSE V3');
+  await dialog.getByText('react のライセンス・著作権表示', { exact: true }).click();
+  await expect(
+    dialog
+      .locator('details')
+      .filter({ has: page.getByText('react のライセンス・著作権表示', { exact: true }) })
+      .locator('pre'),
+  ).toContainText('Permission is hereby granted');
+  expect(await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+  for (const link of await dialog.getByRole('link').all()) {
+    await expect(link).toHaveAttribute('target', '_blank');
+    await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  }
+  await dialog.getByRole('button', { name: 'アプリ情報を閉じる' }).click();
+  await page.getByRole('button', { name: '配色を切り替え', exact: true }).click();
+  await page.getByRole('button', { name: 'アプリについて', exact: true }).click();
+  await expect(dialog.getByRole('tabpanel', { name: 'アプリについて' })).toBeVisible();
+});
+
+test('retries credits when bundled metadata fails to load', async ({ page }) => {
+  await page.route('**/credits.json', (route) =>
+    route.fulfill({ status: 503, body: 'unavailable' }),
+  );
+  await page.getByRole('button', { name: 'クレジット', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'アプリ情報', exact: true });
+  await expect(dialog.getByRole('alert')).toHaveText('クレジットを読み込めませんでした。');
+  await page.unroute('**/credits.json');
+  await dialog.getByRole('button', { name: '再試行', exact: true }).click();
+  await expect(dialog.getByRole('link', { name: 'react', exact: true })).toBeVisible();
+  await expect(dialog.getByRole('alert')).toHaveCount(0);
 });

@@ -38,9 +38,39 @@ try {
     await page.getByRole('button', { name: '端末のフォントを取得', exact: true }).click();
     await expect(page.getByLabel('端末のフォント', { exact: true })).toBeVisible();
   }
+  await app.evaluate(({ Menu }) => Menu.getApplicationMenu().getMenuItemById('about-app').click());
+  const about = page.getByRole('dialog', { name: 'アプリ情報', exact: true });
+  await expect(about.getByText('デスクトップ版', { exact: true })).toBeVisible();
+  await about.getByRole('button', { name: 'アプリ情報を閉じる' }).click();
+  await app.evaluate(({ Menu }) =>
+    Menu.getApplicationMenu().getMenuItemById('app-credits').click(),
+  );
+  await expect(about.getByText('Unicode ライセンス全文', { exact: true })).toBeVisible();
+  await app.evaluate(({ shell }) => {
+    globalThis.originalOpenExternal = shell.openExternal;
+    shell.openExternal = async (url) => {
+      globalThis.creditLink = url;
+    };
+  });
+  await about.getByRole('link', { name: 'Unicode Consortium', exact: true }).click();
+  await expect
+    .poll(() => app.evaluate(() => globalThis.creditLink))
+    .toBe('https://www.unicode.org/');
+  expect(
+    await page.evaluate(() =>
+      window.mojidata.openExternal('file:///tmp/test').then(
+        () => false,
+        () => true,
+      ),
+    ),
+  ).toBe(true);
+  await app.evaluate(({ shell }) => {
+    shell.openExternal = globalThis.originalOpenExternal;
+  });
+  await page.keyboard.press('Escape');
   expect(errors).toEqual([]);
   console.log(
-    'Desktop smoke passed: custom protocol, worker, buffer, clipboard, isolation, always-on-top.',
+    'Desktop smoke passed: custom protocol, worker, buffer, clipboard, isolation, always-on-top, About, credits, external-link validation.',
   );
 } finally {
   if (app) await app.close();

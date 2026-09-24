@@ -1202,3 +1202,129 @@ td button {
     width: 100%;
   }
 }
+
+.footer-links {
+  display: flex;
+  gap: 16px;
+}
+.footer-links button {
+  font: inherit;
+}
+.about-dialog {
+  width: min(680px, calc(100% - 28px));
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 0;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 20px 80px #0004;
+  overflow: hidden;
+}
+.about-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.about-dialog::backdrop {
+  background: #14291fb3;
+}
+.about-header {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 22px;
+}
+.about-tabs {
+  flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+  padding: 0 22px;
+  border-bottom: 1px solid var(--border);
+}
+.about-tabs button {
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--muted);
+  padding: 12px;
+}
+.about-tabs button[aria-selected='true'] {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+}
+.about-content,
+.about-error {
+  padding: 22px;
+}
+.about-content p {
+  margin: 10px 0;
+}
+.about-content {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.about-error {
+  flex-shrink: 0;
+}
+.about-properties {
+  margin: 24px 0;
+}
+.about-properties > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--subtle-border);
+}
+.about-properties dt {
+  color: var(--muted);
+}
+.about-properties dd {
+  margin: 0;
+}
+.credit-card {
+  padding: 16px;
+  margin: 12px 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+}
+.credit-card h4,
+.credits-heading {
+  margin: 0;
+  font-size: 14px;
+}
+.credit-card h4 small {
+  font-weight: normal;
+  color: var(--muted);
+  margin-left: 6px;
+}
+.credit-card details {
+  margin-top: 12px;
+}
+.credits-heading {
+  margin-top: 24px;
+}
+.license-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font:
+    11px/1.7 Consolas,
+    monospace;
+  margin: 12px 0 0;
+}
+@media (max-width: 600px) {
+  .about-header,
+  .about-content,
+  .about-error {
+    padding: 16px;
+  }
+  .about-tabs {
+    padding: 0 16px;
+  }
+}

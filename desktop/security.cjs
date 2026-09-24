@@ -29,4 +29,13 @@ function assetPath(root, requestUrl) {
   if (relative.startsWith('..') || path.isAbsolute(relative)) return null;
   return target;
 }
-module.exports = { isAppUrl, assetPath };
+function isExternalUrl(value) {
+  if (typeof value !== 'string' || value.length > 2048) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && !url.username && !url.password && !url.port;
+  } catch {
+    return false;
+  }
+}
+module.exports = { isAppUrl, assetPath, isExternalUrl };

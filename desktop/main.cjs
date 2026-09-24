@@ -7,10 +7,11 @@ const {
   net,
   protocol,
   session,
+  shell,
 } = require('electron');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
-const { isAppUrl, assetPath } = require('./security.cjs');
+const { isAppUrl, assetPath, isExternalUrl } = require('./security.cjs');
 const dataRoot = path.join(__dirname, '..', 'dist');
 const csp =
   "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data: blob:; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'";
@@ -30,6 +31,11 @@ function trusted(event) {
   )
     throw new Error('Untrusted IPC sender');
 }
+ipcMain.handle('open-external', async (event, url) => {
+  trusted(event);
+  if (!isExternalUrl(url)) throw new Error('Invalid external URL');
+  await shell.openExternal(url);
+});
 ipcMain.handle('copy-text', (event, text) => {
   trusted(event);
   if (typeof text !== 'string' || text.length > 5_000_000)
@@ -87,9 +93,30 @@ app.whenReady().then(() => {
   session.defaultSession.on('will-download', (_event, item) =>
     item.setSaveDialogOptions({ title: 'Mojidata Map — ファイルを保存' }),
   );
+  const openAbout = (section) => {
+    const window = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
+    window?.webContents.send('open-about', section);
+  };
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
-      ...(process.platform === 'darwin' ? [{ role: 'appMenu' }] : []),
+      ...(process.platform === 'darwin'
+        ? [
+            {
+              label: app.name,
+              submenu: [
+                { label: 'Mojidata Map について', click: () => openAbout('about') },
+                { type: 'separator' },
+                { role: 'services' },
+                { type: 'separator' },
+                { role: 'hide' },
+                { role: 'hideOthers' },
+                { role: 'unhide' },
+                { type: 'separator' },
+                { role: 'quit' },
+              ],
+            },
+          ]
+        : []),
       {
         label: '編集',
         submenu: [
@@ -113,6 +140,13 @@ app.whenReady().then(() => {
         ],
       },
       { label: 'ウィンドウ', submenu: [{ role: 'minimize' }, { role: 'close' }] },
+      {
+        label: 'ヘルプ',
+        submenu: [
+          { id: 'about-app', label: 'アプリについて', click: () => openAbout('about') },
+          { id: 'app-credits', label: 'クレジット', click: () => openAbout('credits') },
+        ],
+      },
     ]),
   );
   createWindow();

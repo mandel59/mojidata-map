@@ -1,3 +1,5 @@
+export type AboutSection = 'about' | 'credits';
+
 export async function copyText(text: string): Promise<void> {
   if (window.mojidata) await window.mojidata.copyText(text);
   else if (navigator.clipboard) await navigator.clipboard.writeText(text);
@@ -29,7 +31,8 @@ declare global {
     mojidata?: {
       copyText(text: string): Promise<void>;
       setAlwaysOnTop(value: boolean): Promise<void>;
-      version: string;
+      openExternal(url: string): Promise<void>;
+      onOpenAbout(callback: (section: AboutSection) => void): () => void;
     };
   }
 }

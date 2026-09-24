@@ -12,9 +12,17 @@ try {
   await page.goto('http://127.0.0.1:4175/');
   await page.getByRole('heading', { name: 'HIRAGANA LETTER A', exact: true }).waitFor();
   await page.screenshot({ path: 'var/screenshots/desktop.png', fullPage: true });
+  await page.getByRole('button', { name: 'アプリについて', exact: true }).click();
+  await page.getByRole('dialog', { name: 'アプリ情報', exact: true }).waitFor();
+  await page.screenshot({ path: 'var/screenshots/about-desktop.png' });
+  await page.getByRole('button', { name: 'アプリ情報を閉じる' }).click();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: 'var/screenshots/mobile.png', fullPage: true });
-  console.log('Saved desktop and mobile screenshots in var/screenshots/.');
+  await page.getByRole('button', { name: '配色を切り替え', exact: true }).click();
+  await page.getByRole('button', { name: 'クレジット', exact: true }).click();
+  await page.getByRole('link', { name: 'react', exact: true }).waitFor();
+  await page.screenshot({ path: 'var/screenshots/credits-mobile-dark.png' });
+  console.log('Saved main UI, About and credits screenshots in var/screenshots/.');
 } finally {
   await browser.close();
   await new Promise((resolve) => server.httpServer.close(resolve));
