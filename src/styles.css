@@ -1384,8 +1384,14 @@ td button {
   gap: 3px 6px;
   margin-bottom: 6px;
 }
-.condition-field select {
+.condition-field select,
+.condition-field input {
   width: 100%;
+}
+.condition-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 11px;
 }
 .condition-field button {
   font-size: 11px;

@@ -16,11 +16,13 @@ type Field =
   | 'wholeWord'
   | 'radical'
   | 'strokes'
+  | 'totalStrokes'
   | 'reading';
 const labels: Record<Field | 'text', string> = {
   text: '文字・名前',
   radical: '康熙部首',
   strokes: '内画数',
+  totalStrokes: '総画数',
   reading: '読み・意味',
   category: '一般カテゴリ',
   script: 'スクリプト',
@@ -38,9 +40,20 @@ const categories: { id: string; label: string; fields: Field[] }[] = [
   { id: 'range', label: 'Unicode の範囲', fields: ['block', 'plane', 'age'] },
   { id: 'properties', label: '文字の性質', fields: ['binary', 'bidi', 'combining'] },
   { id: 'matching', label: '名前の照合', fields: ['aliases', 'wholeWord'] },
-  { id: 'han-radical', label: '部首・画数', fields: ['radical', 'strokes'] },
-  { id: 'han-reading', label: '読み・意味', fields: ['reading'] },
+  {
+    id: 'unihan',
+    label: '漢字 (Unihan)',
+    fields: ['radical', 'strokes', 'totalStrokes', 'reading'],
+  },
 ];
+
+const radicalForms = {
+  any: 'すべての形',
+  '': '枝番なし（伝統形）',
+  "'": "'（中国の簡略形）",
+  "''": "''（中国以外の簡略形）",
+  "'''": "'''（中国以外の別の簡略形）",
+};
 
 export const CharacterConditions = memo(function CharacterConditions({
   db,
@@ -62,6 +75,7 @@ export const CharacterConditions = memo(function CharacterConditions({
   const [expanded, setExpanded] = useState(() => !matchMedia('(max-width: 600px)').matches);
   const [draft, setDraft] = useState<Partial<Record<Field, string>>>({});
   const [language, setLanguage] = useState<CharacterQuery['language']>('mandarin');
+  const [radicalForm, setRadicalForm] = useState<CharacterQuery['radicalForm']>(query.radicalForm);
   const languages = {
     mandarin: '普通話 (Pinyin)',
     cantonese: '広東語 (Jyutping)',
@@ -112,7 +126,8 @@ export const CharacterConditions = memo(function CharacterConditions({
       }));
     const value = query[key];
     if (key === 'aliases' ? value !== false : !value) return [];
-    return [{ id: key, label: `${labels[key]}: ${valueLabel(key, String(value))}` }];
+    const detail = key === 'radical' ? ` / ${radicalForms[query.radicalForm ?? 'any']}` : '';
+    return [{ id: key, label: `${labels[key]}: ${valueLabel(key, String(value))}${detail}` }];
   });
   function moveTab(event: KeyboardEvent<HTMLButtonElement>, index: number) {
     const next =
@@ -202,7 +217,15 @@ export const CharacterConditions = memo(function CharacterConditions({
                           return;
                         }
                         onApply({
-                          [key]: key === 'aliases' ? false : key === 'wholeWord' ? true : value,
+                          [key]:
+                            key === 'aliases'
+                              ? false
+                              : key === 'wholeWord'
+                                ? true
+                                : key === 'totalStrokes'
+                                  ? String(Number(value))
+                                  : value,
+                          ...(key === 'radical' ? { radicalForm } : {}),
                           ...(key === 'reading' ? { language } : {}),
                         });
                       }}
@@ -234,6 +257,19 @@ export const CharacterConditions = memo(function CharacterConditions({
                             }
                           />
                         </>
+                      ) : key === 'totalStrokes' ? (
+                        <input
+                          id={`${id}-${key}`}
+                          type="number"
+                          min="1"
+                          step="1"
+                          placeholder="例: 12"
+                          aria-describedby={`${id}-total-strokes-help`}
+                          value={value}
+                          onChange={(event) =>
+                            setDraft({ ...draft, totalStrokes: event.target.value })
+                          }
+                        />
                       ) : (
                         <select
                           id={`${id}-${key}`}
@@ -255,13 +291,36 @@ export const CharacterConditions = memo(function CharacterConditions({
                           ))}
                         </select>
                       )}
+                      {key === 'radical' && (
+                        <>
+                          <label htmlFor={`${id}-radical-form`}>部首の形（枝番）</label>
+                          <select
+                            id={`${id}-radical-form`}
+                            value={radicalForm ?? 'any'}
+                            onChange={(event) =>
+                              setRadicalForm(
+                                event.target.value === 'any'
+                                  ? undefined
+                                  : (event.target.value as CharacterQuery['radicalForm']),
+                              )
+                            }
+                          >
+                            {Object.entries(radicalForms).map(([value, label]) => (
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
+                            ))}
+                          </select>
+                        </>
+                      )}
                       <button
                         aria-label={`${labels[key]}の条件を追加`}
                         disabled={
                           !value.trim() ||
                           (key === 'binary' && query.binary?.includes(value)) ||
                           (String(current) === value &&
-                            (key !== 'reading' || query.language === language))
+                            (key !== 'reading' || query.language === language) &&
+                            (key !== 'radical' || query.radicalForm === radicalForm))
                         }
                       >
                         {key !== 'binary' &&
@@ -271,6 +330,11 @@ export const CharacterConditions = memo(function CharacterConditions({
                           ? '更新'
                           : '追加'}
                       </button>
+                      {key === 'totalStrokes' && (
+                        <p id={`${id}-total-strokes-help`} className="condition-hint muted">
+                          別の数え方を含む、登録済みの総画数のいずれかに一致します。
+                        </p>
+                      )}
                     </form>
                   );
                 })}

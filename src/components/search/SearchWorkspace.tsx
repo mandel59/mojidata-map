@@ -91,6 +91,7 @@ export const SearchWorkspace = memo(function SearchWorkspace({
                 if (!next.binary?.length) delete next.binary;
               } else delete next[key];
               if (key === 'reading') delete next.language;
+              if (key === 'radical') delete next.radicalForm;
               search.run(next);
             }}
             onClear={() => search.run({ aliases: true })}

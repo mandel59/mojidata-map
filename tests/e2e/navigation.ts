@@ -10,6 +10,6 @@ export async function searchMethod(page: Page, method: 'unicode' | 'han' | 'emoj
   if (method === 'han') {
     const expand = page.getByRole('button', { name: '条件を追加', exact: true });
     if (await expand.isVisible()) await expand.click();
-    await page.getByRole('tab', { name: '読み・意味', exact: true }).click();
+    await page.getByRole('tab', { name: '漢字 (Unihan)', exact: true }).click();
   }
 }

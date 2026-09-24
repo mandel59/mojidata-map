@@ -140,7 +140,7 @@ def build(update_lock=False):
             if line.startswith("U+"):
                 cp, prop, value = line.split("\t", 2)
                 unihan[cp[2:]][prop] = value
-    search_fields = ["kRSUnicode", "kTotalStrokes", "kMandarin", "kCantonese", "kZhuang", "kDefinition"]
+    search_fields = ["kRSUnicode", "kTotalStrokes", "kMandarin", "kCantonese", "kZhuang", "kDefinition", "kAlternateTotalStrokes"]
     han_index = [[int(cp, 16), *[values.get(key, "") for key in search_fields]] for cp, values in unihan.items()]
     han_index.sort(key=lambda row: row[0])
     shards = defaultdict(dict)

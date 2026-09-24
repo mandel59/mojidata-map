@@ -191,10 +191,23 @@ export function searchCharacters(
   return result;
 }
 
-export type HanRow = [number, string, string, string, string, string, string];
+// Column order matches tools/build_unicode.py (han-index.json).
+export type HanRow = [
+  cp: number,
+  radicalStrokes: string,
+  totalStrokes: string,
+  mandarin: string,
+  cantonese: string,
+  zhuang: string,
+  definition: string,
+  alternateTotalStrokes: string,
+];
 export interface HanQuery {
   radical?: string;
+  // undefined includes all forms; the empty string requires the traditional form.
+  radicalForm?: '' | "'" | "''" | "'''";
   strokes?: string;
+  totalStrokes?: string;
   reading?: string;
   language?: 'mandarin' | 'cantonese' | 'zhuang' | 'definition';
 }
@@ -215,11 +228,22 @@ export function searchHan(rows: HanRow[], query: HanQuery): number[] {
         (query.radical || query.strokes) &&
         !row[1].split(' ').some((rs) => {
           const [radical, strokes] = rs.split('.');
+          const number = radical.replace(/'/g, '');
           return (
-            (!query.radical || radical.replace(/'/g, '') === query.radical) &&
+            (!query.radical ||
+              (number === query.radical &&
+                (query.radicalForm === undefined || radical === number + query.radicalForm))) &&
             (!query.strokes || strokes === query.strokes)
           );
         })
+      )
+        return false;
+      // Match any recorded count, including source-specific alternatives (e.g. 12:JK).
+      // The alternate value "-" is a marker, not a stroke count.
+      if (
+        query.totalStrokes &&
+        !row[2].split(/\s+/).includes(query.totalStrokes) &&
+        !row[7].split(/\s+/).some((value) => /^([0-9]+):/.exec(value)?.[1] === query.totalStrokes)
       )
         return false;
       if (query.reading) {

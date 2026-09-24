@@ -132,12 +132,12 @@ test('combines Han readings, radicals and Unicode attributes in the same query',
   await expect(page.getByLabel('検索方法', { exact: true })).toHaveCount(0);
   await page.getByLabel('一般カテゴリ', { exact: true }).selectOption('Lo');
   await page.getByRole('button', { name: '一般カテゴリの条件を追加', exact: true }).click();
-  await page.getByRole('tab', { name: '部首・画数', exact: true }).click();
+  await page.getByRole('tab', { name: '漢字 (Unihan)', exact: true }).click();
   await page.getByLabel('康熙部首', { exact: true }).selectOption('85');
   await page.getByRole('button', { name: '康熙部首の条件を追加', exact: true }).click();
   await page.getByLabel('内画数', { exact: true }).selectOption('0');
   await page.getByRole('button', { name: '内画数の条件を追加', exact: true }).click();
-  await page.getByRole('tab', { name: '読み・意味', exact: true }).click();
+  await page.getByRole('tab', { name: '漢字 (Unihan)', exact: true }).click();
   await page.getByLabel('漢字の読み').fill('shui');
   await page.getByRole('button', { name: '読み・意味の条件を追加', exact: true }).click();
   await expect(
@@ -229,7 +229,7 @@ for (const viewport of [
     await expect(settings).toBeFocused();
     const expand = page.getByRole('button', { name: '条件を追加', exact: true });
     if (await expand.isVisible()) await expand.click();
-    await expect(page.getByRole('tab', { name: '部首・画数', exact: true })).toBeVisible();
+    await expect(page.getByRole('tab', { name: '漢字 (Unihan)', exact: true })).toBeVisible();
     await page.getByRole('button', { name: '条件追加を閉じる', exact: true }).click();
     await expect(page.locator('.condition-chip')).toContainText('LATIN');
     await expect(page.getByLabel('編集テキスト')).toBeInViewport();
@@ -248,3 +248,80 @@ for (const viewport of [
     await expect(preview).toContainText('family: man, woman, girl, boy');
   });
 }
+
+test('searches alternate total stroke counts from the unified Unihan category', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1024, height: 600 });
+  await page.goto('/');
+  await searchMethod(page, 'han');
+  await expect(page.getByRole('tab', { name: '部首・画数', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: '読み・意味', exact: true })).toHaveCount(0);
+  const total = page.getByLabel('総画数', { exact: true });
+  const add = page.getByRole('button', { name: '総画数の条件を追加', exact: true });
+  await total.fill('12');
+  const loaded = page.waitForResponse('**/data/han-index.json');
+  await add.click();
+  await loaded;
+  await expect(page.getByRole('button', { name: '総画数: 12 を解除', exact: true })).toBeVisible();
+  await page.getByLabel('文字を検索', { exact: true }).fill('U+537F');
+  await page.getByRole('button', { name: '検索', exact: true }).click();
+  const qing = page.getByRole('button', { name: 'U+537F CJK UNIFIED IDEOGRAPH-537F', exact: true });
+  await expect(qing).toBeVisible();
+  await total.fill('10');
+  await add.click();
+  await expect(page.getByText('1 文字', { exact: true })).toBeVisible();
+  await expect(qing).toBeVisible();
+  for (const invalid of ['0', '-1', '1.5']) {
+    await total.fill(invalid);
+    await add.click();
+    expect(await total.evaluate((el: HTMLInputElement) => el.validity.valid)).toBe(false);
+    await expect(
+      page.getByRole('button', { name: '総画数: 10 を解除', exact: true }),
+    ).toBeVisible();
+  }
+  await total.fill('11');
+  await add.click();
+  await expect(page.getByText('0 文字', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '総画数: 11 を解除', exact: true }).click();
+  await expect(qing).toBeVisible();
+  await expect(page.getByLabel('編集テキスト')).toBeInViewport();
+});
+
+test('refines radical forms without changing the radical number and shows the applied form', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await searchMethod(page, 'han');
+  await page.getByLabel('康熙部首', { exact: true }).selectOption('212');
+  const form = page.getByLabel('部首の形（枝番）', { exact: true });
+  const add = page.getByRole('button', { name: '康熙部首の条件を追加', exact: true });
+  await add.click();
+  await page.getByLabel('内画数', { exact: true }).selectOption('0');
+  await page.getByRole('button', { name: '内画数の条件を追加', exact: true }).click();
+  const cell = (cp: string) =>
+    page.getByRole('button', { name: `U+${cp} CJK UNIFIED IDEOGRAPH-${cp}`, exact: true });
+  const variants = [
+    ['', '9F8D'],
+    ["'", '9F99'],
+    ["''", '7ADC'],
+    ["'''", '31DE5'],
+  ] as const;
+  for (const [, cp] of variants) await expect(cell(cp)).toBeVisible();
+  for (const [suffix, cp] of variants) {
+    await form.selectOption(suffix);
+    await expect(add).toBeEnabled();
+    await add.click();
+    await expect(cell(cp)).toBeVisible();
+    for (const [, other] of variants) if (other !== cp) await expect(cell(other)).toHaveCount(0);
+    await expect(page.locator('.condition-chips')).toContainText(suffix || '枝番なし');
+    await expect(add).toBeDisabled();
+  }
+  await form.selectOption('any');
+  await add.click();
+  for (const [, cp] of variants) await expect(cell(cp)).toBeVisible();
+  await expect(page.locator('.condition-chips')).toContainText('すべての形');
+  await page.getByRole('button', { name: /康熙部首: .* を解除/ }).click();
+  await expect(page.locator('.condition-chips')).not.toContainText('康熙部首');
+  await expect(page.locator('.condition-chip')).toHaveCount(1);
+});
