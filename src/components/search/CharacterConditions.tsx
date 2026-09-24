@@ -42,17 +42,34 @@ const labels: Record<Field | 'text', string> = {
   aliases: '別名の検索',
   wholeWord: '名前の一致方法',
 };
-const categories: { id: string; label: string; fields: Field[] }[] = [
-  { id: 'classification', label: '文字分類', fields: ['category', 'script'] },
-  { id: 'range', label: 'Unicode の範囲', fields: ['block', 'plane', 'age'] },
-  { id: 'properties', label: '文字の性質', fields: ['binary', 'bidi', 'combining'] },
-  { id: 'matching', label: '名前の照合', fields: ['aliases', 'wholeWord'] },
+type ConditionCategory = { id: string; label: string; fields: Field[] };
+const categoryGroups: { id: string; label: string; categories: ConditionCategory[] }[] = [
+  {
+    id: 'unicode',
+    label: '基本条件',
+    categories: [
+      { id: 'classification', label: '文字分類', fields: ['category', 'script'] },
+      { id: 'range', label: 'Unicode の範囲', fields: ['block', 'plane', 'age'] },
+      { id: 'properties', label: '文字の性質', fields: ['binary', 'bidi', 'combining'] },
+      { id: 'matching', label: '名前の照合', fields: ['aliases', 'wholeWord'] },
+    ],
+  },
   {
     id: 'unihan',
     label: '漢字 (Unihan)',
-    fields: ['radical', 'strokes', 'totalStrokes', ...readingProperties],
+    categories: [
+      // UAX #38 classifies kRSUnicode and kTotalStrokes as IRG Sources.
+      // Total strokes also include kAlternateTotalStrokes (Dictionary-like Data).
+      {
+        id: 'unihan-irg-sources',
+        label: 'IRG出典',
+        fields: ['radical', 'strokes', 'totalStrokes'],
+      },
+      { id: 'unihan-readings', label: '読み・意味', fields: readingProperties },
+    ],
   },
 ];
+const categories = categoryGroups.flatMap((group) => group.categories);
 
 const radicalForms = {
   any: 'すべての形',
@@ -78,7 +95,7 @@ export const CharacterConditions = memo(function CharacterConditions({
   children: ReactNode;
 }) {
   const id = useId();
-  const [category, setCategory] = useState(0);
+  const [category, setCategory] = useState(categories[0].id);
   const [expanded, setExpanded] = useState(() => !matchMedia('(max-width: 600px)').matches);
   const [draft, setDraft] = useState<Partial<Record<Field, string>>>(() => ({
     ...query.readings,
@@ -141,7 +158,8 @@ export const CharacterConditions = memo(function CharacterConditions({
     const display = key === 'radical' ? `${value}${radicalSuffix}` : valueLabel(key, String(value));
     return [{ id: key, label: `${labels[key]}: ${display}` }];
   });
-  function moveTab(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+  function moveTab(event: KeyboardEvent<HTMLButtonElement>, categoryId: string) {
+    const index = categories.findIndex((item) => item.id === categoryId);
     const next =
       event.key === 'ArrowDown'
         ? (index + 1) % categories.length
@@ -154,7 +172,7 @@ export const CharacterConditions = memo(function CharacterConditions({
               : null;
     if (next === null) return;
     event.preventDefault();
-    setCategory(next);
+    setCategory(categories[next].id);
     tabs.current?.querySelectorAll<HTMLButtonElement>('[role=tab]')[next]?.focus();
   }
   return (
@@ -189,31 +207,43 @@ export const CharacterConditions = memo(function CharacterConditions({
             className="condition-tabs"
             ref={tabs}
           >
-            {categories.map((item, index) => (
-              <button
-                key={item.id}
-                role="tab"
-                id={`${id}-${item.id}-tab`}
-                aria-controls={`${id}-${item.id}-panel`}
-                aria-selected={index === category}
-                tabIndex={index === category ? 0 : -1}
-                onClick={() => setCategory(index)}
-                onKeyDown={(event) => moveTab(event, index)}
+            {categoryGroups.map((group) => (
+              <div
+                key={group.id}
+                role="group"
+                aria-labelledby={`${id}-${group.id}-heading`}
+                className="condition-tab-group"
               >
-                {item.label}
-              </button>
+                <h3 id={`${id}-${group.id}-heading`} className="condition-tab-group-heading">
+                  {group.label}
+                </h3>
+                {group.categories.map((item) => (
+                  <button
+                    key={item.id}
+                    role="tab"
+                    id={`${id}-${item.id}-tab`}
+                    aria-controls={`${id}-${item.id}-panel`}
+                    aria-selected={item.id === category}
+                    tabIndex={item.id === category ? 0 : -1}
+                    onClick={() => setCategory(item.id)}
+                    onKeyDown={(event) => moveTab(event, item.id)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             ))}
           </div>
-          {categories.map((item, index) => (
+          {categories.map((item) => (
             <div
               key={item.id}
               role="tabpanel"
               id={`${id}-${item.id}-panel`}
               aria-labelledby={`${id}-${item.id}-tab`}
-              hidden={index !== category}
+              hidden={item.id !== category}
               className="condition-fields"
             >
-              {index === category &&
+              {item.id === category &&
                 item.fields.map((key) => {
                   const value = draft[key] ?? '';
                   const current = isReadingProperty(key) ? query.readings?.[key] : query[key];

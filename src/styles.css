@@ -1360,6 +1360,24 @@ td button {
   padding: 4px;
   gap: 2px;
 }
+.condition-tab-group {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 2px;
+}
+.condition-tab-group + .condition-tab-group {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+.condition-tab-group-heading {
+  margin: 0;
+  padding: 3px 6px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+}
 .condition-tabs button {
   border-color: transparent;
   background: transparent;

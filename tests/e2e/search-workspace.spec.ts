@@ -132,12 +132,12 @@ test('combines Han readings, radicals and Unicode attributes in the same query',
   await expect(page.getByLabel('検索方法', { exact: true })).toHaveCount(0);
   await page.getByLabel('一般カテゴリ', { exact: true }).selectOption('Lo');
   await page.getByRole('button', { name: '一般カテゴリの条件を追加', exact: true }).click();
-  await page.getByRole('tab', { name: '漢字 (Unihan)', exact: true }).click();
+  await page.getByRole('tab', { name: 'IRG出典', exact: true }).click();
   await page.getByLabel('康熙部首', { exact: true }).selectOption('85');
   await page.getByRole('button', { name: '康熙部首の条件を追加', exact: true }).click();
   await page.getByLabel('内画数', { exact: true }).selectOption('0');
   await page.getByRole('button', { name: '内画数の条件を追加', exact: true }).click();
-  await page.getByRole('tab', { name: '漢字 (Unihan)', exact: true }).click();
+  await page.getByRole('tab', { name: '読み・意味', exact: true }).click();
   await page.getByLabel('普通話 (Pinyin)', { exact: true }).fill('shui');
   await page.getByRole('button', { name: '普通話 (Pinyin)の条件を追加', exact: true }).click();
   await expect(
@@ -170,7 +170,7 @@ test('ignores a delayed Han result after a newer character query', async ({ page
     await route.continue();
   });
   await page.goto('/');
-  await searchMethod(page, 'han');
+  await searchMethod(page, 'han-readings');
   await page.getByLabel('普通話 (Pinyin)', { exact: true }).fill('zhong');
   await page.getByRole('button', { name: '普通話 (Pinyin)の条件を追加', exact: true }).click();
   await pending;
@@ -229,7 +229,7 @@ for (const viewport of [
     await expect(settings).toBeFocused();
     const expand = page.getByRole('button', { name: '条件を追加', exact: true });
     if (await expand.isVisible()) await expand.click();
-    await expect(page.getByRole('tab', { name: '漢字 (Unihan)', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '漢字 (Unihan)', exact: true })).toBeVisible();
     await page.getByRole('button', { name: '条件追加を閉じる', exact: true }).click();
     await expect(page.locator('.condition-chip')).toContainText('LATIN');
     await expect(page.getByLabel('編集テキスト')).toBeInViewport();
@@ -249,14 +249,13 @@ for (const viewport of [
   });
 }
 
-test('searches alternate total stroke counts from the unified Unihan category', async ({
-  page,
-}) => {
+test('searches alternate total stroke counts from the IRG sources category', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 600 });
   await page.goto('/');
   await searchMethod(page, 'han');
   await expect(page.getByRole('tab', { name: '部首・画数', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('tab', { name: '読み・意味', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: '漢字 (Unihan)', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: '漢字 (Unihan)', exact: true })).toBeVisible();
   const total = page.getByLabel('総画数', { exact: true });
   const add = page.getByRole('button', { name: '総画数の条件を追加', exact: true });
   await total.selectOption('12');

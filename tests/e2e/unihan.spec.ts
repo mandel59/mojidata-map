@@ -5,10 +5,10 @@ for (const width of [1024, 390]) {
   test(`combines and removes independent reading conditions at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 600 });
     await page.goto('/');
-    await searchMethod(page, 'han');
+    await searchMethod(page, 'han-readings');
     await expect(page.getByLabel('読みの種類')).toHaveCount(0);
     await expect(
-      page.getByRole('tabpanel', { name: '漢字 (Unihan)' }).getByRole('textbox'),
+      page.getByRole('tabpanel', { name: '読み・意味' }).getByRole('textbox'),
     ).toHaveCount(13);
     await page.getByLabel('文字を検索', { exact: true }).fill('U+6C34');
     const addReading = async (label: string, text: string) => {
@@ -107,3 +107,80 @@ test('opens annotated and supplementary Han variants from search results and pre
   await expect(page.getByLabel('文字を検索', { exact: true })).toHaveValue('U+6C34');
   await expect(page.locator('.character-cell.selected')).toHaveAttribute('data-cp', String(0x6c34));
 });
+
+for (const width of [1024, 390]) {
+  test(`groups Unihan tabs and retains drafts across keyboard navigation at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 600 });
+    await page.goto('/');
+    await searchMethod(page, 'han');
+    const tabs = page.getByRole('tablist', { name: '検索条件カテゴリ' });
+    const basic = tabs.getByRole('group', { name: '基本条件', exact: true });
+    const han = tabs.getByRole('group', { name: '漢字 (Unihan)', exact: true });
+    await expect(basic.getByRole('heading', { name: '基本条件', exact: true })).toHaveCount(1);
+    await expect(han.getByRole('heading', { name: '漢字 (Unihan)', exact: true })).toHaveCount(1);
+    await expect(basic.getByRole('tab')).toHaveCount(4);
+    await expect(han.getByRole('tab')).toHaveText(['IRG出典', '読み・意味']);
+    const irg = han.getByRole('tab', { name: 'IRG出典', exact: true });
+    const readings = han.getByRole('tab', { name: '読み・意味', exact: true });
+    const matching = basic.getByRole('tab', { name: '名前の照合', exact: true });
+    const classification = basic.getByRole('tab', { name: '文字分類', exact: true });
+    await irg.press('ArrowUp');
+    await expect(matching).toBeFocused();
+    await matching.press('ArrowDown');
+    await expect(irg).toBeFocused();
+    await expect(irg).toBeInViewport();
+    await irg.press('End');
+    await expect(readings).toBeFocused();
+    await expect(page.getByRole('tabpanel', { name: '読み・意味' })).toBeVisible();
+    await readings.press('ArrowDown');
+    await expect(classification).toBeFocused();
+    await classification.press('ArrowUp');
+    await expect(readings).toBeFocused();
+    await readings.press('Home');
+    await expect(classification).toBeFocused();
+    await expect(tabs.locator('[role=tab][tabindex="0"]')).toHaveCount(1);
+    await expect(tabs.locator('[role=tab][aria-selected="true"]')).toHaveCount(1);
+
+    await irg.click();
+    await expect(page.getByRole('tabpanel', { name: 'IRG出典' }).getByRole('textbox')).toHaveCount(
+      0,
+    );
+    const radical = page.getByLabel('康熙部首', { exact: true });
+    const form = page.getByLabel('部首の形（枝番）', { exact: true });
+    const total = page.getByLabel('総画数', { exact: true });
+    await radical.selectOption('212');
+    await form.selectOption("''");
+    await total.selectOption('4');
+    await readings.click();
+    const japanese = page.getByLabel('日本語（かな）', { exact: true });
+    await japanese.fill('みず');
+    await expect(page.getByLabel('康熙部首', { exact: true })).toHaveCount(0);
+    await irg.click();
+    await expect(radical).toHaveValue('212');
+    await expect(form).toHaveValue("''");
+    await expect(total).toHaveValue('4');
+    await expect(page.locator('.condition-chip')).toHaveCount(0);
+    await radical.selectOption('85');
+    await page.getByRole('button', { name: '康熙部首の条件を追加', exact: true }).click();
+    await page.getByLabel('内画数', { exact: true }).selectOption('0');
+    await page.getByRole('button', { name: '内画数の条件を追加', exact: true }).click();
+    await page.getByRole('button', { name: '総画数の条件を追加', exact: true }).click();
+    await readings.click();
+    await expect(japanese).toHaveValue('みず');
+    await page.getByRole('button', { name: '日本語（かな）の条件を追加', exact: true }).click();
+    await expect(page.locator('.condition-chip')).toHaveCount(4);
+    await expect(
+      page.getByRole('button', { name: 'U+6C34 CJK UNIFIED IDEOGRAPH-6C34', exact: true }),
+    ).toBeVisible();
+    await expect(page.getByLabel('編集テキスト')).toBeInViewport();
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollHeight <= innerHeight &&
+          document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  });
+}

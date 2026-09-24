@@ -57,7 +57,7 @@ test('search worker finds names, aliases and filtered categories in a production
 });
 
 test('looks up Han readings and real Unihan metadata', async ({ page }) => {
-  await searchMethod(page, 'han');
+  await searchMethod(page, 'han-readings');
   await page.getByLabel('普通話 (Pinyin)', { exact: true }).fill('zhong');
   await page.getByRole('button', { name: '普通話 (Pinyin)の条件を追加', exact: true }).click();
   await page
