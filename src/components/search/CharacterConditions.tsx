@@ -53,7 +53,7 @@ export const CharacterConditions = memo(function CharacterConditions({
   db: UnicodeDatabase;
   query: CharacterQuery;
   onApply(patch: Partial<CharacterQuery>): void;
-  onRemove(key: keyof CharacterQuery): void;
+  onRemove(key: keyof CharacterQuery, value?: string): void;
   onClear(): void;
   children: ReactNode;
 }) {
@@ -105,6 +105,11 @@ export const CharacterConditions = memo(function CharacterConditions({
             ? '単語全体で一致'
             : value;
   const conditions = (Object.keys(labels) as (keyof typeof labels)[]).flatMap((key) => {
+    if (key === 'binary')
+      return (query.binary ?? []).map((value) => ({
+        id: `binary:${value}`,
+        label: `${labels.binary}: ${value}`,
+      }));
     const value = query[key];
     if (key === 'aliases' ? value !== false : !value) return [];
     return [{ id: key, label: `${labels[key]}: ${valueLabel(key, String(value))}` }];
@@ -139,7 +144,11 @@ export const CharacterConditions = memo(function CharacterConditions({
       </div>
       <ConditionChips
         conditions={conditions}
-        onRemove={(key) => onRemove(key as keyof CharacterQuery)}
+        onRemove={(key) =>
+          key.startsWith('binary:')
+            ? onRemove('binary', key.slice('binary:'.length))
+            : onRemove(key as keyof CharacterQuery)
+        }
         onClear={onClear}
       />
       <div className={`search-results-layout ${expanded ? 'conditions-open' : ''}`}>
@@ -186,6 +195,12 @@ export const CharacterConditions = memo(function CharacterConditions({
                       onSubmit={(event) => {
                         event.preventDefault();
                         if (!value) return;
+                        if (key === 'binary') {
+                          if (query.binary?.includes(value)) return;
+                          onApply({ binary: [...(query.binary ?? []), value] });
+                          setDraft({ ...draft, binary: '' });
+                          return;
+                        }
                         onApply({
                           [key]: key === 'aliases' ? false : key === 'wholeWord' ? true : value,
                           ...(key === 'reading' ? { language } : {}),
@@ -227,8 +242,15 @@ export const CharacterConditions = memo(function CharacterConditions({
                         >
                           <option value="">条件の値を選択…</option>
                           {options[key].map((value) => (
-                            <option key={value} value={value}>
+                            <option
+                              key={value}
+                              value={value}
+                              disabled={key === 'binary' && query.binary?.includes(value)}
+                            >
                               {valueLabel(key, value)}
+                              {key === 'binary' && query.binary?.includes(value)
+                                ? '（追加済み）'
+                                : ''}
                             </option>
                           ))}
                         </select>
@@ -237,11 +259,13 @@ export const CharacterConditions = memo(function CharacterConditions({
                         aria-label={`${labels[key]}の条件を追加`}
                         disabled={
                           !value.trim() ||
+                          (key === 'binary' && query.binary?.includes(value)) ||
                           (String(current) === value &&
                             (key !== 'reading' || query.language === language))
                         }
                       >
-                        {current !== undefined &&
+                        {key !== 'binary' &&
+                        current !== undefined &&
                         current !== '' &&
                         (key !== 'aliases' || current === false)
                           ? '更新'
@@ -250,7 +274,11 @@ export const CharacterConditions = memo(function CharacterConditions({
                     </form>
                   );
                 })}
-              <p className="muted">同じ項目の条件は置き換えます。</p>
+              <p className="muted">
+                {item.id === 'properties'
+                  ? '二値属性は複数追加できます。ほかの項目は置き換えます。'
+                  : '同じ項目の条件は置き換えます。'}
+              </p>
             </div>
           ))}
         </div>

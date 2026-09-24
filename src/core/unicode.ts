@@ -130,7 +130,7 @@ export interface SearchQuery {
   age?: string;
   block?: string;
   plane?: string;
-  binary?: string;
+  binary?: string[];
   bidi?: string;
   combining?: string;
   assignedOnly?: boolean;
@@ -176,7 +176,7 @@ export function searchCharacters(
     if (query.age && db.property(cp, 'Age') !== query.age) continue;
     if (query.block && db.property(cp, 'Block') !== query.block) continue;
     if (query.plane && cp >>> 16 !== Number(query.plane)) continue;
-    if (query.binary && db.property(cp, query.binary) !== 'Yes') continue;
+    if (query.binary?.some((property) => db.property(cp, property) !== 'Yes')) continue;
     if (query.bidi && db.property(cp, 'Bidi_Class') !== query.bidi) continue;
     if (query.combining && (db.record(cp)?.[3] ?? '0') !== query.combining) continue;
     if (

@@ -104,6 +104,15 @@ describe('official Unicode 18 data', () => {
     expect(searchCharacters(db, { plane: '1' }, candidates)).not.toContain(0x6c34);
     expect(searchCharacters(db, {}, [])).toEqual([]);
   });
+  test('requires every selected binary property and allows an empty property list', () => {
+    const block = 'Basic Latin';
+    expect(searchCharacters(db, { block, binary: ['ASCII_Hex_Digit'] })).toHaveLength(22);
+    expect(searchCharacters(db, { block, binary: ['ASCII_Hex_Digit', 'Lowercase'] })).toEqual([
+      0x61, 0x62, 0x63, 0x64, 0x65, 0x66,
+    ]);
+    expect(searchCharacters(db, { block, binary: ['Lowercase', 'Uppercase'] })).toEqual([]);
+    expect(searchCharacters(db, { block, binary: [] })).toEqual(searchCharacters(db, { block }));
+  });
   test('searches names, aliases, properties and supplementary characters', () => {
     expect(searchCharacters(db, { text: 'grinning face' })).toContain(0x1f600);
     expect(searchCharacters(db, { text: 'BOM' })).toContain(0xfeff);

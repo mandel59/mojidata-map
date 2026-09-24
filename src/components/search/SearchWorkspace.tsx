@@ -84,9 +84,12 @@ export const SearchWorkspace = memo(function SearchWorkspace({
             db={db}
             query={search.query}
             onApply={(patch) => search.run({ ...search.query, text, ...patch })}
-            onRemove={(key) => {
+            onRemove={(key, value) => {
               const next = { ...search.query };
-              delete next[key];
+              if (key === 'binary' && value !== undefined) {
+                next.binary = next.binary?.filter((property) => property !== value);
+                if (!next.binary?.length) delete next.binary;
+              } else delete next[key];
               if (key === 'reading') delete next.language;
               search.run(next);
             }}

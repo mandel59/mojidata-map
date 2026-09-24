@@ -74,6 +74,50 @@ test('adds, replaces and removes condition chips with keyboard-operable vertical
   await expect(page.locator('.condition-chips')).toBeFocused();
 });
 
+test('adds multiple binary properties and removes them independently', async ({ page }) => {
+  await page.goto('/');
+  await searchMethod(page, 'unicode');
+  await page.getByRole('tab', { name: 'Unicode の範囲', exact: true }).click();
+  await page.getByLabel('ブロック', { exact: true }).selectOption('Basic Latin');
+  await page.getByRole('button', { name: 'ブロックの条件を追加', exact: true }).click();
+  await page.getByRole('tab', { name: '文字の性質', exact: true }).click();
+  const property = page.getByLabel('二値属性', { exact: true });
+  const add = page.getByRole('button', { name: '二値属性の条件を追加', exact: true });
+  await property.selectOption('ASCII_Hex_Digit');
+  await add.click();
+  await expect(page.getByText('22 文字', { exact: true })).toBeVisible();
+  await property.selectOption('Lowercase');
+  await add.click();
+  await expect(page.getByText('6 文字', { exact: true })).toBeVisible();
+  await expect(page.locator('.character-cell')).toHaveCount(6);
+  await expect(page.locator('.character-cell').first()).toHaveAttribute('data-cp', '97');
+  await expect(page.locator('.condition-chip')).toHaveCount(3);
+  await expect(property.locator('option[value="ASCII_Hex_Digit"]')).toBeDisabled();
+  await expect(property.locator('option[value="Lowercase"]')).toBeDisabled();
+  await expect(add).toBeDisabled();
+  const hexChip = page.getByRole('button', {
+    name: '二値属性: ASCII_Hex_Digit を解除',
+    exact: true,
+  });
+  const lowerChip = page.getByRole('button', { name: '二値属性: Lowercase を解除', exact: true });
+  await hexChip.click();
+  await expect(lowerChip).toBeFocused();
+  await expect(page.getByText('26 文字', { exact: true })).toBeVisible();
+  await expect(property.locator('option[value="ASCII_Hex_Digit"]')).toBeEnabled();
+  await property.selectOption('ASCII_Hex_Digit');
+  await add.click();
+  await expect(page.getByText('6 文字', { exact: true })).toBeVisible();
+  await lowerChip.click();
+  await expect(page.getByText('22 文字', { exact: true })).toBeVisible();
+  await hexChip.click();
+  await expect(page.getByText('128 文字', { exact: true })).toBeVisible();
+  await property.selectOption('Lowercase');
+  await add.click();
+  await page.getByRole('button', { name: 'すべて解除', exact: true }).click();
+  await expect(page.locator('.condition-chip')).toHaveCount(0);
+  await expect(property.locator('option[value="Lowercase"]')).toBeEnabled();
+});
+
 test('combines Han readings, radicals and Unicode attributes in the same query', async ({
   page,
 }) => {
