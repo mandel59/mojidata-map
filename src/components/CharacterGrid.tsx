@@ -1,8 +1,9 @@
-import { useRef, type KeyboardEvent } from 'react';
+import { useEffect, useRef, type KeyboardEvent } from 'react';
 import { CharacterGridSurface } from './CharacterDisplay';
 import { codeLabel, hex, type UnicodeDatabase } from '../core/unicode';
 
 interface Props {
+  columns: number;
   db: UnicodeDatabase;
   points: number[];
   selected: number;
@@ -18,6 +19,7 @@ function colorIndex(value: string) {
 }
 
 export function CharacterGrid({
+  columns,
   db,
   points,
   selected,
@@ -29,15 +31,20 @@ export function CharacterGrid({
   onMove,
 }: Props) {
   const container = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    container.current
+      ?.querySelector<HTMLButtonElement>(`[data-cp="${selected}"]`)
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [selected, points[0], columns]);
   const hasSelection = points.includes(selected);
   function handleKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
     const delta = {
       ArrowRight: 1,
       ArrowLeft: -1,
-      ArrowUp: -16,
-      ArrowDown: 16,
-      Home: -index % 16,
-      End: 15 - (index % 16),
+      ArrowUp: -columns,
+      ArrowDown: columns,
+      Home: -index % columns,
+      End: columns - 1 - (index % columns),
     }[event.key];
     if (delta !== undefined) {
       event.preventDefault();
@@ -53,7 +60,7 @@ export function CharacterGrid({
     }
   }
   return (
-    <CharacterGridSurface containerRef={container}>
+    <CharacterGridSurface containerRef={container} columns={columns}>
       {points.map((cp, index) => {
         const category = db.category(cp);
         const color = colorBy === 'category' ? category[0] : db.property(cp, colorBy);

@@ -41,6 +41,7 @@ try {
   });
   await page.goto('http://127.0.0.1:4176/');
   await page.getByRole('heading', { name: 'HIRAGANA LETTER A', exact: true }).waitFor();
+  await page.getByRole('button', { name: '表示設定', exact: true }).click();
   await page.waitForTimeout(500);
   const client = await page.context().newCDPSession(page);
   await client.send('Emulation.setCPUThrottlingRate', { rate: 4 });

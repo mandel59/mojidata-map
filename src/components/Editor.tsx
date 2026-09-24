@@ -73,29 +73,64 @@ export function Editor({ db, text, onChange, font, onLocate, notify, handle }: P
   return (
     <section className="editor-panel" aria-label="編集バッファ">
       <div className="editor-heading">
-        <h2>
-          編集バッファ <span>文字を集めて、使う</span>
-        </h2>
+        <h2>編集バッファ</h2>
         <span className="muted">
           {stats.graphemes} 書記素 · {stats.codePoints} コードポイント · {stats.utf8} bytes
         </span>
+        <button popoverTarget="editor-options">変換・保存</button>
       </div>
-      <textarea
-        ref={textarea}
-        aria-label="編集テキスト"
-        placeholder="文字をダブルクリックして追加。または、ここに貼り付けて調べる。"
-        value={text}
-        dir={direction}
-        style={{ fontFamily: font }}
-        onChange={(event) => change(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === 'F2') {
-            event.preventDefault();
-            locate();
-          }
-        }}
-      />
-      <div className="editor-toolbar">
+      <div className="editor-input-row">
+        <textarea
+          ref={textarea}
+          aria-label="編集テキスト"
+          placeholder="文字を追加、または貼り付け"
+          value={text}
+          dir={direction}
+          style={{ fontFamily: font }}
+          onChange={(event) => change(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'F2') {
+              event.preventDefault();
+              locate();
+            }
+          }}
+        />
+        <div className="editor-copy">
+          <label>
+            出力{' '}
+            <select
+              aria-label="出力形式"
+              value={format}
+              onChange={(event) => setFormat(event.target.value as OutputFormat)}
+            >
+              {formats.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button className="primary" disabled={!valid || !text} onClick={() => void copy()}>
+            コピー
+          </button>
+        </div>
+      </div>
+      {!valid && (
+        <p role="alert" className="error">
+          単独のサロゲートが含まれています。文字を修正してからコピー・保存してください。
+        </p>
+      )}
+      {format !== 'text' && (
+        <textarea className="encoded-output" aria-label="変換された出力" value={output} readOnly />
+      )}
+      <div
+        id="editor-options"
+        popover="auto"
+        className="utility-popover editor-options"
+        aria-label="変換・保存"
+      >
+        <h2>変換・保存</h2>
+
         <div className="button-row">
           <button disabled={!text} onClick={locate}>
             文字を探す <kbd>F2</kbd>
@@ -144,40 +179,11 @@ export function Editor({ db, text, onChange, font, onLocate, notify, handle }: P
           <button disabled={!text} onClick={() => change('')}>
             クリア
           </button>
-        </div>
-        <div className="button-row">
-          <label>
-            出力{' '}
-            <select
-              aria-label="出力形式"
-              value={format}
-              onChange={(event) => setFormat(event.target.value as OutputFormat)}
-            >
-              {formats.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
           <button disabled={!valid || !text} onClick={() => void copy(true)}>
             切り取り
           </button>
-          <button className="primary" disabled={!valid || !text} onClick={() => void copy()}>
-            コピー
-          </button>
         </div>
-      </div>
-      {!valid && (
-        <p role="alert" className="error">
-          単独のサロゲートが含まれています。文字を修正してからコピー・保存してください。
-        </p>
-      )}
-      {format !== 'text' && (
-        <textarea className="encoded-output" aria-label="変換された出力" value={output} readOnly />
-      )}
-      <details>
-        <summary>保存・文字単位の確認</summary>
+        <h3>保存・文字単位の確認</h3>
         <div className="button-row">
           <select
             aria-label="保存エンコーディング"
@@ -236,7 +242,7 @@ export function Editor({ db, text, onChange, font, onLocate, notify, handle }: P
             {[...text].length > 500 && <p>先頭 500 コードポイントを表示しています。</p>}
           </div>
         )}
-      </details>
+      </div>
     </section>
   );
 }

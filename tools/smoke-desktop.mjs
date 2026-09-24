@@ -17,6 +17,18 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mojidata Map');
+  expect(
+    await app.evaluate(({ BrowserWindow, screen }) => {
+      const bounds = BrowserWindow.getAllWindows()[0].getBounds();
+      const area = screen.getPrimaryDisplay().workArea;
+      return bounds.width <= area.width && bounds.height <= area.height;
+    }),
+  ).toBe(true);
+  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1024, 600));
+  await expect(page.getByLabel('編集テキスト')).toBeInViewport();
+  expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(
+    true,
+  );
   await page.getByLabel('文字を検索', { exact: true }).fill('GRINNING FACE');
   await page.getByRole('button', { name: '検索', exact: true }).click();
   await page.getByRole('button', { name: 'U+1F600 GRINNING FACE', exact: true }).dblclick();
@@ -29,6 +41,7 @@ try {
   expect(await app.evaluate(({ clipboard }) => clipboard.readText())).toBe('&#x1F600;');
   expect(await page.evaluate(() => typeof window.require)).toBe('undefined');
   expect(await page.evaluate(() => typeof window.process)).toBe('undefined');
+  await page.getByRole('button', { name: 'アプリメニュー', exact: true }).click();
   await page.getByLabel('最前面に表示').check();
   expect(
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isAlwaysOnTop()),

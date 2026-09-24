@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { UtilityDialog } from './UtilityDialog';
 import { codeLabel, hex, isScalar, type UnicodeDatabase } from '../core/unicode';
 import { encodeText } from '../core/encoding';
 import { loadData, type Variations } from '../data';
 import { copyText, download } from '../platform';
 
 interface Props {
+  compact: boolean;
   db: UnicodeDatabase;
   cp: number;
   font: string;
@@ -14,6 +16,7 @@ interface Props {
   notify(message: string): void;
 }
 export function CharacterDetails({
+  compact,
   db,
   cp,
   font,
@@ -22,6 +25,10 @@ export function CharacterDetails({
   onInsert,
   notify,
 }: Props) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!compact) setOpen(false);
+  }, [compact]);
   const [han, setHan] = useState<Record<string, string>>({});
   const [variants, setVariants] = useState<[number[], string][]>([]);
   const [error, setError] = useState('');
@@ -78,10 +85,12 @@ export function CharacterDetails({
     Canonical_Combining_Class: '結合クラス',
     Bidi_Class: 'Bidi クラス',
   };
-  return (
-    <aside className="details-panel" aria-label="文字の詳細">
-      <div className="section-heading">
-        <span>CHARACTER INFO</span>
+  const content = (
+    <div className="character-info">
+      <div className="detail-heading">
+        <div className="detail-code">
+          {codeLabel(cp)} <span>/ {cp}</span>
+        </div>
         <button
           className={`icon-button ${bookmarked ? 'bookmarked' : ''}`}
           aria-label={bookmarked ? 'ブックマークを削除' : 'ブックマークに追加'}
@@ -92,9 +101,6 @@ export function CharacterDetails({
       </div>
       <div className="large-glyph" style={{ fontFamily: font }} dir="ltr">
         {db.glyph(cp)}
-      </div>
-      <div className="detail-code">
-        {codeLabel(cp)} <span> / {cp}</span>
       </div>
       <h2 className="character-name">{db.name(cp)}</h2>
       <div className="button-row">
@@ -114,7 +120,7 @@ export function CharacterDetails({
           </div>
         ))}
       </dl>
-      <details open>
+      <details>
         <summary>符号化</summary>
         <dl className="property-list monospace">
           {(['utf8', 'utf16', 'utf32', 'ucn', 'ncr-hex'] as const).map((format) => (
@@ -126,7 +132,7 @@ export function CharacterDetails({
         </dl>
       </details>
       {db.data.aliases[hex(cp)] && (
-        <details open>
+        <details>
           <summary>名前の別名</summary>
           {db.data.aliases[hex(cp)].map(([name, type]) => (
             <p className="note" key={`${name}-${type}`}>
@@ -155,7 +161,7 @@ export function CharacterDetails({
         </details>
       )}
       {Object.keys(han).length > 0 && (
-        <details open>
+        <details>
           <summary>Unihan データ</summary>
           <dl className="property-list">
             {Object.entries(han)
@@ -211,6 +217,36 @@ export function CharacterDetails({
           JSON 保存
         </button>
       </div>
-    </aside>
+    </div>
+  );
+  if (!compact)
+    return (
+      <aside className="details-panel" aria-label="文字の詳細">
+        {content}
+      </aside>
+    );
+  return (
+    <>
+      <aside className="detail-strip" aria-label="選択中の文字">
+        <span className="strip-glyph" style={{ fontFamily: font }} dir="ltr">
+          {db.glyph(cp)}
+        </span>
+        <div>
+          <strong>{codeLabel(cp)}</strong>
+          <span>{db.name(cp)}</span>
+        </div>
+        <button disabled={!scalar} onClick={() => onInsert(char)}>
+          追加
+        </button>
+        <button aria-haspopup="dialog" onClick={() => setOpen(true)}>
+          文字情報
+        </button>
+      </aside>
+      {open && (
+        <UtilityDialog title="文字情報" onClose={() => setOpen(false)}>
+          {content}
+        </UtilityDialog>
+      )}
+    </>
   );
 }

@@ -12,6 +12,7 @@ test('browses, inserts, encodes, bookmarks and restores supplementary characters
 }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
+  await page.getByRole('button', { name: 'コード指定', exact: true }).click();
   await page.getByLabel('移動先コードポイント').fill('U+1F600');
   await page.getByRole('button', { name: '移動', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'GRINNING FACE', exact: true })).toBeVisible();
@@ -41,8 +42,8 @@ test('search worker finds names, aliases and filtered categories in a production
   await expect(
     page.getByRole('button', { name: 'U+FEFF ZERO WIDTH NO-BREAK SPACE', exact: true }),
   ).toBeVisible();
-  await page.getByText('詳細検索', { exact: false }).first().click();
   await page.getByLabel('文字を検索', { exact: true }).fill('');
+  await page.getByRole('button', { name: '詳細検索', exact: true }).click();
   await page.getByLabel('一般カテゴリ', { exact: true }).selectOption('Nd');
   await page.getByLabel('ブロック', { exact: true }).selectOption('Basic Latin');
   await page.getByRole('button', { name: '条件で検索' }).click();
@@ -57,6 +58,7 @@ test('looks up Han readings and real Unihan metadata', async ({ page }) => {
   await page
     .getByRole('button', { name: 'U+4E2D CJK UNIFIED IDEOGRAPH-4E2D', exact: true })
     .click();
+  await page.getByText('Unihan データ', { exact: true }).click();
   await expect(page.getByText('kMandarin', { exact: true })).toBeVisible();
   await expect(page.getByText('zhōng', { exact: true })).toBeVisible();
 });
@@ -73,6 +75,7 @@ test('inserts full emoji sequences without splitting them', async ({ page }) => 
 });
 
 test('rejects invalid jumps and prevents surrogate insertion', async ({ page }) => {
+  await page.getByRole('button', { name: 'コード指定', exact: true }).click();
   await page.getByLabel('移動先コードポイント').fill('110000');
   await page.getByRole('button', { name: '移動', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('0〜10FFFF');
@@ -85,7 +88,9 @@ test('normalizes text, locates supplementary characters at a UTF-16 caret, and e
   page,
 }) => {
   await page.getByLabel('編集テキスト').fill('か\u3099😀');
+  await page.getByRole('button', { name: '変換・保存', exact: true }).click();
   await page.getByLabel('正規化', { exact: true }).selectOption('NFC');
+  await page.keyboard.press('Escape');
   await expect(page.getByLabel('編集テキスト')).toHaveValue('が😀');
   await page.getByLabel('編集テキスト').evaluate((element: HTMLTextAreaElement) => {
     element.focus();
@@ -93,7 +98,7 @@ test('normalizes text, locates supplementary characters at a UTF-16 caret, and e
   });
   await page.getByLabel('編集テキスト').press('F2');
   await expect(page.getByRole('heading', { name: 'GRINNING FACE', exact: true })).toBeVisible();
-  await page.getByText('保存・文字単位の確認', { exact: true }).click();
+  await page.getByRole('button', { name: '変換・保存', exact: true }).click();
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'テキストを保存', exact: true }).click();
   const file = await download;
@@ -130,7 +135,6 @@ test('inspects a real font, exports outlines, and keeps the font across tabs', a
 });
 
 test('uses Unicode 18 in search, statistics and the emoji picker', async ({ page }) => {
-  await expect(page.getByText('Unicode 18.0.0', { exact: true })).toBeVisible();
   await page.getByLabel('文字を検索', { exact: true }).fill('UAE DIRHAM SIGN');
   await page.getByRole('button', { name: '検索', exact: true }).click();
   await page.getByRole('button', { name: 'U+20C3 UAE DIRHAM SIGN', exact: true }).click();
@@ -157,6 +161,7 @@ test('previews size while dragging, commits on release and restores it with othe
       () => JSON.parse(localStorage.getItem('mojidata-map.preferences.v1') ?? '{}').size,
     );
   await page.getByLabel('編集テキスト').fill('サイズ調整🌏');
+  await page.getByRole('button', { name: '表示設定', exact: true }).click();
   await size.press('Home');
   await expect(size).toHaveValue('16');
   await expect(glyph).toHaveCSS('font-size', '16px');
@@ -173,6 +178,7 @@ test('previews size while dragging, commits on release and restores it with othe
   await page.mouse.up();
   await expect.poll(savedSize).toBe(64);
   await page.reload();
+  await page.getByRole('button', { name: '表示設定', exact: true }).click();
   await expect(size).toHaveValue('64');
   await expect(glyph).toHaveCSS('font-size', '64px');
   await expect(page.getByLabel('編集テキスト')).toHaveValue('サイズ調整🌏');
@@ -181,6 +187,7 @@ test('previews size while dragging, commits on release and restores it with othe
 test('keeps size across keyboard edits, tab switches and grid navigation', async ({ page }) => {
   const size = page.getByRole('slider', { name: '文字サイズ' });
   const glyph = page.locator('.cell-glyph').first();
+  await page.getByRole('button', { name: '表示設定', exact: true }).click();
   await size.press('End');
   await size.press('ArrowLeft');
   await expect(size).toHaveValue('63');
@@ -188,10 +195,12 @@ test('keeps size across keyboard edits, tab switches and grid navigation', async
   await page.getByRole('button', { name: '絵文字', exact: true }).click();
   await page.getByRole('button', { name: '文字マップ', exact: true }).click();
   await expect(glyph).toHaveCSS('font-size', '63px');
+  await page.getByRole('button', { name: '表示設定', exact: true }).click();
   await page.getByLabel('表示フォント', { exact: true }).fill('monospace');
   await expect(glyph).toHaveCSS('font-family', 'monospace');
   await page.getByLabel('色分け').selectOption('none');
   await expect(page.locator('.character-cell').first()).not.toHaveClass(/tint-/);
+  await page.keyboard.press('Escape');
   const selected = page.locator('.character-cell[aria-pressed="true"]');
   await selected.press('ArrowRight');
   await expect(selected).toHaveAttribute('data-cp', String(0x3043));
@@ -200,6 +209,7 @@ test('keeps size across keyboard edits, tab switches and grid navigation', async
   await page.getByRole('button', { name: '次のページ', exact: true }).click();
   await expect(glyph).toHaveCSS('font-size', '63px');
   await page.reload();
+  await page.getByRole('button', { name: '表示設定', exact: true }).click();
   await expect(size).toHaveValue('63');
   await expect(glyph).toHaveCSS('font-size', '63px');
 });
@@ -209,6 +219,7 @@ test('opens About, switches its tabs with the keyboard and restores focus and ed
 }) => {
   await page.getByLabel('編集テキスト').fill('アプリ情報の確認');
   const opener = page.getByRole('button', { name: 'アプリについて', exact: true });
+  await page.getByRole('button', { name: 'アプリメニュー', exact: true }).click();
   await opener.click();
   const dialog = page.getByRole('dialog', { name: 'アプリ情報', exact: true });
   await expect(dialog).toBeVisible();
@@ -231,7 +242,7 @@ test('opens About, switches its tabs with the keyboard and restores focus and ed
   await expect(dialog.getByRole('button', { name: 'アプリ情報を閉じる' })).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
-  await expect(opener).toBeFocused();
+  await expect(page.getByRole('button', { name: 'アプリメニュー', exact: true })).toBeFocused();
   await expect(page.getByLabel('編集テキスト')).toHaveValue('アプリ情報の確認');
 });
 
@@ -240,7 +251,9 @@ test('shows bundled credits and license text on narrow screens in both themes', 
 }) => {
   await page.route('https://**', (route) => route.abort());
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'アプリメニュー', exact: true }).click();
   await page.getByRole('button', { name: '配色を切り替え', exact: true }).click();
+  await page.getByRole('button', { name: 'アプリメニュー', exact: true }).click();
   await page.getByRole('button', { name: 'クレジット', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'アプリ情報', exact: true });
   await expect(dialog.getByRole('link', { name: 'BabelMap', exact: true })).toHaveAttribute(
@@ -263,7 +276,9 @@ test('shows bundled credits and license text on narrow screens in both themes', 
     await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   }
   await dialog.getByRole('button', { name: 'アプリ情報を閉じる' }).click();
+  await page.getByRole('button', { name: 'アプリメニュー', exact: true }).click();
   await page.getByRole('button', { name: '配色を切り替え', exact: true }).click();
+  await page.getByRole('button', { name: 'アプリメニュー', exact: true }).click();
   await page.getByRole('button', { name: 'アプリについて', exact: true }).click();
   await expect(dialog.getByRole('tabpanel', { name: 'アプリについて' })).toBeVisible();
 });
@@ -272,6 +287,7 @@ test('retries credits when bundled metadata fails to load', async ({ page }) => 
   await page.route('**/credits.json', (route) =>
     route.fulfill({ status: 503, body: 'unavailable' }),
   );
+  await page.getByRole('button', { name: 'アプリメニュー', exact: true }).click();
   await page.getByRole('button', { name: 'クレジット', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'アプリ情報', exact: true });
   await expect(dialog.getByRole('alert')).toHaveText('クレジットを読み込めませんでした。');

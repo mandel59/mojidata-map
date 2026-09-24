@@ -15,7 +15,9 @@ const GlyphSize = createContext(30);
 export function CharacterGridSurface({
   children,
   containerRef,
+  columns,
 }: {
+  columns: number;
   children: ReactNode;
   containerRef: RefObject<HTMLDivElement | null>;
 }) {
@@ -26,7 +28,7 @@ export function CharacterGridSurface({
         className="character-grid"
         ref={containerRef}
         aria-label="文字一覧"
-        style={{ '--glyph-size': `${size}px` } as CSSProperties}
+        style={{ '--glyph-size': `${size}px`, '--grid-columns': columns } as CSSProperties}
       >
         {children}
       </div>
@@ -35,6 +37,7 @@ export function CharacterGridSurface({
 }
 
 interface Props {
+  navigation: ReactNode;
   size: number;
   onSizeCommit(size: number): void;
   fontControls: ReactNode;
@@ -43,6 +46,7 @@ interface Props {
 }
 
 export function CharacterDisplay({
+  navigation,
   size,
   onSizeCommit,
   fontControls,
@@ -76,6 +80,16 @@ export function CharacterDisplay({
     <GlyphSize value={previewSize}>
       <main className="main-content">
         <div className="display-toolbar">
+          {navigation}
+          <button popoverTarget="display-options">表示設定</button>
+        </div>
+        <div
+          id="display-options"
+          popover="auto"
+          className="utility-popover display-options"
+          aria-label="表示設定"
+        >
+          <h2>表示設定</h2>
           {fontControls}
           <label className="size-control">
             文字サイズ{' '}

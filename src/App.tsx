@@ -15,6 +15,8 @@ import { CharacterDetails } from './components/CharacterDetails';
 import { Editor, type EditorHandle } from './components/Editor';
 import { usePreferences } from './preferences';
 import { download, type AboutSection } from './platform';
+import { UtilityDialog } from './components/UtilityDialog';
+import { useMediaQuery } from './useMediaQuery';
 import { AboutDialog } from './components/AboutDialog';
 import { version as appVersion } from '../package.json';
 const FontPanel = lazy(() =>
@@ -40,6 +42,9 @@ const planeNames: Record<number, string> = {
 
 export default function App({ db }: { db: UnicodeDatabase }) {
   const { preferences: prefs, update, storageError } = usePreferences();
+  const compact = useMediaQuery('(max-width: 700px)');
+  const columns = useMediaQuery('(max-width: 600px)') ? 8 : 16;
+  const menuButton = useRef<HTMLButtonElement>(null);
   const initial =
     parseCodePoint(new URLSearchParams(location.search).get('cp') ?? '3042') ?? 0x3042;
   const [selected, setSelected] = useState(initial);
@@ -116,6 +121,9 @@ export default function App({ db }: { db: UnicodeDatabase }) {
       if (document.querySelector('dialog[open]')) return;
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
         event.preventDefault();
+        document
+          .querySelectorAll<HTMLElement>(':popover-open')
+          .forEach((popover) => popover.hidePopover());
         searchInput.current?.focus();
         searchInput.current?.select();
       }
@@ -188,9 +196,9 @@ export default function App({ db }: { db: UnicodeDatabase }) {
     : Array.from({ length: PAGE_SIZE }, (_, i) => pageStart + i).filter(
         (cp) => !assignedOnly || db.category(cp) !== 'Cn',
       );
-  const blocks = db.data.properties.Block.filter(
-    ([start, , name]) =>
-      start >>> 16 === plane && name.toLowerCase().includes(blockFilter.toLowerCase()),
+  const planeBlocks = db.data.properties.Block.filter(([start]) => start >>> 16 === plane);
+  const blocks = planeBlocks.filter(([, , name]) =>
+    name.toLowerCase().includes(blockFilter.toLowerCase()),
   );
   const block = db.property(selected, 'Block');
   const filterOptions = useMemo(() => {
@@ -228,75 +236,116 @@ export default function App({ db }: { db: UnicodeDatabase }) {
       </select>
     </label>
   );
+  const activeFilters = Object.entries(filters).filter(([key, value]) =>
+    key === 'aliases' ? value === false : Boolean(value),
+  ).length;
+  const tabs: [Tab, string][] = [
+    ['map', '文字マップ'],
+    ['han', '漢字を探す'],
+    ['emoji', '絵文字'],
+    ['fonts', 'フォント'],
+    ['statistics', 'Unicode データ'],
+    ['bookmarks', `ブックマーク (${prefs.bookmarks.length})`],
+  ];
+  function menuAction(action: () => void) {
+    document.getElementById('application-menu')?.hidePopover();
+    menuButton.current?.focus();
+    action();
+  }
   return (
     <div className="app-shell">
       <header className="app-header">
-        <div className="brand">
-          <span className="brand-mark" aria-hidden="true">
-            字
-          </span>
-          <div>
-            <h1>
-              Mojidata <span>Map</span>
-            </h1>
-            <p>文字の世界を、ひとつの地図に。</p>
-          </div>
-        </div>
-        <div className="header-actions">
-          <span className="version-badge">
-            <i /> Unicode {db.data.version}
-          </span>
-          <button
-            className="icon-button"
-            aria-label="配色を切り替え"
-            onClick={() => update({ dark: !prefs.dark })}
-          >
-            {prefs.dark ? '☀' : '☾'}
-          </button>
-          <button onClick={() => setHelp(!help)}>使い方</button>
-        </div>
+        <h1>
+          Mojidata <span>Map</span>
+        </h1>
+        <nav className="main-tabs" aria-label="ツール">
+          {tabs.map(([value, label]) => (
+            <button
+              key={value}
+              aria-current={tab === value ? 'page' : undefined}
+              onClick={() => changeTab(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+        <select
+          className="tool-select"
+          aria-label="ツールを選択"
+          value={tab}
+          onChange={(event) => changeTab(event.target.value as Tab)}
+        >
+          {tabs.map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <button ref={menuButton} popoverTarget="application-menu" aria-label="アプリメニュー">
+          メニュー
+        </button>
       </header>
-      <nav className="main-tabs" aria-label="ツール">
-        {(
-          [
-            ['map', '文字マップ'],
-            ['han', '漢字を探す'],
-            ['emoji', '絵文字'],
-            ['fonts', 'フォント'],
-            ['statistics', 'Unicode データ'],
-            ['bookmarks', `ブックマーク (${prefs.bookmarks.length})`],
-          ] as [Tab, string][]
-        ).map(([value, label]) => (
-          <button
-            key={value}
-            aria-current={tab === value ? 'page' : undefined}
-            onClick={() => changeTab(value)}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
+      <div
+        id="application-menu"
+        popover="auto"
+        className="utility-popover app-menu"
+        aria-label="アプリメニュー"
+      >
+        <button aria-haspopup="dialog" onClick={() => menuAction(() => setHelp(true))}>
+          使い方
+        </button>
+        <button aria-haspopup="dialog" onClick={() => menuAction(() => setAbout('about'))}>
+          アプリについて
+        </button>
+        <button aria-haspopup="dialog" onClick={() => menuAction(() => setAbout('credits'))}>
+          クレジット
+        </button>
+        <button
+          aria-label="配色を切り替え"
+          onClick={() => menuAction(() => update({ dark: !prefs.dark }))}
+        >
+          {prefs.dark ? 'ライト表示にする' : 'ダーク表示にする'}
+        </button>
+        {window.mojidata && (
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={alwaysOnTop}
+              onChange={(event) => {
+                const value = event.target.checked;
+                setAlwaysOnTop(value);
+                void window.mojidata!.setAlwaysOnTop(value).catch((error) => {
+                  setAlwaysOnTop(!value);
+                  notify(String(error));
+                });
+              }}
+            />
+            最前面に表示
+          </label>
+        )}
+      </div>
       {help && (
-        <section className="help-panel">
-          <h2>文字を探す・調べる・使う</h2>
-          <p>
-            名前（英語）・別名・文字・U+コードで検索します。文字をクリックすると詳細を表示し、ダブルクリックまたは
-            Enter で編集バッファへ追加します。矢印キーで文字を移動できます。
-          </p>
-          <p>
-            Ctrl/Cmd+F: 検索へ移動 / 編集バッファ内の F2:
-            カーソル位置の文字を探す。設定、ブックマーク、編集テキストはこの端末に保存します。
-          </p>
-          <p>
-            未収録の字形には表示用フォントが必要です。「◌」「␣」「·」などは結合文字・空白・未割当の表示補助です。実際に追加される文字には補助記号は含まれません。
-          </p>
-          <p>
-            バージョン {appVersion}。BabelMap
-            の全機能との互換性は開発中です。文字の歴史データ、IVD、彝文字・西夏文字の専用検索、Windows
-            固有の描画・トレイ機能は未対応です。
-          </p>
-          <button onClick={() => setHelp(false)}>閉じる</button>
-        </section>
+        <UtilityDialog title="使い方" onClose={() => setHelp(false)}>
+          <div className="help-content">
+            <p>
+              名前（英語）・別名・文字・U+コードで検索します。文字をクリックすると詳細を表示し、ダブルクリックまたは
+              Enter で編集バッファへ追加します。矢印キーで文字を移動できます。
+            </p>
+            <p>
+              Ctrl/Cmd+F: 検索へ移動 / 編集バッファ内の F2:
+              カーソル位置の文字を探す。設定、ブックマーク、編集テキストはこの端末に保存します。
+            </p>
+            <p>
+              未収録の字形には表示用フォントが必要です。「◌」「␣」「·」などは結合文字・空白・未割当の表示補助です。実際に追加される文字には補助記号は含まれません。
+            </p>
+            <p>漢字検索では普通話・広東語の声調を区別しません。部首と残画は Unihan の基準です。</p>
+            <p>
+              バージョン {appVersion}。BabelMap
+              の全機能との互換性は開発中です。文字の歴史データ、IVD、彝文字・西夏文字の専用検索、Windows
+              固有の描画・トレイ機能は未対応です。
+            </p>
+          </div>
+        </UtilityDialog>
       )}
       <form
         className="search-bar"
@@ -305,27 +354,158 @@ export default function App({ db }: { db: UnicodeDatabase }) {
           runSearch('unicode');
         }}
       >
-        <span aria-hidden="true" className="search-symbol">
-          ⌕
-        </span>
         <input
           ref={searchInput}
           aria-label="文字を検索"
-          placeholder="文字・名前・コードポイントで検索  —  あ / LATIN / U+1F600"
+          placeholder="文字・名前・U+コードで検索"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
-        <kbd>Ctrl F</kbd>
         <button className="primary" type="submit" disabled={busy}>
           検索
         </button>
+        <button type="button" popoverTarget="advanced-search" aria-label="詳細検索">
+          詳細検索{activeFilters > 0 && ` (${activeFilters})`}
+        </button>
+        <button type="button" popoverTarget="goto-codepoint">
+          コード指定
+        </button>
       </form>
+      <div id="advanced-search" popover="auto" className="utility-popover" aria-label="詳細検索">
+        <h2>詳細検索</h2>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            runSearch('unicode');
+            document.getElementById('advanced-search')?.hidePopover();
+          }}
+        >
+          <div className="filter-fields">
+            {filterSelect('category', '一般カテゴリ', filterOptions.category)}
+            {filterSelect('script', 'スクリプト', filterOptions.script)}
+            {filterSelect('age', '追加バージョン', filterOptions.age)}
+            {filterSelect('block', 'ブロック', filterOptions.block)}
+            {filterSelect('plane', '面', filterOptions.plane)}
+            {filterSelect('binary', '二値属性', filterOptions.binary)}
+            {filterSelect('bidi', 'Bidi クラス', filterOptions.bidi)}
+            {filterSelect('combining', '結合クラス', filterOptions.combining)}
+          </div>
+          <div className="button-row">
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={filters.aliases !== false}
+                onChange={(event) => setFilters({ ...filters, aliases: event.target.checked })}
+              />
+              別名も検索
+            </label>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={filters.wholeWord === true}
+                onChange={(event) => setFilters({ ...filters, wholeWord: event.target.checked })}
+              />
+              単語全体で一致
+            </label>
+            <button type="button" onClick={() => setFilters({ aliases: true })}>
+              条件をリセット
+            </button>
+            <button className="primary" disabled={busy}>
+              条件で検索
+            </button>
+          </div>
+        </form>
+      </div>
+      <div
+        id="goto-codepoint"
+        popover="auto"
+        className="utility-popover"
+        aria-label="コードポイントへ移動"
+      >
+        <h2>コードポイントへ移動</h2>
+        <form
+          className="goto-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const cp = parseCodePoint(goTo, radix);
+            if (cp === null) notify('0〜10FFFF のコードポイントを入力してください。');
+            else {
+              locate(cp);
+              document.getElementById('goto-codepoint')?.hidePopover();
+            }
+          }}
+        >
+          <input
+            aria-label="移動先コードポイント"
+            placeholder={radix === 16 ? 'U+3042' : '12354'}
+            value={goTo}
+            onChange={(event) => setGoTo(event.target.value)}
+          />
+          <select
+            aria-label="コードポイントの基数"
+            value={radix}
+            onChange={(event) => setRadix(Number(event.target.value) as 10 | 16)}
+          >
+            <option value="16">16進</option>
+            <option value="10">10進</option>
+          </select>
+          <button>移動</button>
+        </form>
+      </div>
       <div className="workspace">
-        <aside className="sidebar">
-          <div className="section-heading">EXPLORE UNICODE</div>
-          <div className="sidebar-section">
-            <label>
-              Unicode 面
+        <div
+          id="block-browser"
+          popover="auto"
+          className="utility-popover block-browser"
+          aria-label="ブロック一覧"
+          onToggle={(event) => {
+            if (event.currentTarget.matches(':popover-open')) {
+              const list = blockList.current;
+              const active = list?.querySelector<HTMLButtonElement>('button.active');
+              if (list && active) list.scrollTop = active.offsetTop - list.clientHeight / 2;
+            }
+          }}
+        >
+          <h2>ブロック一覧</h2>
+          <input
+            aria-label="ブロックを絞り込み"
+            placeholder="名前で絞り込み…"
+            value={blockFilter}
+            onChange={(event) => setBlockFilter(event.target.value)}
+          />
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={allPlanes}
+              onChange={(event) => {
+                setAllPlanes(event.target.checked);
+                if (!event.target.checked && !planeNames[plane]) locate(0);
+              }}
+            />
+            予約面も表示
+          </label>
+          <div className="block-list" ref={blockList} aria-label="Unicode ブロック">
+            {blocks.map(([start, end, name]) => (
+              <button
+                key={start}
+                className={block === name ? 'active' : ''}
+                onClick={() => {
+                  locate(start);
+                  document.getElementById('block-browser')?.hidePopover();
+                }}
+              >
+                <span>{name}</span>
+                <small>
+                  {hex(start)}–{hex(end)}
+                </small>
+              </button>
+            ))}
+            {!blocks.length && <p className="muted">一致するブロックはありません。</p>}
+          </div>
+        </div>
+        <CharacterDisplay
+          navigation={
+            <>
               <select
                 aria-label="Unicode 面"
                 value={plane}
@@ -339,73 +519,26 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                     </option>
                   ))}
               </select>
-            </label>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={allPlanes}
+              <select
+                className="block-select"
+                aria-label="ブロックへ移動"
+                value={planeBlocks.find(([, , name]) => name === selectedBlock)?.[0] ?? ''}
                 onChange={(event) => {
-                  setAllPlanes(event.target.checked);
-                  if (!event.target.checked && !planeNames[plane]) locate(0);
+                  if (event.target.value) locate(Number(event.target.value));
                 }}
-              />
-              予約面も表示
-            </label>
-          </div>
-          <label className="mobile-block-select">
-            ブロック
-            <select
-              aria-label="ブロックへ移動"
-              value={blocks.find(([, , name]) => name === selectedBlock)?.[0] ?? ''}
-              onChange={(event) => {
-                if (event.target.value) locate(Number(event.target.value));
-              }}
-            >
-              <option value="">選択…</option>
-              {blocks.map(([start, , name]) => (
-                <option key={start} value={start}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="sidebar-section block-heading">
-            <label>
-              ブロック
-              <input
-                aria-label="ブロックを絞り込み"
-                placeholder="名前で絞り込み…"
-                value={blockFilter}
-                onChange={(event) => setBlockFilter(event.target.value)}
-              />
-            </label>
-          </div>
-          <div className="block-list" ref={blockList} aria-label="Unicode ブロック">
-            {blocks.map(([start, end, name]) => (
-              <button
-                key={start}
-                className={block === name ? 'active' : ''}
-                onClick={() => locate(start)}
               >
-                <span>{name}</span>
-                <small>
-                  {hex(start)}–{hex(end)}
-                </small>
+                <option value="">ブロックを選択…</option>
+                {planeBlocks.map(([start, , name]) => (
+                  <option key={start} value={start}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+              <button popoverTarget="block-browser" aria-label="ブロック一覧">
+                一覧
               </button>
-            ))}
-            {!blocks.length && (
-              <p className="muted">
-                一致するブロックはありません。予約面はコードポイントから移動できます。
-              </p>
-            )}
-          </div>
-          <div className="sidebar-footer">
-            <span className="status-dot" /> ローカルで動作
-            <br />
-            <small>Unicode データをアプリに同梱</small>
-          </div>
-        </aside>
-        <CharacterDisplay
+            </>
+          }
           size={prefs.size}
           onSizeCommit={(size) => update({ size })}
           fontControls={
@@ -459,7 +592,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
             }
           >
             {fontOpened && (
-              <div hidden={tab !== 'fonts'}>
+              <div className="tool-scroll" hidden={tab !== 'fonts'}>
                 <FontPanel
                   db={db}
                   cp={selected}
@@ -479,62 +612,8 @@ export default function App({ db }: { db: UnicodeDatabase }) {
             {tab === 'statistics' && <Statistics db={db} onLocate={locate} />}
             {(tab === 'map' || tab === 'han' || tab === 'bookmarks') && (
               <>
-                {tab === 'map' && (
-                  <details className="advanced-search">
-                    <summary>
-                      詳細検索 <span>カテゴリ・スクリプト・バージョン・属性</span>
-                    </summary>
-                    <form
-                      onSubmit={(event) => {
-                        event.preventDefault();
-                        runSearch('unicode');
-                      }}
-                    >
-                      <div className="filter-fields">
-                        {filterSelect('category', '一般カテゴリ', filterOptions.category)}
-                        {filterSelect('script', 'スクリプト', filterOptions.script)}
-                        {filterSelect('age', '追加バージョン', filterOptions.age)}
-                        {filterSelect('block', 'ブロック', filterOptions.block)}
-                        {filterSelect('plane', '面', filterOptions.plane)}
-                        {filterSelect('binary', '二値属性', filterOptions.binary)}
-                        {filterSelect('bidi', 'Bidi クラス', filterOptions.bidi)}
-                        {filterSelect('combining', '結合クラス', filterOptions.combining)}
-                      </div>
-                      <div className="button-row">
-                        <label className="check">
-                          <input
-                            type="checkbox"
-                            checked={filters.aliases !== false}
-                            onChange={(event) =>
-                              setFilters({ ...filters, aliases: event.target.checked })
-                            }
-                          />
-                          別名も検索
-                        </label>
-                        <label className="check">
-                          <input
-                            type="checkbox"
-                            checked={filters.wholeWord === true}
-                            onChange={(event) =>
-                              setFilters({ ...filters, wholeWord: event.target.checked })
-                            }
-                          />
-                          単語全体で一致
-                        </label>
-                        <button type="button" onClick={() => setFilters({ aliases: true })}>
-                          条件をリセット
-                        </button>
-                        <button className="primary" disabled={busy}>
-                          条件で検索
-                        </button>
-                      </div>
-                    </form>
-                  </details>
-                )}
                 {tab === 'han' && (
                   <section className="han-search">
-                    <span className="eyebrow">UNIHAN LOOKUP</span>
-                    <h2>漢字を探す</h2>
                     <form
                       onSubmit={(event) => {
                         event.preventDefault();
@@ -595,56 +674,17 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                           />
                         </label>
                       </div>
-                      <p className="muted">
-                        普通話・広東語は声調を区別せず検索します。部首と残画は Unihan の基準です。
-                      </p>
                       <button className="primary" disabled={busy}>
                         漢字を検索
                       </button>
                     </form>
                   </section>
                 )}
-                <div className="map-heading">
-                  <div>
-                    <span className="eyebrow">
-                      {listed
-                        ? 'COLLECTION'
-                        : `PLANE ${plane.toString().padStart(2, '0')} / ${planeNames[plane] ?? 'RESERVED'}`}
-                    </span>
-                    <h2>
-                      {tab === 'bookmarks'
-                        ? 'ブックマーク'
-                        : results
-                          ? resultTitle
-                          : selectedBlock.replace('No_Block', '未割当の範囲')}
-                    </h2>
-                  </div>
-                  <form
-                    className="goto-form"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      const cp = parseCodePoint(goTo, radix);
-                      if (cp === null) notify('0〜10FFFF のコードポイントを入力してください。');
-                      else locate(cp);
-                    }}
-                  >
-                    <input
-                      aria-label="移動先コードポイント"
-                      placeholder={radix === 16 ? 'U+3042' : '12354'}
-                      value={goTo}
-                      onChange={(event) => setGoTo(event.target.value)}
-                    />
-                    <select
-                      aria-label="コードポイントの基数"
-                      value={radix}
-                      onChange={(event) => setRadix(Number(event.target.value) as 10 | 16)}
-                    >
-                      <option value="16">16進</option>
-                      <option value="10">10進</option>
-                    </select>
-                    <button>移動</button>
-                  </form>
-                </div>
+                {listed && (
+                  <h2 className="collection-heading">
+                    {tab === 'bookmarks' ? 'ブックマーク' : resultTitle}
+                  </h2>
+                )}
                 <div className="results-heading">
                   <span aria-live="polite">
                     {busy
@@ -691,6 +731,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                 </div>
                 {points.length > 0 ? (
                   <CharacterGrid
+                    columns={columns}
                     db={db}
                     points={points}
                     selected={selected}
@@ -727,7 +768,6 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                   </div>
                 )}
                 <div className="pagination">
-                  <span className="muted">クリックで詳細 · ダブルクリックで追加</span>
                   <div className="button-row">
                     <button
                       aria-label="前のページ"
@@ -769,6 +809,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
           </Suspense>
         </CharacterDisplay>
         <CharacterDetails
+          compact={compact}
           db={db}
           cp={selected}
           font={currentFont}
@@ -790,49 +831,6 @@ export default function App({ db }: { db: UnicodeDatabase }) {
       {about && (
         <AboutDialog db={db} section={about} onSection={setAbout} onClose={() => setAbout(null)} />
       )}
-      <footer className="app-footer">
-        <span>
-          Mojidata Map <small>{appVersion}</small>
-        </span>
-        <nav className="footer-links" aria-label="アプリ情報">
-          <button className="text-button" aria-haspopup="dialog" onClick={() => setAbout('about')}>
-            アプリについて
-          </button>
-          <button
-            className="text-button"
-            aria-haspopup="dialog"
-            onClick={() => setAbout('credits')}
-          >
-            クレジット
-          </button>
-        </nav>
-        <span>
-          Unicode data © Unicode, Inc. ·{' '}
-          <a
-            href={`${import.meta.env.BASE_URL}data/LICENSE-UNICODE.txt`}
-            download="LICENSE-UNICODE.txt"
-          >
-            ライセンス
-          </a>
-        </span>
-        {window.mojidata && (
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={alwaysOnTop}
-              onChange={(event) => {
-                const value = event.target.checked;
-                setAlwaysOnTop(value);
-                void window.mojidata!.setAlwaysOnTop(value).catch((error) => {
-                  setAlwaysOnTop(!value);
-                  notify(String(error));
-                });
-              }}
-            />
-            最前面に表示
-          </label>
-        )}
-      </footer>
       {storageError && (
         <p role="alert" className="storage-error">
           {storageError}

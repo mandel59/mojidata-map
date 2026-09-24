@@ -7,6 +7,7 @@ const {
   net,
   protocol,
   session,
+  screen,
   shell,
 } = require('electron');
 const path = require('node:path');
@@ -49,11 +50,12 @@ ipcMain.handle('always-on-top', (event, value) => {
 });
 
 function createWindow() {
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
   const window = new BrowserWindow({
-    width: 1480,
-    height: 1050,
-    minWidth: 700,
-    minHeight: 600,
+    width: Math.min(1200, width),
+    height: Math.min(760, height),
+    minWidth: Math.min(640, width),
+    minHeight: Math.min(420, height),
     title: 'Mojidata Map',
     backgroundColor: '#f6f7f4',
     webPreferences: {
