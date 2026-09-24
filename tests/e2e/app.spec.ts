@@ -144,3 +144,60 @@ test('uses Unicode 18 in search, statistics and the emoji picker', async ({ page
   await page.getByRole('button', { name: '絵文字を追加', exact: true }).click();
   await expect(page.getByLabel('編集テキスト')).toHaveValue(String.fromCodePoint(0x1faeb));
 });
+
+test('previews size while dragging, commits on release and restores it with other preferences', async ({
+  page,
+}) => {
+  const size = page.getByRole('slider', { name: '文字サイズ' });
+  const glyph = page.locator('.cell-glyph').first();
+  const savedSize = () =>
+    page.evaluate(
+      () => JSON.parse(localStorage.getItem('mojidata-map.preferences.v1') ?? '{}').size,
+    );
+  await page.getByLabel('編集テキスト').fill('サイズ調整🌏');
+  await size.press('Home');
+  await expect(size).toHaveValue('16');
+  await expect(glyph).toHaveCSS('font-size', '16px');
+  await expect.poll(savedSize).toBe(16);
+  const bounds = (await size.boundingBox())!;
+  await page.mouse.move(bounds.x + 8, bounds.y + bounds.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(bounds.x + bounds.width - 8, bounds.y + bounds.height / 2, { steps: 24 });
+  await expect(size).toHaveValue('64');
+  await expect(glyph).toHaveCSS('font-size', '64px');
+  // Longer than the preferences debounce: previews must not write global settings.
+  await page.waitForTimeout(400);
+  expect(await savedSize()).toBe(16);
+  await page.mouse.up();
+  await expect.poll(savedSize).toBe(64);
+  await page.reload();
+  await expect(size).toHaveValue('64');
+  await expect(glyph).toHaveCSS('font-size', '64px');
+  await expect(page.getByLabel('編集テキスト')).toHaveValue('サイズ調整🌏');
+});
+
+test('keeps size across keyboard edits, tab switches and grid navigation', async ({ page }) => {
+  const size = page.getByRole('slider', { name: '文字サイズ' });
+  const glyph = page.locator('.cell-glyph').first();
+  await size.press('End');
+  await size.press('ArrowLeft');
+  await expect(size).toHaveValue('63');
+  await expect(glyph).toHaveCSS('font-size', '63px');
+  await page.getByRole('button', { name: '絵文字', exact: true }).click();
+  await page.getByRole('button', { name: '文字マップ', exact: true }).click();
+  await expect(glyph).toHaveCSS('font-size', '63px');
+  await page.getByLabel('表示フォント', { exact: true }).fill('monospace');
+  await expect(glyph).toHaveCSS('font-family', 'monospace');
+  await page.getByLabel('色分け').selectOption('none');
+  await expect(page.locator('.character-cell').first()).not.toHaveClass(/tint-/);
+  const selected = page.locator('.character-cell[aria-pressed="true"]');
+  await selected.press('ArrowRight');
+  await expect(selected).toHaveAttribute('data-cp', String(0x3043));
+  await selected.press('Enter');
+  await expect(page.getByLabel('編集テキスト')).toHaveValue('ぃ');
+  await page.getByRole('button', { name: '次のページ', exact: true }).click();
+  await expect(glyph).toHaveCSS('font-size', '63px');
+  await page.reload();
+  await expect(size).toHaveValue('63');
+  await expect(glyph).toHaveCSS('font-size', '63px');
+});

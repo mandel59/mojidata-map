@@ -70,6 +70,8 @@ Linux の GUI がない環境ではデスクトップ検証を `xvfb-run -a node
 
 `.github/workflows/check.yml` に Web の検証と Windows での起動・ZIP 生成を定義しています。ワークフローはこのローカル環境からは実行していません。
 
+文字サイズ変更の性能は、本番ビルド後に `node tools/benchmark-size.mjs` で計測できます。Chromium の CPU を 4 倍に減速し、60 回の連続入力について入力処理時間、フレーム待ち時間、スクリプト・レイアウト時間、App / 文字セル生成部分の再レンダリング回数を表示します。同じ端末での比較用で、時間による合否判定は行いません。
+
 ## データの再生成
 
 Unicode **18.0.0 正式版**の UCD、Unihan、Emoji データを `public/data/` に同梱しています。通常のビルド・デスクトップ版の使用時に Unicode サーバーへの接続は不要です。

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   UnicodeDatabase,
   codeLabel,
@@ -9,6 +9,7 @@ import {
   type HanQuery,
   type SearchQuery,
 } from './core/unicode';
+import { CharacterDisplay } from './components/CharacterDisplay';
 import { CharacterGrid } from './components/CharacterGrid';
 import { CharacterDetails } from './components/CharacterDetails';
 import { Editor, type EditorHandle } from './components/Editor';
@@ -187,10 +188,26 @@ export default function App({ db }: { db: UnicodeDatabase }) {
       start >>> 16 === plane && name.toLowerCase().includes(blockFilter.toLowerCase()),
   );
   const block = db.property(selected, 'Block');
-  const values = (property: string) =>
-    [...new Set(db.data.properties[property].map((row) => row[2]))].sort((a, b) =>
-      a.localeCompare(b, undefined, { numeric: true }),
-    );
+  const filterOptions = useMemo(() => {
+    const collator = new Intl.Collator(undefined, { numeric: true });
+    const values = (property: string) =>
+      [...new Set(db.data.properties[property].map((row) => row[2]))].sort(collator.compare);
+    return {
+      category: [...new Set(db.data.records.map((row) => row[2])), 'Cn'].sort(),
+      script: values('Script'),
+      age: values('Age'),
+      block: values('Block'),
+      plane: Array.from({ length: 17 }, (_, i) => String(i)),
+      binary: Object.entries(db.data.properties)
+        .filter(([, rows]) => rows.every((row) => row[2] === 'Yes'))
+        .map(([key]) => key)
+        .sort(),
+      bidi: values('Bidi_Class'),
+      combining: [...new Set(db.data.records.map((row) => row[3]))].sort(
+        (a, b) => Number(a) - Number(b),
+      ),
+    };
+  }, [db]);
   const filterSelect = (key: keyof SearchQuery, label: string, options: string[]) => (
     <label key={key}>
       {label}
@@ -383,44 +400,40 @@ export default function App({ db }: { db: UnicodeDatabase }) {
             <small>Unicode データをアプリに同梱</small>
           </div>
         </aside>
-        <main className="main-content">
-          <div className="display-toolbar">
-            <label>
-              表示フォント
-              <input
-                aria-label="表示フォント"
-                list="font-families"
-                value={prefs.font}
-                onChange={(event) => update({ font: event.target.value })}
-              />
-            </label>
-            <datalist id="font-families">
-              {[
-                'sans-serif',
-                'serif',
-                'monospace',
-                'Yu Gothic',
-                'Yu Mincho',
-                'Meiryo',
-                'Segoe UI',
-                'Segoe UI Symbol',
-                'Segoe UI Emoji',
-                'Noto Sans CJK JP',
-                'Noto Sans Symbols 2',
-              ].map((name) => (
-                <option key={name}>{name}</option>
-              ))}
-            </datalist>
-            <label className="size-control">
-              文字サイズ{' '}
-              <input
-                type="range"
-                min="16"
-                max="64"
-                value={prefs.size}
-                onChange={(event) => update({ size: Number(event.target.value) })}
-              />
-            </label>
+        <CharacterDisplay
+          size={prefs.size}
+          onSizeCommit={(size) => update({ size })}
+          fontControls={
+            <>
+              <label>
+                表示フォント
+                <input
+                  aria-label="表示フォント"
+                  list="font-families"
+                  value={prefs.font}
+                  onChange={(event) => update({ font: event.target.value })}
+                />
+              </label>
+              <datalist id="font-families">
+                {[
+                  'sans-serif',
+                  'serif',
+                  'monospace',
+                  'Yu Gothic',
+                  'Yu Mincho',
+                  'Meiryo',
+                  'Segoe UI',
+                  'Segoe UI Symbol',
+                  'Segoe UI Emoji',
+                  'Noto Sans CJK JP',
+                  'Noto Sans Symbols 2',
+                ].map((name) => (
+                  <option key={name}>{name}</option>
+                ))}
+              </datalist>
+            </>
+          }
+          colorControl={
             <select
               aria-label="色分け"
               value={prefs.colorBy}
@@ -431,7 +444,8 @@ export default function App({ db }: { db: UnicodeDatabase }) {
               <option value="Age">追加バージョンで色分け</option>
               <option value="none">色分けなし</option>
             </select>
-          </div>
+          }
+        >
           <Suspense
             fallback={
               <p className="loading" role="status">
@@ -472,35 +486,14 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                       }}
                     >
                       <div className="filter-fields">
-                        {filterSelect(
-                          'category',
-                          '一般カテゴリ',
-                          [...new Set(db.data.records.map((row) => row[2])), 'Cn'].sort(),
-                        )}
-                        {filterSelect('script', 'スクリプト', values('Script'))}
-                        {filterSelect('age', '追加バージョン', values('Age'))}
-                        {filterSelect('block', 'ブロック', values('Block'))}
-                        {filterSelect(
-                          'plane',
-                          '面',
-                          Array.from({ length: 17 }, (_, i) => String(i)),
-                        )}
-                        {filterSelect(
-                          'binary',
-                          '二値属性',
-                          Object.entries(db.data.properties)
-                            .filter(([, rows]) => rows.every((row) => row[2] === 'Yes'))
-                            .map(([key]) => key)
-                            .sort(),
-                        )}
-                        {filterSelect('bidi', 'Bidi クラス', values('Bidi_Class'))}
-                        {filterSelect(
-                          'combining',
-                          '結合クラス',
-                          [...new Set(db.data.records.map((row) => row[3]))].sort(
-                            (a, b) => Number(a) - Number(b),
-                          ),
-                        )}
+                        {filterSelect('category', '一般カテゴリ', filterOptions.category)}
+                        {filterSelect('script', 'スクリプト', filterOptions.script)}
+                        {filterSelect('age', '追加バージョン', filterOptions.age)}
+                        {filterSelect('block', 'ブロック', filterOptions.block)}
+                        {filterSelect('plane', '面', filterOptions.plane)}
+                        {filterSelect('binary', '二値属性', filterOptions.binary)}
+                        {filterSelect('bidi', 'Bidi クラス', filterOptions.bidi)}
+                        {filterSelect('combining', '結合クラス', filterOptions.combining)}
                       </div>
                       <div className="button-row">
                         <label className="check">
@@ -699,7 +692,6 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                     onSelect={setSelected}
                     onInsert={insertCp}
                     font={prefs.font}
-                    size={prefs.size}
                     colorBy={prefs.colorBy}
                     composite={prefs.composite}
                     onMove={(delta) => {
@@ -770,7 +762,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
               </>
             )}
           </Suspense>
-        </main>
+        </CharacterDisplay>
         <CharacterDetails
           db={db}
           cp={selected}
