@@ -361,34 +361,18 @@ export default function App({ db }: { db: UnicodeDatabase }) {
           size={prefs.size}
           onSizeCommit={setSize}
           fontControls={
-            <>
-              <label>
-                表示フォント
-                <input
-                  aria-label="表示フォント"
-                  list="font-families"
-                  value={prefs.font}
-                  onChange={(event) => update({ font: event.target.value })}
-                />
-              </label>
-              <datalist id="font-families">
-                {[
-                  'sans-serif',
-                  'serif',
-                  'monospace',
-                  'Yu Gothic',
-                  'Yu Mincho',
-                  'Meiryo',
-                  'Segoe UI',
-                  'Segoe UI Symbol',
-                  'Segoe UI Emoji',
-                  'Noto Sans CJK JP',
-                  'Noto Sans Symbols 2',
-                ].map((name) => (
-                  <option key={name}>{name}</option>
-                ))}
-              </datalist>
-            </>
+            <label>
+              表示フォント（名前を入力）
+              <input
+                type="text"
+                aria-label="表示フォント"
+                placeholder="例: Yu Gothic"
+                autoComplete="off"
+                spellCheck={false}
+                value={prefs.font}
+                onChange={(event) => update({ font: event.target.value })}
+              />
+            </label>
           }
           colorControl={
             <select
