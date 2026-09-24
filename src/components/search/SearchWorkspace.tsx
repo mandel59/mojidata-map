@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { UnicodeDatabase } from '../../core/unicode';
+import { isReadingProperty } from '../../core/hanReadings';
 import type { CharacterSearch } from '../../useCharacterSearch';
 import { CharacterConditions } from './CharacterConditions';
 import { CharacterCollection } from '../CharacterCollection';
@@ -89,8 +90,11 @@ export const SearchWorkspace = memo(function SearchWorkspace({
               if (key === 'binary' && value !== undefined) {
                 next.binary = next.binary?.filter((property) => property !== value);
                 if (!next.binary?.length) delete next.binary;
+              } else if (key === 'readings' && value !== undefined && isReadingProperty(value)) {
+                next.readings = { ...next.readings };
+                delete next.readings[value];
+                if (!Object.keys(next.readings).length) delete next.readings;
               } else delete next[key];
-              if (key === 'reading') delete next.language;
               if (key === 'radical') delete next.radicalForm;
               search.run(next);
             }}

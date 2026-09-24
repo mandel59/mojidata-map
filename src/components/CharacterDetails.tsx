@@ -1,6 +1,7 @@
 import { memo, useMemo, useEffect, useState } from 'react';
 import { UtilityDialog } from './UtilityDialog';
 import { codeLabel, hex, isScalar, type UnicodeDatabase } from '../core/unicode';
+import { hanVariants, hanVariantLabels } from '../core/hanVariants';
 import { encodeText } from '../core/encoding';
 import { loadData, peekData, type Variations } from '../data';
 import { copyText, download } from '../platform';
@@ -13,6 +14,7 @@ interface Props {
   bookmarked: boolean;
   onBookmark(): void;
   onInsert(text: string): void;
+  onLocate(cp: number): void;
   notify(message: string): void;
 }
 export const CharacterDetails = memo(function CharacterDetails({
@@ -23,6 +25,7 @@ export const CharacterDetails = memo(function CharacterDetails({
   bookmarked,
   onBookmark,
   onInsert,
+  onLocate,
   notify,
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -38,6 +41,7 @@ export const CharacterDetails = memo(function CharacterDetails({
   const manifest = peekData<{ unihanShards: string[] }>('manifest');
   const hanData = peekData<Record<string, Record<string, string>>>(`unihan/${shard}`);
   const han = hanData?.[hex(cp)] ?? {};
+  const relatedHan = hanVariants(cp, han);
   const variants = variations?.[hex(cp)] ?? [];
   const missing = !variations || !manifest || (manifest.unihanShards.includes(shard) && !hanData);
   const error = loaded.cp === cp ? loaded.error : '';
@@ -154,6 +158,34 @@ export const CharacterDetails = memo(function CharacterDetails({
                 {cps.map(codeLabel).join(' ')}
                 <br />
                 {name}
+              </small>
+            </button>
+          ))}
+        </details>
+      )}
+      {relatedHan.length > 0 && (
+        <details>
+          <summary>漢字の異体字・関連字 ({relatedHan.length})</summary>
+          {relatedHan.map(({ cp: target, relations }) => (
+            <button
+              className="variant"
+              key={target}
+              aria-label={`漢字の異体字 ${codeLabel(target)} へ移動`}
+              title={relations
+                .map(({ property, source }) => `${property}${source ? `: ${source}` : ''}`)
+                .join('\n')}
+              onClick={() => {
+                setOpen(false);
+                onLocate(target);
+              }}
+            >
+              <span style={{ fontFamily: font }}>{String.fromCodePoint(target)}</span>
+              <small>
+                {codeLabel(target)}
+                <br />
+                {[...new Set(relations.map(({ property }) => hanVariantLabels[property]))].join(
+                  '・',
+                )}
               </small>
             </button>
           ))}

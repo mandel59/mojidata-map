@@ -138,8 +138,8 @@ test('combines Han readings, radicals and Unicode attributes in the same query',
   await page.getByLabel('内画数', { exact: true }).selectOption('0');
   await page.getByRole('button', { name: '内画数の条件を追加', exact: true }).click();
   await page.getByRole('tab', { name: '漢字 (Unihan)', exact: true }).click();
-  await page.getByLabel('漢字の読み').fill('shui');
-  await page.getByRole('button', { name: '読み・意味の条件を追加', exact: true }).click();
+  await page.getByLabel('普通話 (Pinyin)', { exact: true }).fill('shui');
+  await page.getByRole('button', { name: '普通話 (Pinyin)の条件を追加', exact: true }).click();
   await expect(
     page.getByRole('button', { name: 'U+6C34 CJK UNIFIED IDEOGRAPH-6C34', exact: true }),
   ).toBeVisible();
@@ -171,10 +171,10 @@ test('ignores a delayed Han result after a newer character query', async ({ page
   });
   await page.goto('/');
   await searchMethod(page, 'han');
-  await page.getByLabel('漢字の読み').fill('zhong');
-  await page.getByRole('button', { name: '読み・意味の条件を追加', exact: true }).click();
+  await page.getByLabel('普通話 (Pinyin)', { exact: true }).fill('zhong');
+  await page.getByRole('button', { name: '普通話 (Pinyin)の条件を追加', exact: true }).click();
   await pending;
-  await page.getByRole('button', { name: /読み・意味: .*zhong を解除/ }).click();
+  await page.getByRole('button', { name: /普通話 .*zhong を解除/ }).click();
   await page.getByLabel('文字を検索', { exact: true }).fill('SNOWMAN');
   await page.getByRole('button', { name: '検索', exact: true }).click();
   await expect(
@@ -259,7 +259,7 @@ test('searches alternate total stroke counts from the unified Unihan category', 
   await expect(page.getByRole('tab', { name: '読み・意味', exact: true })).toHaveCount(0);
   const total = page.getByLabel('総画数', { exact: true });
   const add = page.getByRole('button', { name: '総画数の条件を追加', exact: true });
-  await total.fill('12');
+  await total.selectOption('12');
   const loaded = page.waitForResponse('**/data/han-index.json');
   await add.click();
   await loaded;
@@ -268,19 +268,14 @@ test('searches alternate total stroke counts from the unified Unihan category', 
   await page.getByRole('button', { name: '検索', exact: true }).click();
   const qing = page.getByRole('button', { name: 'U+537F CJK UNIFIED IDEOGRAPH-537F', exact: true });
   await expect(qing).toBeVisible();
-  await total.fill('10');
+  await total.selectOption('10');
   await add.click();
   await expect(page.getByText('1 文字', { exact: true })).toBeVisible();
   await expect(qing).toBeVisible();
-  for (const invalid of ['0', '-1', '1.5']) {
-    await total.fill(invalid);
-    await add.click();
-    expect(await total.evaluate((el: HTMLInputElement) => el.validity.valid)).toBe(false);
-    await expect(
-      page.getByRole('button', { name: '総画数: 10 を解除', exact: true }),
-    ).toBeVisible();
-  }
-  await total.fill('11');
+  await expect(total).toHaveJSProperty('tagName', 'SELECT');
+  await expect(total.locator('option[value="0"]')).toHaveCount(0);
+  await expect(total.locator('option[value="84"]')).toHaveCount(1);
+  await total.selectOption('11');
   await add.click();
   await expect(page.getByText('0 文字', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '総画数: 11 を解除', exact: true }).click();

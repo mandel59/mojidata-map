@@ -11,6 +11,7 @@ test.beforeEach(async ({ page }) => {
 test('browses, inserts, encodes, bookmarks and restores supplementary characters', async ({
   page,
 }) => {
+  await expect(page.locator('.large-glyph')).toHaveCSS('font-family', 'serif');
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.getByRole('button', { name: 'コード指定', exact: true }).click();
@@ -57,8 +58,8 @@ test('search worker finds names, aliases and filtered categories in a production
 
 test('looks up Han readings and real Unihan metadata', async ({ page }) => {
   await searchMethod(page, 'han');
-  await page.getByLabel('漢字の読み').fill('zhong');
-  await page.getByRole('button', { name: '読み・意味の条件を追加', exact: true }).click();
+  await page.getByLabel('普通話 (Pinyin)', { exact: true }).fill('zhong');
+  await page.getByRole('button', { name: '普通話 (Pinyin)の条件を追加', exact: true }).click();
   await page
     .getByRole('button', { name: 'U+4E2D CJK UNIFIED IDEOGRAPH-4E2D', exact: true })
     .click();

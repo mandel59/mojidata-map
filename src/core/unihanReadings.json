@@ -1,0 +1,27 @@
+{
+  "kDefinition": { "label": "英語の意味", "placeholder": "例: water", "match": "text" },
+  "kCantonese": { "label": "広東語 (Jyutping)", "placeholder": "例: seoi2", "match": "toneless" },
+  "kSMSZD2003Readings": {
+    "label": "商務新字典の読み",
+    "placeholder": "例: shuǐ / seoi2",
+    "match": "text"
+  },
+  "kMandarin": { "label": "普通話 (Pinyin)", "placeholder": "例: shui", "match": "toneless" },
+  "kZhuang": { "label": "チワン語", "placeholder": "例: bya", "match": "token" },
+  "kTang": { "label": "唐代音 (Tang)", "placeholder": "例: shuǐ", "match": "text" },
+  "kFanqie": { "label": "反切", "placeholder": "例: 式軌", "match": "text" },
+  "kJapanese": { "label": "日本語（かな）", "placeholder": "例: みず / スイ", "match": "text" },
+  "kJapaneseOn": {
+    "label": "日本語の音読み（ローマ字）",
+    "placeholder": "例: sui",
+    "match": "text"
+  },
+  "kJapaneseKun": {
+    "label": "日本語の訓読み（ローマ字）",
+    "placeholder": "例: mizu",
+    "match": "text"
+  },
+  "kHangul": { "label": "韓国語（ハングル）", "placeholder": "例: 수", "match": "text" },
+  "kKorean": { "label": "韓国語 (Yale)", "placeholder": "例: swu", "match": "text" },
+  "kVietnamese": { "label": "ベトナム語", "placeholder": "例: thuỷ", "match": "text" }
+}

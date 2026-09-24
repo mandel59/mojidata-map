@@ -1,3 +1,5 @@
+import { isReadingProperty, readingMatcher, type ReadingProperty } from './hanReadings';
+
 export type Range = [number, number, string];
 export type CharacterRecord = [number, number, ...string[]];
 export type RadicalForm = '' | "'" | "''" | "'''";
@@ -12,6 +14,7 @@ export interface UnicodeData {
   labels: Record<string, Record<string, string>>;
   notes: Record<string, string[]>;
   radicalForms: Record<string, RadicalForm[]>;
+  hanTotalStrokes: string[];
 }
 
 export const MAX_CP = 0x10ffff;
@@ -203,27 +206,27 @@ export type HanRow = [
   zhuang: string,
   definition: string,
   alternateTotalStrokes: string,
+  ...otherReadings: string[],
 ];
+export interface HanIndex {
+  fields: string[];
+  rows: HanRow[];
+}
 export interface HanQuery {
   radical?: string;
   // undefined includes all forms; the empty string requires the traditional form.
   radicalForm?: RadicalForm;
   strokes?: string;
   totalStrokes?: string;
-  reading?: string;
-  language?: 'mandarin' | 'cantonese' | 'zhuang' | 'definition';
+  readings?: Partial<Record<ReadingProperty, string>>;
 }
-const readingKey = (value: string) =>
-  value
-    .toLowerCase()
-    .replace(/ü/g, 'v')
-    .normalize('NFD')
-    .replace(/u\u0308/g, 'v')
-    .replace(/[\u0300-\u036f\d]/g, '');
-export function searchHan(rows: HanRow[], query: HanQuery): number[] {
-  const index = { mandarin: 3, cantonese: 4, zhuang: 5, definition: 6 }[
-    query.language ?? 'mandarin'
-  ];
+export function searchHan({ fields, rows }: HanIndex, query: HanQuery): number[] {
+  const readings = Object.entries(query.readings ?? {})
+    .filter(([, value]) => value?.trim())
+    .map(([key, value]) => ({
+      column: fields.indexOf(key) + 1,
+      matches: isReadingProperty(key) ? readingMatcher(key, value) : () => false,
+    }));
   return rows
     .filter((row) => {
       if (
@@ -248,17 +251,10 @@ export function searchHan(rows: HanRow[], query: HanQuery): number[] {
         !row[7].split(/\s+/).some((value) => /^([0-9]+):/.exec(value)?.[1] === query.totalStrokes)
       )
         return false;
-      if (query.reading) {
-        const value = String(row[index]);
-        if (query.language === 'definition')
-          return value.toLowerCase().includes(query.reading.toLowerCase());
-        if (query.language === 'zhuang')
-          return value.toLowerCase().split(/\s+/).includes(query.reading.toLowerCase());
-        return value
-          .split(/\s+/)
-          .some((syllable) => readingKey(syllable) === readingKey(query.reading!));
-      }
-      return true;
+      return readings.every(({ column, matches }) => {
+        const value = row[column];
+        return typeof value === 'string' && value.length > 0 && matches(value);
+      });
     })
     .map((row) => row[0]);
 }

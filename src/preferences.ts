@@ -11,7 +11,7 @@ export interface Preferences {
   dark: boolean;
 }
 const defaults: Preferences = {
-  font: 'sans-serif',
+  font: 'serif',
   size: 30,
   bookmarks: [],
   buffer: '',

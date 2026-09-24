@@ -180,7 +180,7 @@ export const FontPanel = memo(function FontPanel({
               addedFaces.current.forEach((face) => document.fonts.delete(face));
               addedFaces.current = [];
               setFonts([]);
-              if (family.startsWith('Mojidata Imported ')) setFamily('sans-serif');
+              if (family.startsWith('Mojidata Imported ')) setFamily('serif');
             }}
           >
             追加フォントを解除

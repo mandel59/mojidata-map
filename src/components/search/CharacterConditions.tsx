@@ -1,5 +1,12 @@
 import { memo, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { UnicodeDatabase } from '../../core/unicode';
+import {
+  isReadingProperty,
+  readingDefinitions,
+  readingLabels,
+  readingProperties,
+  type ReadingProperty,
+} from '../../core/hanReadings';
 import type { CharacterQuery } from '../../core/searchConditions';
 import { ConditionChips } from './ConditionChips';
 
@@ -17,13 +24,13 @@ type Field =
   | 'radical'
   | 'strokes'
   | 'totalStrokes'
-  | 'reading';
+  | ReadingProperty;
 const labels: Record<Field | 'text', string> = {
   text: '文字・名前',
   radical: '康熙部首',
   strokes: '内画数',
   totalStrokes: '総画数',
-  reading: '読み・意味',
+  ...readingLabels,
   category: '一般カテゴリ',
   script: 'スクリプト',
   block: 'ブロック',
@@ -43,7 +50,7 @@ const categories: { id: string; label: string; fields: Field[] }[] = [
   {
     id: 'unihan',
     label: '漢字 (Unihan)',
-    fields: ['radical', 'strokes', 'totalStrokes', 'reading'],
+    fields: ['radical', 'strokes', 'totalStrokes', ...readingProperties],
   },
 ];
 
@@ -73,21 +80,15 @@ export const CharacterConditions = memo(function CharacterConditions({
   const id = useId();
   const [category, setCategory] = useState(0);
   const [expanded, setExpanded] = useState(() => !matchMedia('(max-width: 600px)').matches);
-  const [draft, setDraft] = useState<Partial<Record<Field, string>>>(() =>
-    query.radical ? { radical: query.radical } : {},
-  );
-  const [language, setLanguage] = useState<CharacterQuery['language']>('mandarin');
+  const [draft, setDraft] = useState<Partial<Record<Field, string>>>(() => ({
+    ...query.readings,
+    ...(query.radical ? { radical: query.radical } : {}),
+  }));
   const [radicalForm, setRadicalForm] = useState<CharacterQuery['radicalForm']>(query.radicalForm);
   const availableRadicalForms: readonly string[] = db.data.radicalForms[draft.radical ?? ''] ?? [];
   const validRadical =
     availableRadicalForms.length > 0 &&
     (radicalForm === undefined || availableRadicalForms.includes(radicalForm));
-  const languages = {
-    mandarin: '普通話 (Pinyin)',
-    cantonese: '広東語 (Jyutping)',
-    zhuang: 'チワン語',
-    definition: '英語の意味',
-  };
   const tabs = useRef<HTMLDivElement>(null);
   const options = useMemo(() => {
     const collator = new Intl.Collator(undefined, { numeric: true });
@@ -109,7 +110,7 @@ export const CharacterConditions = memo(function CharacterConditions({
       ),
       radical: Array.from({ length: 214 }, (_, i) => String(i + 1)),
       strokes: Array.from({ length: 66 }, (_, i) => String(i - 5)),
-      reading: [],
+      totalStrokes: db.data.hanTotalStrokes,
       aliases: ['false'],
       wholeWord: ['true'],
     };
@@ -117,13 +118,11 @@ export const CharacterConditions = memo(function CharacterConditions({
   const valueLabel = (key: string, value: string) =>
     key === 'radical'
       ? `${String.fromCodePoint(0x2f00 + Number(value) - 1)} ${value}`
-      : key === 'reading'
-        ? `${languages[query.language ?? 'mandarin']}: ${value}`
-        : key === 'aliases'
-          ? '正式名のみ'
-          : key === 'wholeWord'
-            ? '単語全体で一致'
-            : value;
+      : key === 'aliases'
+        ? '正式名のみ'
+        : key === 'wholeWord'
+          ? '単語全体で一致'
+          : value;
   const radicalSuffix =
     query.radicalForm ??
     ((db.data.radicalForms[query.radical ?? '']?.length ?? 0) > 1 ? '（すべての形）' : '');
@@ -133,6 +132,10 @@ export const CharacterConditions = memo(function CharacterConditions({
         id: `binary:${value}`,
         label: `${labels.binary}: ${value}`,
       }));
+    if (isReadingProperty(key)) {
+      const value = query.readings?.[key];
+      return value ? [{ id: `readings:${key}`, label: `${labels[key]}: ${value}` }] : [];
+    }
     const value = query[key];
     if (key === 'aliases' ? value !== false : !value) return [];
     const display = key === 'radical' ? `${value}${radicalSuffix}` : valueLabel(key, String(value));
@@ -171,7 +174,9 @@ export const CharacterConditions = memo(function CharacterConditions({
         onRemove={(key) =>
           key.startsWith('binary:')
             ? onRemove('binary', key.slice('binary:'.length))
-            : onRemove(key as keyof CharacterQuery)
+            : key.startsWith('readings:')
+              ? onRemove('readings', key.slice('readings:'.length))
+              : onRemove(key as keyof CharacterQuery)
         }
         onClear={onClear}
       />
@@ -211,7 +216,7 @@ export const CharacterConditions = memo(function CharacterConditions({
               {index === category &&
                 item.fields.map((key) => {
                   const value = draft[key] ?? '';
-                  const current = query[key];
+                  const current = isReadingProperty(key) ? query.readings?.[key] : query[key];
                   return (
                     <form
                       className="condition-field"
@@ -219,6 +224,11 @@ export const CharacterConditions = memo(function CharacterConditions({
                       onSubmit={(event) => {
                         event.preventDefault();
                         if (!value || (key === 'radical' && !validRadical)) return;
+                        if (isReadingProperty(key)) {
+                          if (!value.trim()) return;
+                          onApply({ readings: { ...query.readings, [key]: value.trim() } });
+                          return;
+                        }
                         if (key === 'binary') {
                           if (query.binary?.includes(value)) return;
                           onApply({ binary: [...(query.binary ?? []), value] });
@@ -235,53 +245,24 @@ export const CharacterConditions = memo(function CharacterConditions({
                                   ? String(Number(value))
                                   : value,
                           ...(key === 'radical' ? { radicalForm } : {}),
-                          ...(key === 'reading' ? { language } : {}),
                         });
                       }}
                     >
                       <label htmlFor={`${id}-${key}`}>{labels[key]}</label>
-                      {key === 'reading' ? (
-                        <>
-                          <select
-                            className="reading-language"
-                            aria-label="読みの種類"
-                            value={language}
-                            onChange={(event) =>
-                              setLanguage(event.target.value as CharacterQuery['language'])
-                            }
-                          >
-                            {Object.entries(languages).map(([key, label]) => (
-                              <option value={key} key={key}>
-                                {label}
-                              </option>
-                            ))}
-                          </select>
-                          <input
-                            id={`${id}-${key}`}
-                            aria-label="漢字の読み"
-                            placeholder="例: shui"
-                            value={value}
-                            onChange={(event) =>
-                              setDraft({ ...draft, reading: event.target.value })
-                            }
-                          />
-                        </>
-                      ) : key === 'totalStrokes' ? (
+                      {isReadingProperty(key) ? (
                         <input
                           id={`${id}-${key}`}
-                          type="number"
-                          min="1"
-                          step="1"
-                          placeholder="例: 12"
-                          aria-describedby={`${id}-total-strokes-help`}
+                          placeholder={readingDefinitions[key].placeholder}
+                          title={key}
                           value={value}
-                          onChange={(event) =>
-                            setDraft({ ...draft, totalStrokes: event.target.value })
-                          }
+                          onChange={(event) => setDraft({ ...draft, [key]: event.target.value })}
                         />
                       ) : (
                         <select
                           id={`${id}-${key}`}
+                          aria-describedby={
+                            key === 'totalStrokes' ? `${id}-total-strokes-help` : undefined
+                          }
                           value={value}
                           onChange={(event) => {
                             const next = event.target.value;
@@ -344,7 +325,6 @@ export const CharacterConditions = memo(function CharacterConditions({
                           (key === 'radical' && !validRadical) ||
                           (key === 'binary' && query.binary?.includes(value)) ||
                           (String(current) === value &&
-                            (key !== 'reading' || query.language === language) &&
                             (key !== 'radical' || query.radicalForm === radicalForm))
                         }
                       >

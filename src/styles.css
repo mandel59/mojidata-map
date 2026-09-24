@@ -1455,9 +1455,6 @@ td button {
     border-bottom: 1px solid var(--border);
   }
 }
-.condition-field .reading-language {
-  grid-column: 1 / -1;
-}
 .sequence-preview {
   font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;
   overflow-wrap: anywhere;

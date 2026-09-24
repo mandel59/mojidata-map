@@ -146,6 +146,12 @@ def build(update_lock=False):
                 cp, prop, value = line.split("\t", 2)
                 unihan[cp[2:]][prop] = value
     search_fields = ["kRSUnicode", "kTotalStrokes", "kMandarin", "kCantonese", "kZhuang", "kDefinition", "kAlternateTotalStrokes"]
+    reading_fields = json.loads((ROOT / "src/core/unihanReadings.json").read_text(encoding="utf-8"))
+    search_fields.extend(key for key in reading_fields if key not in search_fields)
+    total_strokes = set()
+    for values in unihan.values():
+        total_strokes.update(int(value) for value in values.get("kTotalStrokes", "").split())
+        total_strokes.update(int(value.split(":")[0]) for value in values.get("kAlternateTotalStrokes", "").split() if value != "-")
     han_index = [[int(cp, 16), *[values.get(key, "") for key in search_fields]] for cp, values in unihan.items()]
     han_index.sort(key=lambda row: row[0])
     shards = defaultdict(dict)
@@ -164,7 +170,7 @@ def build(update_lock=False):
                           "version": description[1], "group": group, "subgroup": subgroup})
 
     core = {"version": VERSION, "emojiVersion": emoji_version, "records": records, "names": names, "aliases": dict(aliases),
-            "properties": props, "defaults": defaults, "labels": dict(labels), "notes": dict(notes), "radicalForms": dict(radical_forms)}
+            "properties": props, "defaults": defaults, "labels": dict(labels), "notes": dict(notes), "radicalForms": dict(radical_forms), "hanTotalStrokes": [str(value) for value in sorted(total_strokes)]}
     OUTPUT.mkdir(parents=True, exist_ok=True)
 
     def write(name, value):

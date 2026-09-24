@@ -6,7 +6,7 @@ import {
   searchCharacters,
   searchHan,
   type UnicodeData,
-  type HanRow,
+  type HanIndex,
 } from '../src/core/unicode';
 import { encodeFile, encodeText, textStats } from '../src/core/encoding';
 const data: UnicodeData = JSON.parse(readFileSync('public/data/unicode.json', 'utf8'));
@@ -86,14 +86,11 @@ describe('official Unicode 18 data', () => {
     expect(db.property(0x20, 'White_Space')).toBe('Yes');
   });
   test('intersects Unihan candidates with Unicode conditions, direct points and planes', () => {
-    const { rows } = JSON.parse(readFileSync('public/data/han-index.json', 'utf8')) as {
-      rows: HanRow[];
-    };
-    const candidates = searchHan(rows, {
+    const index = JSON.parse(readFileSync('public/data/han-index.json', 'utf8')) as HanIndex;
+    const candidates = searchHan(index, {
       radical: '85',
       strokes: '0',
-      reading: 'shui',
-      language: 'mandarin',
+      readings: { kMandarin: 'shui' },
     });
     expect(candidates).toContain(0x6c34);
     expect(
@@ -147,10 +144,8 @@ test('supplementary encodings and file byte order preserve Unicode scalars', () 
 });
 
 test('Unihan radical-stroke pairs and readings use real data', () => {
-  const { rows } = JSON.parse(readFileSync('public/data/han-index.json', 'utf8')) as {
-    rows: HanRow[];
-  };
-  expect(searchHan(rows, { radical: '85', strokes: '11' })).toContain(0x6f22);
-  expect(searchHan(rows, { reading: 'zhong', language: 'mandarin' })).toContain(0x4e2d);
-  expect(searchHan(rows, { reading: 'zung1', language: 'cantonese' })).toContain(0x4e2d);
+  const index = JSON.parse(readFileSync('public/data/han-index.json', 'utf8')) as HanIndex;
+  expect(searchHan(index, { radical: '85', strokes: '11' })).toContain(0x6f22);
+  expect(searchHan(index, { readings: { kMandarin: 'zhong' } })).toContain(0x4e2d);
+  expect(searchHan(index, { readings: { kCantonese: 'zung1' } })).toContain(0x4e2d);
 });

@@ -533,6 +533,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
               bookmarked={prefs.bookmarks.includes(detailCp)}
               onBookmark={bookmark}
               onInsert={insert}
+              onLocate={locate}
               notify={notify}
             />
           )

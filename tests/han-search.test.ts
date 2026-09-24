@@ -1,6 +1,11 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { expect, test } from 'vitest';
-import { searchHan, type HanRow, type UnicodeData } from '../src/core/unicode';
+import {
+  searchHan as searchIndex,
+  type HanRow,
+  type HanQuery,
+  type UnicodeData,
+} from '../src/core/unicode';
 import { hasHanConditions } from '../src/core/searchConditions';
 
 const { fields, rows } = JSON.parse(readFileSync('public/data/han-index.json', 'utf8')) as {
@@ -8,7 +13,9 @@ const { fields, rows } = JSON.parse(readFileSync('public/data/han-index.json', '
   rows: HanRow[];
 };
 
-test('indexes all source-specific total stroke counts without losing their values', () => {
+const searchHan = (rows: HanRow[], query: HanQuery) => searchIndex({ fields, rows }, query);
+
+test('indexes all Han search fields without losing source values', () => {
   expect(fields[6]).toBe('kAlternateTotalStrokes');
   const indexed = new Map(rows.map((row) => [row[0], row]));
   for (const file of readdirSync('public/data/unihan')) {
@@ -17,7 +24,9 @@ test('indexes all source-specific total stroke counts without losing their value
       Record<string, string>
     >;
     for (const [cp, properties] of Object.entries(shard)) {
-      expect(indexed.get(parseInt(cp, 16))?.[7]).toBe(properties.kAlternateTotalStrokes ?? '');
+      expect(indexed.get(parseInt(cp, 16))?.slice(1)).toEqual(
+        fields.map((field) => properties[field] ?? ''),
+      );
     }
   }
 });
@@ -76,7 +85,7 @@ test('matches radical, form and residual strokes within the same entry', () => {
 
 test('combines total strokes with residual strokes and readings, and triggers Han loading alone', () => {
   const water = rows.filter(([cp]) => cp === 0x6c34);
-  const query = { radical: '85', strokes: '0', totalStrokes: '4', reading: 'shui' };
+  const query = { radical: '85', strokes: '0', totalStrokes: '4', readings: { kMandarin: 'shui' } };
   expect(searchHan(water, query)).toEqual([0x6c34]);
   expect(searchHan(water, { ...query, totalStrokes: '3' })).toEqual([]);
   expect(hasHanConditions({ totalStrokes: '12' })).toBe(true);
@@ -97,4 +106,77 @@ test('defines only the radical and suffix combinations found in Unicode 18', () 
   // The non-Chinese form exists without a Chinese simplified form for radical 208.
   expect(data.radicalForms['208']).toEqual(['', "''"]);
   expect(data.radicalForms['212']).toEqual(['', "'", "''", "'''"]);
+});
+
+test('covers all thirteen Readings properties from the Unicode search page', () => {
+  const properties = [
+    'kDefinition',
+    'kCantonese',
+    'kSMSZD2003Readings',
+    'kMandarin',
+    'kZhuang',
+    'kTang',
+    'kFanqie',
+    'kJapanese',
+    'kJapaneseOn',
+    'kJapaneseKun',
+    'kHangul',
+    'kKorean',
+    'kVietnamese',
+  ];
+  for (const property of properties) expect(fields).toContain(property);
+  const water = rows.filter(([cp]) => cp === 0x6c34);
+  for (const [property, text] of Object.entries({
+    kDefinition: 'WATER',
+    kCantonese: 'seoi2',
+    kSMSZD2003Readings: 'seoi2',
+    kMandarin: 'shui',
+    kTang: 'shuǐ',
+    kFanqie: '式軌',
+    kJapanese: 'みず',
+    kJapaneseOn: 'sui',
+    kJapaneseKun: 'mizu',
+    kHangul: '수',
+    kKorean: 'swu',
+    kVietnamese: 'thuỷ',
+  }))
+    expect(searchHan(water, { readings: { [property]: text } })).toEqual([0x6c34]);
+  expect(searchHan(rows, { readings: { kZhuang: 'gyaeq' } })).toContain(0x3200f);
+});
+
+test('combines readings with AND and matches normalized text without stripping Vietnamese marks', () => {
+  const water = rows.filter(([cp]) => cp === 0x6c34);
+  expect(
+    searchHan(water, { readings: { kJapanese: 'みず', kMandarin: 'shui', kHangul: '수' } }),
+  ).toEqual([0x6c34]);
+  expect(searchHan(water, { readings: { kJapanese: 'みず', kMandarin: 'huo' } })).toEqual([]);
+  expect(searchHan(water, { readings: { kVietnamese: 'thuỷ'.normalize('NFD') } })).toEqual([
+    0x6c34,
+  ]);
+  expect(searchHan(water, { readings: { kVietnamese: 'thuy' } })).toEqual([]);
+  expect(searchHan(water, { readings: { kHangul: '수'.normalize('NFD') } })).toEqual([0x6c34]);
+  expect(hasHanConditions({ readings: { kJapanese: 'みず' } })).toBe(true);
+  expect(hasHanConditions({ readings: { kJapanese: '  ' } })).toBe(false);
+});
+
+test('offers every recorded primary or alternate total stroke count in numeric order', () => {
+  const data: UnicodeData = JSON.parse(readFileSync('public/data/unicode.json', 'utf8'));
+  const counts = new Set(
+    rows
+      .flatMap((row) => [
+        ...row[2].split(/\s+/),
+        ...row[7]
+          .split(/\s+/)
+          .filter((value) => value.includes(':'))
+          .map((value) => value.split(':')[0]),
+      ])
+      .filter(Boolean),
+  );
+  expect(data.hanTotalStrokes).toEqual([...counts].sort((a, b) => Number(a) - Number(b)));
+  expect(data.hanTotalStrokes).toContain('84');
+});
+
+test('ignores absent reading conditions and does not match empty data with tone-only input', () => {
+  expect(searchHan(rows, { readings: { kJapanese: undefined } })).toHaveLength(rows.length);
+  expect(searchHan(rows, { readings: { kMandarin: '2' } })).toEqual([]);
 });

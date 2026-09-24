@@ -84,8 +84,8 @@ test('keeps delayed and cached Unihan details tied to the current selection', as
     await gate;
     await route.fulfill({
       json: {
-        '4E00': { kDefinition: 'first character fixture' },
-        '4E01': { kDefinition: 'second character fixture' },
+        '4E00': { kDefinition: 'first character fixture', kSimplifiedVariant: 'U+4E02' },
+        '4E01': { kDefinition: 'second character fixture', kSimplifiedVariant: 'U+4E03' },
       },
     });
   });
@@ -96,9 +96,13 @@ test('keeps delayed and cached Unihan details tied to the current selection', as
   await page.getByText('Unihan データ', { exact: true }).click();
   await expect(page.getByText('second character fixture', { exact: true })).toBeVisible();
   await expect(page.getByText('first character fixture', { exact: true })).toHaveCount(0);
+  await expect(page.locator('[aria-label="漢字の異体字 U+4E03 へ移動"]')).toHaveCount(1);
+  await expect(page.locator('[aria-label="漢字の異体字 U+4E02 へ移動"]')).toHaveCount(0);
   await page.locator('.character-cell.selected').press('ArrowLeft');
   await expect(page.getByText('first character fixture', { exact: true })).toBeVisible();
   await expect(page.getByText('second character fixture', { exact: true })).toHaveCount(0);
+  await expect(page.locator('[aria-label="漢字の異体字 U+4E02 へ移動"]')).toHaveCount(1);
+  await expect(page.locator('[aria-label="漢字の異体字 U+4E03 へ移動"]')).toHaveCount(0);
   await goTo(page, '3042');
   await expect(page.getByText('Unihan データ', { exact: true })).toHaveCount(0);
   await goTo(page, '4E01');
