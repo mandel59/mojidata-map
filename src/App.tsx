@@ -233,7 +233,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
   const tabs: [Tab, string][] = [
     ['map', '文字マップ'],
     ['search', '文字検索'],
-    ['sequences', 'シーケンス検索'],
+    ['sequences', '絵文字検索'],
     ['fonts', 'フォント'],
     ['statistics', 'Unicode データ'],
     ['bookmarks', `ブックマーク (${prefs.bookmarks.length})`],

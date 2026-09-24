@@ -49,13 +49,13 @@ try {
   await page.setViewportSize({ width: 390, height: 600 });
   await page.screenshot({ path: 'var/screenshots/search-mobile.png' });
   await page.setViewportSize({ width: 1024, height: 600 });
-  await page.getByRole('button', { name: 'シーケンス検索', exact: true }).click();
+  await page.getByRole('button', { name: '絵文字検索', exact: true }).click();
   await page.getByLabel('英語の名前').fill('family: man, woman, girl, boy');
   await page.getByRole('button', { name: 'family: man, woman, girl, boy', exact: true }).click();
   await page.screenshot({ path: 'var/screenshots/sequence-laptop.png' });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: 'var/screenshots/sequence-mobile.png' });
-  await page.getByRole('button', { name: 'シーケンス情報', exact: true }).click();
+  await page.getByRole('button', { name: '絵文字情報', exact: true }).click();
   await page.screenshot({ path: 'var/screenshots/sequence-mobile-detail.png' });
   console.log(
     'Saved main UI, search, sequence previews, About and credits screenshots in var/screenshots/.',

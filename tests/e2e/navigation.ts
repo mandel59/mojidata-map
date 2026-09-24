@@ -5,7 +5,7 @@ export async function searchMethod(
   method: 'unicode' | 'han' | 'han-readings' | 'emoji',
 ) {
   await page.getByLabel('ツールを選択').waitFor({ state: 'attached' });
-  const label = method === 'emoji' ? 'シーケンス検索' : '文字検索';
+  const label = method === 'emoji' ? '絵文字検索' : '文字検索';
   const tab = page.getByRole('button', { name: label, exact: true });
   if (await tab.isVisible()) await tab.click();
   else

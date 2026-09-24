@@ -12,7 +12,7 @@ test('shows map navigation only in the map and preserves search results across t
   await expect(page.getByRole('button', { name: '次のページ', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: '次のページ', exact: true }).click();
   const cp = await page.locator('.character-cell.selected').getAttribute('data-cp');
-  for (const tool of ['フォント', 'Unicode データ', 'シーケンス検索', 'ブックマーク (0)']) {
+  for (const tool of ['フォント', 'Unicode データ', '絵文字検索', 'ブックマーク (0)']) {
     await page.getByRole('button', { name: tool, exact: true }).click();
     await expect(page.getByLabel('Unicode 面')).toHaveCount(0);
     await expect(page.getByLabel('ブロックへ移動')).toHaveCount(0);
@@ -203,7 +203,7 @@ for (const viewport of [
     await page.getByLabel('英語の名前').fill('family: man, woman, girl, boy');
     await page.getByRole('button', { name: 'family: man, woman, girl, boy', exact: true }).click();
     const preview = page.getByRole('complementary', {
-      name: viewport.width > 700 ? 'シーケンスの詳細' : '選択中のシーケンス',
+      name: viewport.width > 700 ? '絵文字の詳細' : '選択中の絵文字',
       exact: true,
     });
     await expect(preview).toBeInViewport();
@@ -211,7 +211,7 @@ for (const viewport of [
     expect(box.x).toBe(initial!.x);
     expect(box.width).toBe(initial!.width);
     if (viewport.width <= 700)
-      await page.getByRole('button', { name: 'シーケンス情報', exact: true }).click();
+      await page.getByRole('button', { name: '絵文字情報', exact: true }).click();
     await page.getByRole('button', { name: 'バッファに追加', exact: true }).click();
     await expect(page.getByLabel('編集テキスト')).toHaveValue('👨‍👩‍👧‍👦');
     if (viewport.width <= 700) await page.keyboard.press('Escape');

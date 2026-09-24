@@ -56,33 +56,33 @@ export const SequenceDetails = memo(function SequenceDetails({
       </dl>
     </div>
   ) : (
-    <p className="muted">シーケンスを選択すると、ここに詳細を表示します。</p>
+    <p className="muted">絵文字を選択すると、ここに詳細を表示します。</p>
   );
   if (!compact)
     return (
-      <aside className="details-panel" aria-label="シーケンスの詳細">
+      <aside className="details-panel" aria-label="絵文字の詳細">
         {content}
       </aside>
     );
   return (
     <>
-      <aside className="detail-strip" aria-label="選択中のシーケンス">
+      <aside className="detail-strip" aria-label="選択中の絵文字">
         <span className="strip-glyph" dir="ltr">
           {text}
         </span>
         <div>
-          <strong>{sequence?.name ?? 'シーケンスを選択'}</strong>
+          <strong>{sequence?.name ?? '絵文字を選択'}</strong>
           <span>{sequence?.cps.map(codeLabel).join(' ')}</span>
         </div>
         <button disabled={!sequence} onClick={() => onInsert(text)}>
           追加
         </button>
         <button disabled={!sequence} aria-haspopup="dialog" onClick={() => setOpen(true)}>
-          シーケンス情報
+          絵文字情報
         </button>
       </aside>
       {open && (
-        <UtilityDialog title="シーケンス情報" onClose={() => setOpen(false)}>
+        <UtilityDialog title="絵文字情報" onClose={() => setOpen(false)}>
           {content}
         </UtilityDialog>
       )}
