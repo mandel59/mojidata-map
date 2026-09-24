@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { UnicodeDatabase, codeLabel, isCodePoint, isScalar, parseCodePoint } from './core/unicode';
-import { SearchField } from './components/search/SearchField';
+import { MapSearch } from './components/search/MapSearch';
+import { useSearchWorker } from './useSearchWorker';
 import { SearchWorkspace } from './components/search/SearchWorkspace';
 import { SequenceDetails } from './components/SequenceDetails';
 import type { Emoji } from './data';
@@ -50,11 +51,11 @@ export default function App({ db }: { db: UnicodeDatabase }) {
   const [tab, setTab] = useState<Tab>('map');
   const [plane, setPlane] = useState(initial >>> 16);
   const [pageStart, setPageStart] = useState(initial - (initial % PAGE_SIZE));
-  const [quickSearch, setQuickSearch] = useState('');
   const [sequencesOpened, setSequencesOpened] = useState(false);
   const [selectedEmoji, setSelectedEmoji] = useState<Emoji | null>(null);
   const [focusRequest, setFocusRequest] = useState(0);
-  const search = useCharacterSearch();
+  const searchCharacters = useSearchWorker();
+  const search = useCharacterSearch(searchCharacters);
   const [mapSelected, setMapSelected] = useState(initial);
   const [bookmarkPage, setBookmarkPage] = useState(0);
   const [notice, setNotice] = useState('');
@@ -90,7 +91,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
     tab === 'bookmarks' ||
     tab === 'sequences' ||
     (tab === 'search' && searchSession.selected !== null);
-  const showSettings = tab === 'map' || tab === 'bookmarks';
+  const showSettings = tab === 'bookmarks';
   const selectedBlock = db.property(mapSelected, 'Block');
   const currentFont = prefs.composite[db.property(detailCp, 'Block')] || prefs.font;
   const notify = useCallback((message: string) => {
@@ -183,10 +184,6 @@ export default function App({ db }: { db: UnicodeDatabase }) {
     },
     [search.showCollection],
   );
-  const runQuickSearch = useCallback(() => {
-    search.run({ text: quickSearch, aliases: true });
-    setTab('search');
-  }, [quickSearch, search.run]);
   const selectMap = useCallback((cp: number) => {
     setMapSelected(cp);
     setSelected(cp);
@@ -312,6 +309,9 @@ export default function App({ db }: { db: UnicodeDatabase }) {
               Enter で編集バッファへ追加します。矢印キーで文字を移動できます。
             </p>
             <p>
+              文字マップの検索は現在位置の次の一致へ移動し、末尾から先頭へ戻ります。同じ条件で検索を繰り返すと順に移動できます。
+            </p>
+            <p>
               Ctrl/Cmd+F: 文字検索へ移動 / 編集バッファ内の F2:
               カーソル位置の文字を探す。設定、ブックマーク、編集テキストはこの端末に保存します。
             </p>
@@ -329,11 +329,16 @@ export default function App({ db }: { db: UnicodeDatabase }) {
           </div>
         </UtilityDialog>
       )}
-      {tab === 'map' && (
-        <SearchField value={quickSearch} onChange={setQuickSearch} onSearch={runQuickSearch} />
-      )}
       <div className={`workspace ${showDetails ? 'with-details' : ''}`}>
         <CharacterDisplay
+          searchBar={
+            <MapSearch
+              active={tab === 'map'}
+              selected={mapSelected}
+              searchCharacters={searchCharacters}
+              onLocate={locate}
+            />
+          }
           navigation={
             tab === 'map' ? (
               <>

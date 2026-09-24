@@ -5,11 +5,15 @@ export const SearchField = memo(function SearchField({
   onChange,
   onSearch,
   busy = false,
+  disabled = false,
+  status = '',
 }: {
   value: string;
   onChange(value: string): void;
   onSearch(): void;
   busy?: boolean;
+  disabled?: boolean;
+  status?: string;
 }) {
   return (
     <form
@@ -27,7 +31,12 @@ export const SearchField = memo(function SearchField({
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />
-      <button className="primary" type="submit" disabled={busy}>
+      {status && (
+        <span className="search-status" role="status">
+          {status}
+        </span>
+      )}
+      <button className="primary" type="submit" disabled={busy || disabled}>
         検索
       </button>
     </form>

@@ -6,6 +6,7 @@ test('shows map navigation only in the map and preserves search results across t
 }) => {
   await page.goto('/?cp=3042');
   await page.getByRole('button', { name: '次のページ', exact: true }).click();
+  await searchMethod(page, 'unicode');
   await page.getByLabel('文字を検索', { exact: true }).fill('LATIN');
   await page.getByRole('button', { name: '検索', exact: true }).click();
   await expect(page.getByRole('button', { name: '次のページ', exact: true })).toBeEnabled();
@@ -30,8 +31,13 @@ test('shows map navigation only in the map and preserves search results across t
   await expect(page.getByLabel('文字を検索', { exact: true })).toBeFocused();
   await expect(page.getByLabel('文字を検索', { exact: true })).toHaveValue('GREEK');
   await page.getByRole('button', { name: '文字マップ', exact: true }).click();
+  await page.getByLabel('文字を検索', { exact: true }).fill('SNOWMAN');
   await page.getByRole('button', { name: '検索', exact: true }).click();
-  await expect(page.getByLabel('文字を検索', { exact: true })).toHaveValue('LATIN');
+  await expect(page.locator('.character-cell.selected')).toHaveAttribute('data-cp', String(0x2603));
+  await searchMethod(page, 'unicode');
+  await expect(page.getByLabel('文字を検索', { exact: true })).toHaveValue('GREEK');
+  await expect(page.locator('.character-cell.selected')).toHaveAttribute('data-cp', cp!);
+  await expect(page.locator('.pagination')).toContainText('2 /');
 });
 
 test('adds, replaces and removes condition chips with keyboard-operable vertical tabs', async ({

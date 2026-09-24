@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CharacterQuery } from './core/searchConditions';
+import type { SearchCharacters } from './useSearchWorker';
 
 export interface SearchSession {
   points: number[] | null;
@@ -20,49 +21,44 @@ const emptySession = (): SearchSession => ({
 
 // Search results survive tool switches. Only the latest submitted query can
 // replace them, including when a previous Unihan request finishes later.
-export function useCharacterSearch() {
+export function useCharacterSearch(searchCharacters: SearchCharacters) {
   const [query, setQuery] = useState<CharacterQuery>({ aliases: true });
   const [session, setSession] = useState<SearchSession>(emptySession);
-  const worker = useRef<Worker | null>(null);
   const latest = useRef(0);
-  useEffect(() => {
-    const instance = new Worker(new URL('./search.worker.ts', import.meta.url), { type: 'module' });
-    worker.current = instance;
-    instance.onmessage = (
-      event: MessageEvent<{ id: number; results?: number[]; error?: string }>,
-    ) => {
-      const { id, results, error } = event.data;
-      if (id !== latest.current) return;
-      setSession((current) => ({
-        ...current,
-        busy: false,
-        error: error ?? '',
-        points: results ?? [],
-        selected: results?.[0] ?? null,
-        page: 0,
-      }));
-    };
-    instance.onerror = (event) =>
-      setSession((current) =>
-        current.busy
-          ? { ...current, busy: false, error: `検索を開始できません: ${event.message}` }
-          : current,
+  useEffect(
+    () => () => {
+      latest.current++;
+    },
+    [],
+  );
+  const run = useCallback(
+    (query: CharacterQuery) => {
+      const id = ++latest.current;
+      setQuery(query);
+      setSession({
+        ...emptySession(),
+        title: query.text?.trim() ? `「${query.text}」の検索結果` : '条件に一致する文字',
+        busy: true,
+      });
+      void searchCharacters(query).then(
+        (points) => {
+          if (id !== latest.current) return;
+          setSession((current) => ({
+            ...current,
+            busy: false,
+            points,
+            selected: points[0] ?? null,
+            page: 0,
+          }));
+        },
+        (error) => {
+          if (id !== latest.current) return;
+          setSession((current) => ({ ...current, busy: false, error: String(error), points: [] }));
+        },
       );
-    return () => {
-      instance.terminate();
-      worker.current = null;
-    };
-  }, []);
-  const run = useCallback((query: CharacterQuery) => {
-    const id = ++latest.current;
-    setQuery(query);
-    setSession({
-      ...emptySession(),
-      title: query.text?.trim() ? `「${query.text}」の検索結果` : '条件に一致する文字',
-      busy: true,
-    });
-    worker.current?.postMessage({ id, query });
-  }, []);
+    },
+    [searchCharacters],
+  );
   const showCollection = useCallback((points: number[], title: string) => {
     latest.current++;
     const sorted = [...points].sort((a, b) => a - b);

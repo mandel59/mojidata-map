@@ -35,6 +35,7 @@ test('browses, inserts, encodes, bookmarks and restores supplementary characters
 test('search worker finds names, aliases and filtered categories in a production build', async ({
   page,
 }) => {
+  await searchMethod(page, 'unicode');
   await page.getByLabel('文字を検索', { exact: true }).fill('SNOWMAN');
   await page.getByRole('button', { name: '検索', exact: true }).click();
   await expect(page.getByRole('button', { name: 'U+2603 SNOWMAN', exact: true })).toBeVisible();

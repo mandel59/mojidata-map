@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { searchMethod } from './navigation';
 
 async function goTo(page: Page, code: string) {
   await page.getByRole('button', { name: 'コード指定', exact: true }).click();
@@ -51,6 +52,7 @@ test('updates reused cells and handlers for filtered pages and search results', 
   const lastCp = Number(await last.getAttribute('data-cp'));
   await last.dblclick();
   await expect(page.getByLabel('編集テキスト')).toHaveValue(String.fromCodePoint(lastCp));
+  await searchMethod(page, 'unicode');
   await page.getByLabel('文字を検索', { exact: true }).fill('LATIN');
   await page.getByRole('button', { name: '検索', exact: true }).click();
   await expect(

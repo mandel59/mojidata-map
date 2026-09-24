@@ -14,6 +14,13 @@ try {
   await page.screenshot({ path: 'var/screenshots/desktop.png', fullPage: true });
   await page.setViewportSize({ width: 1024, height: 600 });
   await page.screenshot({ path: 'var/screenshots/small-laptop.png' });
+  await page.getByLabel('文字を検索', { exact: true }).fill('SNOWMAN');
+  await page.getByRole('button', { name: '検索', exact: true }).click();
+  await page.locator('.map-search [role=status]').filter({ hasText: '1 / 3' }).waitFor();
+  await page.screenshot({ path: 'var/screenshots/map-search-laptop.png' });
+  await page.setViewportSize({ width: 390, height: 600 });
+  await page.screenshot({ path: 'var/screenshots/map-search-mobile.png' });
+  await page.setViewportSize({ width: 1024, height: 600 });
   await page.getByRole('button', { name: 'アプリメニュー', exact: true }).click();
   await page.getByRole('button', { name: 'アプリについて', exact: true }).click();
   await page.getByRole('dialog', { name: 'アプリ情報', exact: true }).waitFor();

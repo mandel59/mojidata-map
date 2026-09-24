@@ -37,6 +37,7 @@ export function CharacterGridSurface({
 }
 
 interface Props {
+  searchBar?: ReactNode;
   navigation?: ReactNode;
   showSettings: boolean;
   size: number;
@@ -47,6 +48,7 @@ interface Props {
 }
 
 export function CharacterDisplay({
+  searchBar,
   navigation,
   showSettings,
   size,
@@ -81,6 +83,7 @@ export function CharacterDisplay({
   return (
     <GlyphSize value={previewSize}>
       <main className="main-content">
+        {searchBar}
         {(navigation || showSettings) && (
           <div className="display-toolbar">
             {navigation}
