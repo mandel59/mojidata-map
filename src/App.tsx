@@ -197,7 +197,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
         (cp) => !assignedOnly || db.category(cp) !== 'Cn',
       );
   const planeBlocks = db.data.properties.Block.filter(([start]) => start >>> 16 === plane);
-  const blocks = planeBlocks.filter(([, , name]) =>
+  const blocks = db.data.properties.Block.filter(([, , name]) =>
     name.toLowerCase().includes(blockFilter.toLowerCase()),
   );
   const block = db.property(selected, 'Block');

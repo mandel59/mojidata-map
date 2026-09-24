@@ -63,13 +63,53 @@ test('opens optional controls, returns focus and keeps navigation available', as
   await page.goto('/');
   const blocks = page.getByRole('button', { name: 'ブロック一覧', exact: true });
   await blocks.click();
+  await expect(
+    page.locator('.block-list').getByRole('button', { name: 'Basic Latin', exact: false }),
+  ).toHaveCount(1);
+  await expect(
+    page
+      .locator('.block-list')
+      .getByRole('button', { name: 'CJK Unified Ideographs Extension B', exact: false }),
+  ).toHaveCount(1);
+  await expect(
+    page
+      .locator('.block-list')
+      .getByRole('button', { name: 'Supplementary Private Use Area-B', exact: false }),
+  ).toHaveCount(1);
+  await page.getByLabel('ブロックを絞り込み').fill('Emoticons');
+  await page
+    .locator('.block-list')
+    .getByRole('button', { name: 'Emoticons', exact: false })
+    .click();
+  await expect(page.getByLabel('Unicode 面')).toHaveValue('1');
+  await expect(page.locator('.character-cell.selected')).toHaveAttribute(
+    'data-cp',
+    String(0x1f600),
+  );
+  await expect(page.getByLabel('ブロックへ移動')).toHaveValue(String(0x1f600));
+  await expect(page.locator('#block-browser')).not.toBeVisible();
+  const dropdown = page.getByLabel('ブロックへ移動');
+  // Only the optional list spans planes; the dropdown follows the selected plane.
+  await expect(dropdown.getByRole('option', { name: 'Basic Latin', exact: true })).toHaveCount(0);
+  await expect(dropdown.getByRole('option', { name: 'Emoticons', exact: true })).toHaveCount(1);
+  await page.getByLabel('Unicode 面').selectOption('16');
+  await expect(dropdown).toHaveValue(String(0x100000));
+  await expect(dropdown.getByRole('option', { name: 'Emoticons', exact: true })).toHaveCount(0);
+  await blocks.click();
+  await expect(
+    page.locator('.block-list').getByRole('button', { name: 'Emoticons', exact: false }),
+  ).toHaveCount(1);
   await page.getByLabel('ブロックを絞り込み').fill('Basic Latin');
   await page
     .locator('.block-list')
     .getByRole('button', { name: 'Basic Latin', exact: false })
     .click();
-  await expect(page.getByLabel('ブロックへ移動')).toHaveValue('0');
-  await expect(page.locator('#block-browser')).not.toBeVisible();
+  await expect(page.getByLabel('Unicode 面')).toHaveValue('0');
+  await expect(dropdown).toHaveValue('0');
+  await expect(dropdown.getByRole('option', { name: 'Emoticons', exact: true })).toHaveCount(0);
+  // List filtering must not remove other blocks from the plane dropdown.
+  await dropdown.selectOption({ label: 'Hiragana' });
+  await expect(page.locator('.character-cell.selected')).toHaveAttribute('data-cp', String(0x3040));
   await page.getByRole('button', { name: '表示設定', exact: true }).click();
   await page.getByLabel('表示フォント', { exact: true }).focus();
   await page.keyboard.press('Escape');
