@@ -27,7 +27,32 @@ try {
   await page.getByRole('button', { name: 'クレジット', exact: true }).click();
   await page.getByRole('link', { name: 'react', exact: true }).waitFor();
   await page.screenshot({ path: 'var/screenshots/credits-mobile-dark.png' });
-  console.log('Saved main UI, About and credits screenshots in var/screenshots/.');
+  await page.getByRole('button', { name: 'アプリ情報を閉じる' }).click();
+  await page.setViewportSize({ width: 1024, height: 600 });
+  await page.getByRole('button', { name: 'アプリメニュー', exact: true }).click();
+  await page.getByRole('button', { name: '配色を切り替え', exact: true }).click();
+  await page.getByRole('button', { name: '文字検索', exact: true }).click();
+  await page.getByLabel('一般カテゴリ', { exact: true }).selectOption('Nd');
+  await page.getByRole('button', { name: '一般カテゴリの条件を追加', exact: true }).click();
+  await page.getByRole('tab', { name: 'Unicode の範囲', exact: true }).click();
+  await page.getByLabel('ブロック', { exact: true }).selectOption('Basic Latin');
+  await page.getByRole('button', { name: 'ブロックの条件を追加', exact: true }).click();
+  await page.getByText('10 文字', { exact: true }).waitFor();
+  await page.screenshot({ path: 'var/screenshots/search-laptop.png' });
+  await page.setViewportSize({ width: 390, height: 600 });
+  await page.screenshot({ path: 'var/screenshots/search-mobile.png' });
+  await page.setViewportSize({ width: 1024, height: 600 });
+  await page.getByRole('button', { name: 'シーケンス検索', exact: true }).click();
+  await page.getByLabel('英語の名前').fill('family: man, woman, girl, boy');
+  await page.getByRole('button', { name: 'family: man, woman, girl, boy', exact: true }).click();
+  await page.screenshot({ path: 'var/screenshots/sequence-laptop.png' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: 'var/screenshots/sequence-mobile.png' });
+  await page.getByRole('button', { name: 'シーケンス情報', exact: true }).click();
+  await page.screenshot({ path: 'var/screenshots/sequence-mobile-detail.png' });
+  console.log(
+    'Saved main UI, search, sequence previews, About and credits screenshots in var/screenshots/.',
+  );
 } finally {
   await browser.close();
   await new Promise((resolve) => server.httpServer.close(resolve));

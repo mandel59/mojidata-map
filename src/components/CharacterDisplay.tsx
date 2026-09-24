@@ -37,7 +37,8 @@ export function CharacterGridSurface({
 }
 
 interface Props {
-  navigation: ReactNode;
+  navigation?: ReactNode;
+  showSettings: boolean;
   size: number;
   onSizeCommit(size: number): void;
   fontControls: ReactNode;
@@ -47,6 +48,7 @@ interface Props {
 
 export function CharacterDisplay({
   navigation,
+  showSettings,
   size,
   onSizeCommit,
   fontControls,
@@ -79,10 +81,12 @@ export function CharacterDisplay({
   return (
     <GlyphSize value={previewSize}>
       <main className="main-content">
-        <div className="display-toolbar">
-          {navigation}
-          <button popoverTarget="display-options">表示設定</button>
-        </div>
+        {(navigation || showSettings) && (
+          <div className="display-toolbar">
+            {navigation}
+            {showSettings && <button popoverTarget="display-options">表示設定</button>}
+          </div>
+        )}
         <div
           id="display-options"
           popover="auto"

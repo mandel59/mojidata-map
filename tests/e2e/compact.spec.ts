@@ -1,3 +1,4 @@
+import { searchMethod } from './navigation';
 import { test, expect, type Page } from '@playwright/test';
 
 async function fitsViewport(page: Page) {
@@ -47,7 +48,7 @@ for (const viewport of [
     await page.getByLabel('出力形式').selectOption('utf16');
     await expect(page.getByLabel('変換された出力')).toHaveValue('0041 D83D DE00');
     await fitsViewport(page);
-    await page.getByRole('button', { name: '絵文字', exact: true }).click();
+    await searchMethod(page, 'emoji');
     await expect(page.getByLabel('英語の名前')).toBeInViewport();
     await expect(page.getByLabel('編集テキスト')).toBeInViewport();
     await page.getByRole('button', { name: 'フォント', exact: true }).click();
@@ -114,12 +115,13 @@ test('opens optional controls, returns focus and keeps navigation available', as
   await page.getByLabel('表示フォント', { exact: true }).focus();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: '表示設定', exact: true })).toBeFocused();
-  await page.getByRole('button', { name: '詳細検索', exact: true }).click();
+  await searchMethod(page, 'unicode');
   await page.getByLabel('一般カテゴリ', { exact: true }).selectOption('Nd');
-  await page.getByRole('button', { name: '条件で検索', exact: true }).click();
-  await expect(page.getByRole('button', { name: '詳細検索', exact: true })).toHaveText(
-    '詳細検索 (1)',
-  );
+  await page.getByRole('button', { name: '一般カテゴリの条件を追加', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: '一般カテゴリ: Nd を解除', exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: '文字マップ', exact: true }).click();
   await page.getByRole('button', { name: 'コード指定', exact: true }).click();
   await page.keyboard.press('Control+f');
   await expect(page.getByLabel('文字を検索', { exact: true })).toBeFocused();

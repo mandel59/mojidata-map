@@ -1,3 +1,4 @@
+import { searchMethod } from './navigation';
 import packageMetadata from '../../package.json' with { type: 'json' };
 const appVersion = packageMetadata.version;
 import { test, expect } from '@playwright/test';
@@ -43,18 +44,20 @@ test('search worker finds names, aliases and filtered categories in a production
     page.getByRole('button', { name: 'U+FEFF ZERO WIDTH NO-BREAK SPACE', exact: true }),
   ).toBeVisible();
   await page.getByLabel('文字を検索', { exact: true }).fill('');
-  await page.getByRole('button', { name: '詳細検索', exact: true }).click();
+  await searchMethod(page, 'unicode');
   await page.getByLabel('一般カテゴリ', { exact: true }).selectOption('Nd');
+  await page.getByRole('button', { name: '一般カテゴリの条件を追加', exact: true }).click();
+  await page.getByRole('tab', { name: 'Unicode の範囲', exact: true }).click();
   await page.getByLabel('ブロック', { exact: true }).selectOption('Basic Latin');
-  await page.getByRole('button', { name: '条件で検索' }).click();
+  await page.getByRole('button', { name: 'ブロックの条件を追加', exact: true }).click();
   await expect(page.getByText('10 文字', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'U+0030 DIGIT ZERO', exact: true })).toBeVisible();
 });
 
 test('looks up Han readings and real Unihan metadata', async ({ page }) => {
-  await page.getByRole('button', { name: '漢字を探す', exact: true }).click();
+  await searchMethod(page, 'han');
   await page.getByLabel('漢字の読み').fill('zhong');
-  await page.getByRole('button', { name: '漢字を検索', exact: true }).click();
+  await page.getByRole('button', { name: '読み・意味の条件を追加', exact: true }).click();
   await page
     .getByRole('button', { name: 'U+4E2D CJK UNIFIED IDEOGRAPH-4E2D', exact: true })
     .click();
@@ -64,10 +67,10 @@ test('looks up Han readings and real Unihan metadata', async ({ page }) => {
 });
 
 test('inserts full emoji sequences without splitting them', async ({ page }) => {
-  await page.getByRole('button', { name: '絵文字', exact: true }).click();
+  await searchMethod(page, 'emoji');
   await page.getByLabel('英語の名前').fill('family: man, woman, girl, boy');
   await page.getByRole('button', { name: 'family: man, woman, girl, boy', exact: true }).click();
-  await page.getByRole('button', { name: '絵文字を追加', exact: true }).click();
+  await page.getByRole('button', { name: 'バッファに追加', exact: true }).click();
   await expect(page.getByLabel('編集テキスト')).toHaveValue('👨‍👩‍👧‍👦');
   await expect(
     page.getByText('1 書記素 · 7 コードポイント · 25 bytes', { exact: true }),
@@ -144,13 +147,13 @@ test('uses Unicode 18 in search, statistics and the emoji picker', async ({ page
   await expect(page.getByRole('heading', { name: 'UAE DIRHAM SIGN', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Unicode データ', exact: true }).click();
   await expect(page.getByText('18.0.0', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: '絵文字', exact: true }).click();
+  await searchMethod(page, 'emoji');
   await expect(
     page.getByText('Unicode Emoji 18.0 の単体・肌色・国旗・ZWJ シーケンス。', { exact: true }),
   ).toBeVisible();
   await page.getByLabel('英語の名前').fill('cracking face');
   await page.getByRole('button', { name: 'cracking face', exact: true }).click();
-  await page.getByRole('button', { name: '絵文字を追加', exact: true }).click();
+  await page.getByRole('button', { name: 'バッファに追加', exact: true }).click();
   await expect(page.getByLabel('編集テキスト')).toHaveValue(String.fromCodePoint(0x1faeb));
 });
 
@@ -195,7 +198,7 @@ test('keeps size across keyboard edits, tab switches and grid navigation', async
   await size.press('ArrowLeft');
   await expect(size).toHaveValue('63');
   await expect(glyph).toHaveCSS('font-size', '63px');
-  await page.getByRole('button', { name: '絵文字', exact: true }).click();
+  await searchMethod(page, 'emoji');
   await page.getByRole('button', { name: '文字マップ', exact: true }).click();
   await expect(glyph).toHaveCSS('font-size', '63px');
   await page.getByRole('button', { name: '表示設定', exact: true }).click();

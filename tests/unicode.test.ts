@@ -85,6 +85,25 @@ describe('official Unicode 18 data', () => {
     expect(db.property(0x378, 'Script')).toBe('Unknown');
     expect(db.property(0x20, 'White_Space')).toBe('Yes');
   });
+  test('intersects Unihan candidates with Unicode conditions, direct points and planes', () => {
+    const { rows } = JSON.parse(readFileSync('public/data/han-index.json', 'utf8')) as {
+      rows: HanRow[];
+    };
+    const candidates = searchHan(rows, {
+      radical: '85',
+      strokes: '0',
+      reading: 'shui',
+      language: 'mandarin',
+    });
+    expect(candidates).toContain(0x6c34);
+    expect(
+      searchCharacters(db, { category: 'Lo', text: 'U+6C34', plane: '0' }, candidates),
+    ).toEqual([0x6c34]);
+    expect(searchCharacters(db, { category: 'Nd' }, candidates)).toEqual([]);
+    expect(searchCharacters(db, { text: 'U+0041' }, candidates)).toEqual([]);
+    expect(searchCharacters(db, { plane: '1' }, candidates)).not.toContain(0x6c34);
+    expect(searchCharacters(db, {}, [])).toEqual([]);
+  });
   test('searches names, aliases, properties and supplementary characters', () => {
     expect(searchCharacters(db, { text: 'grinning face' })).toContain(0x1f600);
     expect(searchCharacters(db, { text: 'BOM' })).toContain(0xfeff);

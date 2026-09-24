@@ -127,7 +127,7 @@ kbd {
 .check input {
   margin: 0;
 }
-/* The shell reserves a persistent search row and editor; only content panes scroll. */
+/* The shell reserves its header and editor; each workspace owns its search controls. */
 .app-shell {
   height: 100dvh;
   min-height: 360px;
@@ -900,37 +900,9 @@ td button {
   overflow: hidden;
   height: 28px;
 }
-.emoji-selection {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 14px;
-  border: 1px solid var(--soft-border);
-  background: var(--soft);
-  border-radius: 5px;
-  margin-bottom: 15px;
-}
-.emoji-selection > span {
-  font-size: 52px;
-}
 .emoji-selection p {
   font-size: 10px;
   margin: 5px 0 10px;
-}
-.han-search {
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--border);
-}
-.han-search form {
-  display: flex;
-  align-items: end;
-  gap: 8px;
-}
-.han-search .filter-fields {
-  flex: 1;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
-  margin: 0;
 }
 
 .empty-state {
@@ -1012,12 +984,6 @@ td button {
   }
   .display-toolbar > select:first-child {
     width: 115px;
-  }
-  .han-search form {
-    flex-wrap: wrap;
-  }
-  .han-search .filter-fields {
-    flex-basis: 100%;
   }
 }
 @media (max-width: 700px) {
@@ -1137,9 +1103,6 @@ td button {
   }
   .editor-options {
     bottom: 124px;
-  }
-  .han-search .filter-fields {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .font-summary {
     grid-template-columns: 1fr;
@@ -1296,5 +1259,199 @@ td button {
   }
   .about-tabs {
     padding: 0 16px;
+  }
+}
+
+/* Each workspace exposes only its own controls; the editor remains shared. */
+.workspace:not(.with-details) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.context-title {
+  font-weight: 600;
+}
+.search-workspace:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.search-workspace > :not(.grid-scroll):not(.empty-state):not(.tool-scroll) {
+  flex-shrink: 0;
+}
+.search-input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+}
+.search-input-row .search-bar {
+  flex: 1;
+  min-width: 0;
+}
+.character-conditions {
+  border-bottom: 1px solid var(--border);
+}
+.condition-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+  gap: 6px;
+}
+.condition-heading button {
+  padding: 2px 7px;
+  font-size: 11px;
+}
+.condition-chips {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 5px 6px;
+  max-height: 72px;
+  overflow: auto;
+}
+.condition-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 11px;
+  background: var(--soft);
+  color: var(--accent);
+  border-color: var(--soft-border);
+  max-width: min(340px, 100%);
+}
+.condition-chip > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.clear-conditions {
+  border: 0;
+  padding: 2px 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.condition-editor:not([hidden]) {
+  display: grid;
+}
+.condition-tabs {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  border-right: 1px solid var(--border);
+  background: var(--sidebar);
+  padding: 4px;
+  gap: 2px;
+}
+.condition-tabs button {
+  border-color: transparent;
+  background: transparent;
+  text-align: left;
+  font-size: 11px;
+  padding: 5px 6px;
+}
+.condition-tabs button[aria-selected='true'] {
+  background: var(--soft);
+  color: var(--accent);
+  border-color: var(--soft-border);
+}
+.condition-fields {
+  min-width: 0;
+  padding: 8px;
+  overflow: auto;
+}
+.condition-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 3px 6px;
+  margin-bottom: 6px;
+}
+.condition-field select {
+  width: 100%;
+}
+.condition-field button {
+  font-size: 11px;
+}
+/* Keep the condition editor beside results on laptops, preserving their height. */
+.main-content > .character-collection,
+.search-workspace > .character-collection,
+.search-workspace > .character-conditions {
+  flex: 1;
+  min-height: 0;
+}
+.character-conditions,
+.character-collection {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.character-conditions > :not(.search-results-layout),
+.character-collection > :not(.grid-scroll):not(.empty-state) {
+  flex-shrink: 0;
+}
+.search-results-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  border-top: 1px solid var(--border);
+}
+.search-results-layout > .condition-editor:not([hidden]) {
+  flex: 0 0 306px;
+  width: 306px;
+  height: auto;
+  grid-template-columns: 104px minmax(0, 1fr);
+  border: 0;
+  border-right: 1px solid var(--border);
+  min-height: 0;
+}
+.search-result-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+.search-result-content > .character-collection {
+  flex: 1;
+}
+.condition-field label {
+  grid-column: 1 / -1;
+}
+.condition-tabs button {
+  white-space: normal;
+}
+@media (max-width: 1000px) {
+  .search-results-layout {
+    flex-direction: column;
+  }
+  .search-results-layout > .condition-editor:not([hidden]) {
+    flex: 0 0 min(140px, 22dvh);
+    width: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+}
+.condition-field .reading-language {
+  grid-column: 1 / -1;
+}
+.sequence-preview {
+  font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;
+  overflow-wrap: anywhere;
+}
+.emoji-grid button[aria-pressed='true'] {
+  background: var(--soft);
+  border-color: var(--accent);
+}
+
+@media (max-width: 700px) and (max-height: 650px) {
+  .search-results-layout > .condition-editor:not([hidden]) {
+    flex-basis: 72px;
+  }
+  .search-results-layout.conditions-open .collection-heading {
+    display: none;
   }
 }

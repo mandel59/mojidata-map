@@ -1,18 +1,22 @@
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { loadData, type Emoji } from '../data';
 import { codeLabel } from '../core/unicode';
-import { copyText } from '../platform';
 interface Props {
   version: string;
   onInsert(text: string): void;
-  notify(message: string): void;
+  selected: Emoji | null;
+  onSelect(emoji: Emoji): void;
 }
-export function EmojiPanel({ version, onInsert, notify }: Props) {
+export const EmojiPanel = memo(function EmojiPanel({
+  version,
+  onInsert,
+  selected,
+  onSelect,
+}: Props) {
   const [all, setAll] = useState<Emoji[]>([]);
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState('');
   const [page, setPage] = useState(0);
-  const [selected, setSelected] = useState<Emoji | null>(null);
   const [error, setError] = useState('');
   useEffect(() => {
     let active = true;
@@ -93,41 +97,14 @@ export function EmojiPanel({ version, onInsert, notify }: Props) {
           {error}
         </p>
       )}
-      {selected && (
-        <div className="emoji-selection">
-          <span>{String.fromCodePoint(...selected.cps)}</span>
-          <div>
-            <strong>{selected.name}</strong>
-            <p>
-              {selected.cps.map(codeLabel).join(' ')} · Emoji {selected.version}
-            </p>
-            <div className="button-row">
-              <button
-                className="primary"
-                onClick={() => onInsert(String.fromCodePoint(...selected.cps))}
-              >
-                絵文字を追加
-              </button>
-              <button
-                onClick={() =>
-                  void copyText(String.fromCodePoint(...selected.cps))
-                    .then(() => notify('コピーしました'))
-                    .catch((error) => notify(String(error)))
-                }
-              >
-                絵文字をコピー
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       <div className="emoji-grid">
         {matches.slice(page * 120, (page + 1) * 120).map((emoji) => (
           <button
             key={emoji.cps.join('-')}
             aria-label={emoji.name}
             title={`${emoji.name}\n${emoji.cps.map(codeLabel).join(' ')}`}
-            onClick={() => setSelected(emoji)}
+            onClick={() => onSelect(emoji)}
+            aria-pressed={selected?.cps.join('-') === emoji.cps.join('-')}
             onDoubleClick={() => onInsert(String.fromCodePoint(...emoji.cps))}
           >
             <span>{String.fromCodePoint(...emoji.cps)}</span>
@@ -137,4 +114,4 @@ export function EmojiPanel({ version, onInsert, notify }: Props) {
       </div>
     </section>
   );
-}
+});

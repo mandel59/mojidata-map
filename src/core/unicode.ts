@@ -136,7 +136,11 @@ export interface SearchQuery {
   assignedOnly?: boolean;
 }
 
-export function searchCharacters(db: UnicodeDatabase, query: SearchQuery): number[] {
+export function searchCharacters(
+  db: UnicodeDatabase,
+  query: SearchQuery,
+  candidates?: readonly number[],
+): number[] {
   const text = (query.text ?? '').trim();
   const words = text.toUpperCase().split(/\s+/).filter(Boolean);
   let direct: number | null = null;
@@ -155,7 +159,10 @@ export function searchCharacters(db: UnicodeDatabase, query: SearchQuery): numbe
   const result: number[] = [];
   const begin = direct ?? (query.plane ? Number(query.plane) * 0x10000 : 0);
   const end = direct ?? (query.plane ? begin + 0xffff : MAX_CP);
-  for (let cp = begin; cp <= end; cp++) {
+  const length = candidates?.length ?? end - begin + 1;
+  for (let index = 0; index < length; index++) {
+    const cp = candidates?.[index] ?? begin + index;
+    if (cp < begin || cp > end) continue;
     const category = db.category(cp);
     if (
       query.assignedOnly !== false &&
