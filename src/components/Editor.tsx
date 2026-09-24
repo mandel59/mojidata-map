@@ -1,4 +1,4 @@
-import { useRef, useState, type RefObject } from 'react';
+import { memo, useMemo, useRef, useState, type RefObject } from 'react';
 import {
   encodeText,
   encodeFile,
@@ -22,7 +22,15 @@ interface Props {
   notify(message: string): void;
   handle: RefObject<EditorHandle | null>;
 }
-export function Editor({ db, text, onChange, font, onLocate, notify, handle }: Props) {
+export const Editor = memo(function Editor({
+  db,
+  text,
+  onChange,
+  font,
+  onLocate,
+  notify,
+  handle,
+}: Props) {
   const textarea = useRef<HTMLTextAreaElement>(null);
   const [format, setFormat] = useState<OutputFormat>('text');
   const [direction, setDirection] = useState<'auto' | 'ltr' | 'rtl'>('auto');
@@ -30,9 +38,9 @@ export function Editor({ db, text, onChange, font, onLocate, notify, handle }: P
   const [bom, setBom] = useState(false);
   const [preview, setPreview] = useState(false);
   const history = useRef<string[]>([]);
-  const valid = scalarText(text);
-  const output = valid ? encodeText(text, format) : '';
-  const stats = textStats(text);
+  const valid = useMemo(() => scalarText(text), [text]);
+  const output = useMemo(() => (valid ? encodeText(text, format) : ''), [text, format, valid]);
+  const stats = useMemo(() => textStats(text), [text]);
   function change(value: string) {
     history.current.push(text);
     if (history.current.length > 50) history.current.shift();
@@ -245,4 +253,4 @@ export function Editor({ db, text, onChange, font, onLocate, notify, handle }: P
       </div>
     </section>
   );
-}
+});

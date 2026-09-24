@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { isCodePoint } from './core/unicode';
 
 export interface Preferences {
@@ -69,7 +69,9 @@ export function usePreferences() {
       window.removeEventListener('pagehide', persist);
     };
   }, [preferences]);
-  const update = (patch: Partial<Preferences>) =>
-    setPreferences((current) => ({ ...current, ...patch }));
+  const update = useCallback(
+    (patch: Partial<Preferences>) => setPreferences((current) => ({ ...current, ...patch })),
+    [],
+  );
   return { preferences, update, storageError };
 }

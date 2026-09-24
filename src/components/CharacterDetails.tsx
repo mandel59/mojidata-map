@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { memo, useMemo, useEffect, useState } from 'react';
 import { UtilityDialog } from './UtilityDialog';
 import { codeLabel, hex, isScalar, type UnicodeDatabase } from '../core/unicode';
 import { encodeText } from '../core/encoding';
-import { loadData, type Variations } from '../data';
+import { loadData, peekData, type Variations } from '../data';
 import { copyText, download } from '../platform';
 
 interface Props {
@@ -15,7 +15,7 @@ interface Props {
   onInsert(text: string): void;
   notify(message: string): void;
 }
-export function CharacterDetails({
+export const CharacterDetails = memo(function CharacterDetails({
   compact,
   db,
   cp,
@@ -29,38 +29,37 @@ export function CharacterDetails({
   useEffect(() => {
     if (!compact) setOpen(false);
   }, [compact]);
-  const [han, setHan] = useState<Record<string, string>>({});
-  const [variants, setVariants] = useState<[number[], string][]>([]);
-  const [error, setError] = useState('');
-  const properties = db.details(cp);
+  const [loaded, setLoaded] = useState({ cp, error: '' });
+  const properties = useMemo(() => db.details(cp), [db, cp]);
   const scalar = isScalar(cp);
   const char = scalar ? String.fromCodePoint(cp) : '';
+  const shard = (cp >>> 12).toString(16).padStart(3, '0');
+  const variations = peekData<Variations>('variations');
+  const manifest = peekData<{ unihanShards: string[] }>('manifest');
+  const hanData = peekData<Record<string, Record<string, string>>>(`unihan/${shard}`);
+  const han = hanData?.[hex(cp)] ?? {};
+  const variants = variations?.[hex(cp)] ?? [];
+  const missing = !variations || !manifest || (manifest.unihanShards.includes(shard) && !hanData);
+  const error = loaded.cp === cp ? loaded.error : '';
   useEffect(() => {
+    if (!missing) return;
     let current = true;
-    setHan({});
-    setVariants([]);
-    setError('');
-    loadData<Variations>('variations')
-      .then((data) => {
-        if (current) setVariants(data[hex(cp)] ?? []);
-      })
-      .catch((error) => {
-        if (current) setError(String(error));
-      });
-    loadData<{ unihanShards: string[] }>('manifest')
-      .then(async (manifest) => {
-        const shard = (cp >>> 12).toString(16).padStart(3, '0');
-        if (!manifest.unihanShards.includes(shard)) return;
-        const data = await loadData<Record<string, Record<string, string>>>(`unihan/${shard}`);
-        if (current) setHan(data[hex(cp)] ?? {});
-      })
-      .catch((error) => {
-        if (current) setError(String(error));
-      });
+    // Only cold data needs an asynchronous update. Read the selected character
+    // from the cache on render so a late response can never show a previous one.
+    void Promise.allSettled([
+      loadData<Variations>('variations'),
+      loadData<{ unihanShards: string[] }>('manifest').then(async (data) => {
+        if (data.unihanShards.includes(shard)) await loadData(`unihan/${shard}`);
+      }),
+    ]).then((results) => {
+      if (!current) return;
+      const failure = results.find((result) => result.status === 'rejected');
+      setLoaded({ cp, error: failure?.status === 'rejected' ? String(failure.reason) : '' });
+    });
     return () => {
       current = false;
     };
-  }, [cp]);
+  }, [cp, shard, missing]);
   const copy = async (text: string) => {
     try {
       await copyText(text);
@@ -249,4 +248,4 @@ export function CharacterDetails({
       )}
     </>
   );
-}
+});

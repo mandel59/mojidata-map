@@ -130,8 +130,11 @@ test('inspects a real font, exports outlines, and keeps the font across tabs', a
   for await (const chunk of stream!) chunks.push(chunk);
   expect(Buffer.concat(chunks).toString()).toContain('<path transform="scale(1,-1)" d="M');
   await page.getByRole('button', { name: '文字マップ', exact: true }).click();
+  await page.getByRole('button', { name: '次のページ', exact: true }).click();
+  await expect(page.locator('.character-cell.selected')).toHaveAttribute('data-cp', String(0x3080));
   await page.getByRole('button', { name: 'フォント', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Liberation Sans', exact: true })).toBeVisible();
+  await expect(page.getByText(/^U\+3080 · Glyph ID /)).toBeVisible();
 });
 
 test('uses Unicode 18 in search, statistics and the emoji picker', async ({ page }) => {

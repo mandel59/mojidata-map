@@ -1,5 +1,11 @@
 import { UnicodeDatabase, type UnicodeData } from './core/unicode';
 const cache = new Map<string, Promise<unknown>>();
+// Resolved values share the same objects as the Promise cache. Synchronous reads
+// let warmed character details render without another state update per selection.
+const resolved = new Map<string, unknown>();
+export function peekData<T>(name: string): T | undefined {
+  return resolved.get(name) as T | undefined;
+}
 export function loadData<T>(name: string): Promise<T> {
   let pending = cache.get(name);
   if (!pending) {
@@ -11,6 +17,10 @@ export function loadData<T>(name: string): Promise<T> {
       .then((response) => {
         if (!response.ok) throw new Error(`データを読み込めません: ${name} (${response.status})`);
         return response.json();
+      })
+      .then((data) => {
+        resolved.set(name, data);
+        return data;
       })
       .catch((error) => {
         cache.delete(name);

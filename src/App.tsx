@@ -1,14 +1,15 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   UnicodeDatabase,
   codeLabel,
-  hex,
   isCodePoint,
   isScalar,
   parseCodePoint,
   type HanQuery,
   type SearchQuery,
 } from './core/unicode';
+import { AdvancedSearch } from './components/AdvancedSearch';
+import { BlockNavigation } from './components/BlockNavigation';
 import { CharacterDisplay } from './components/CharacterDisplay';
 import { CharacterGrid } from './components/CharacterGrid';
 import { CharacterDetails } from './components/CharacterDetails';
@@ -61,7 +62,6 @@ export default function App({ db }: { db: UnicodeDatabase }) {
   const [notice, setNotice] = useState('');
   const [goTo, setGoTo] = useState('');
   const [radix, setRadix] = useState<10 | 16>(16);
-  const [blockFilter, setBlockFilter] = useState('');
   const [assignedOnly, setAssignedOnly] = useState(false);
   const [allPlanes, setAllPlanes] = useState(false);
   const [alwaysOnTop, setAlwaysOnTop] = useState(false);
@@ -73,20 +73,14 @@ export default function App({ db }: { db: UnicodeDatabase }) {
   const worker = useRef<Worker | null>(null);
   const editor = useRef<EditorHandle | null>(null);
   const searchInput = useRef<HTMLInputElement>(null);
-  const blockList = useRef<HTMLDivElement>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectedBlock = db.property(selected, 'Block');
   const currentFont = prefs.composite[selectedBlock] || prefs.font;
-  useEffect(() => {
-    const list = blockList.current;
-    const active = list?.querySelector<HTMLButtonElement>('button.active');
-    if (list && active) list.scrollTop = active.offsetTop - list.clientHeight / 2;
-  }, [selectedBlock, plane]);
-  function notify(message: string) {
+  const notify = useCallback((message: string) => {
     setNotice(message);
     if (noticeTimer.current) clearTimeout(noticeTimer.current);
     noticeTimer.current = setTimeout(() => setNotice(''), 8000);
-  }
+  }, []);
   useEffect(() => {
     const instance = new Worker(new URL('./search.worker.ts', import.meta.url), { type: 'module' });
     worker.current = instance;
@@ -134,107 +128,98 @@ export default function App({ db }: { db: UnicodeDatabase }) {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, []);
-  function locate(cp: number) {
-    if (!isCodePoint(cp)) return;
-    requestId.current++;
-    setBusy(false);
-    setResults(null);
-    setTab('map');
-    setSelected(cp);
-    setPlane(cp >>> 16);
-    setPageStart(cp - (cp % PAGE_SIZE));
-    if (db.category(cp) === 'Cn') setAssignedOnly(false);
-    if (!planeNames[cp >>> 16]) setAllPlanes(true);
-  }
-  function insert(text: string) {
+  const locate = useCallback(
+    (cp: number) => {
+      if (!isCodePoint(cp)) return;
+      requestId.current++;
+      setBusy(false);
+      setResults(null);
+      setTab('map');
+      setSelected(cp);
+      setPlane(cp >>> 16);
+      setPageStart(cp - (cp % PAGE_SIZE));
+      if (db.category(cp) === 'Cn') setAssignedOnly(false);
+      if (!planeNames[cp >>> 16]) setAllPlanes(true);
+    },
+    [db],
+  );
+  const insert = useCallback((text: string) => {
     editor.current?.insert(text);
-  }
-  function insertCp(cp: number) {
-    if (isScalar(cp)) insert(String.fromCodePoint(cp));
-    else notify('サロゲートは文字として挿入できません。');
-  }
-  function runSearch(type: 'unicode' | 'han') {
-    setTab(type === 'han' ? 'han' : 'map');
-    setBusy(true);
-    setResultTitle(
-      type === 'han'
-        ? '漢字検索の結果'
-        : search.trim()
-          ? `「${search}」の検索結果`
-          : '属性検索の結果',
-    );
-    worker.current?.postMessage({
-      id: ++requestId.current,
-      type,
-      query: type === 'han' ? han : { ...filters, text: search },
-    });
-  }
-  function changeTab(next: Tab) {
+  }, []);
+  const insertCp = useCallback(
+    (cp: number) => {
+      if (isScalar(cp)) insert(String.fromCodePoint(cp));
+      else notify('サロゲートは文字として挿入できません。');
+    },
+    [insert, notify],
+  );
+  const runSearch = useCallback(
+    (type: 'unicode' | 'han') => {
+      setTab(type === 'han' ? 'han' : 'map');
+      setBusy(true);
+      setResultTitle(
+        type === 'han'
+          ? '漢字検索の結果'
+          : search.trim()
+            ? `「${search}」の検索結果`
+            : '属性検索の結果',
+      );
+      worker.current?.postMessage({
+        id: ++requestId.current,
+        type,
+        query: type === 'han' ? han : { ...filters, text: search },
+      });
+    },
+    [search, filters, han],
+  );
+  const changeTab = useCallback((next: Tab) => {
     if (next === 'fonts') setFontOpened(true);
     requestId.current++;
     setBusy(false);
     setTab(next);
     setResults(null);
     setResultPage(0);
-  }
-  function showResults(points: number[], title: string) {
-    changeTab('map');
-    setResults([...points].sort((a, b) => a - b));
-    setResultTitle(title);
-    if (points.length) setSelected(points[0]);
-  }
-  function bookmark() {
+  }, []);
+  const showResults = useCallback(
+    (points: number[], title: string) => {
+      changeTab('map');
+      setResults([...points].sort((a, b) => a - b));
+      setResultTitle(title);
+      if (points.length) setSelected(points[0]);
+    },
+    [changeTab],
+  );
+  const bookmark = useCallback(() => {
     update({
       bookmarks: prefs.bookmarks.includes(selected)
         ? prefs.bookmarks.filter((cp) => cp !== selected)
         : [...prefs.bookmarks, selected],
     });
-  }
-  const listed = tab === 'bookmarks' ? prefs.bookmarks : results;
-  const points = listed
-    ? listed.slice(resultPage * PAGE_SIZE, (resultPage + 1) * PAGE_SIZE)
-    : Array.from({ length: PAGE_SIZE }, (_, i) => pageStart + i).filter(
-        (cp) => !assignedOnly || db.category(cp) !== 'Cn',
-      );
-  const planeBlocks = db.data.properties.Block.filter(([start]) => start >>> 16 === plane);
-  const blocks = db.data.properties.Block.filter(([, , name]) =>
-    name.toLowerCase().includes(blockFilter.toLowerCase()),
+  }, [selected, prefs.bookmarks, update]);
+  const searchUnicode = useCallback(() => runSearch('unicode'), [runSearch]);
+  const setBuffer = useCallback((buffer: string) => update({ buffer }), [update]);
+  const setFont = useCallback((font: string) => update({ font }), [update]);
+  const setComposite = useCallback(
+    (composite: Record<string, string>) => update({ composite }),
+    [update],
   );
-  const block = db.property(selected, 'Block');
-  const filterOptions = useMemo(() => {
-    const collator = new Intl.Collator(undefined, { numeric: true });
-    const values = (property: string) =>
-      [...new Set(db.data.properties[property].map((row) => row[2]))].sort(collator.compare);
-    return {
-      category: [...new Set(db.data.records.map((row) => row[2])), 'Cn'].sort(),
-      script: values('Script'),
-      age: values('Age'),
-      block: values('Block'),
-      plane: Array.from({ length: 17 }, (_, i) => String(i)),
-      binary: Object.entries(db.data.properties)
-        .filter(([, rows]) => rows.every((row) => row[2] === 'Yes'))
-        .map(([key]) => key)
-        .sort(),
-      bidi: values('Bidi_Class'),
-      combining: [...new Set(db.data.records.map((row) => row[3]))].sort(
-        (a, b) => Number(a) - Number(b),
-      ),
-    };
-  }, [db]);
-  const filterSelect = (key: keyof SearchQuery, label: string, options: string[]) => (
-    <label key={key}>
-      {label}
-      <select
-        aria-label={label}
-        value={String(filters[key] ?? '')}
-        onChange={(event) => setFilters({ ...filters, [key]: event.target.value })}
-      >
-        <option value="">すべて</option>
-        {options.map((value) => (
-          <option key={value}>{value}</option>
-        ))}
-      </select>
-    </label>
+  const setSize = useCallback((size: number) => update({ size }), [update]);
+  const changeAllPlanes = useCallback(
+    (value: boolean) => {
+      setAllPlanes(value);
+      if (!value && !planeNames[plane]) locate(0);
+    },
+    [plane, locate],
+  );
+  const listed = tab === 'bookmarks' ? prefs.bookmarks : results;
+  const points = useMemo(
+    () =>
+      listed
+        ? listed.slice(resultPage * PAGE_SIZE, (resultPage + 1) * PAGE_SIZE)
+        : Array.from({ length: PAGE_SIZE }, (_, i) => pageStart + i).filter(
+            (cp) => !assignedOnly || db.category(cp) !== 'Cn',
+          ),
+    [listed, resultPage, pageStart, assignedOnly, db],
   );
   const activeFilters = Object.entries(filters).filter(([key, value]) =>
     key === 'aliases' ? value === false : Boolean(value),
@@ -371,51 +356,13 @@ export default function App({ db }: { db: UnicodeDatabase }) {
           コード指定
         </button>
       </form>
-      <div id="advanced-search" popover="auto" className="utility-popover" aria-label="詳細検索">
-        <h2>詳細検索</h2>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            runSearch('unicode');
-            document.getElementById('advanced-search')?.hidePopover();
-          }}
-        >
-          <div className="filter-fields">
-            {filterSelect('category', '一般カテゴリ', filterOptions.category)}
-            {filterSelect('script', 'スクリプト', filterOptions.script)}
-            {filterSelect('age', '追加バージョン', filterOptions.age)}
-            {filterSelect('block', 'ブロック', filterOptions.block)}
-            {filterSelect('plane', '面', filterOptions.plane)}
-            {filterSelect('binary', '二値属性', filterOptions.binary)}
-            {filterSelect('bidi', 'Bidi クラス', filterOptions.bidi)}
-            {filterSelect('combining', '結合クラス', filterOptions.combining)}
-          </div>
-          <div className="button-row">
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={filters.aliases !== false}
-                onChange={(event) => setFilters({ ...filters, aliases: event.target.checked })}
-              />
-              別名も検索
-            </label>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={filters.wholeWord === true}
-                onChange={(event) => setFilters({ ...filters, wholeWord: event.target.checked })}
-              />
-              単語全体で一致
-            </label>
-            <button type="button" onClick={() => setFilters({ aliases: true })}>
-              条件をリセット
-            </button>
-            <button className="primary" disabled={busy}>
-              条件で検索
-            </button>
-          </div>
-        </form>
-      </div>
+      <AdvancedSearch
+        db={db}
+        filters={filters}
+        onChangeFilters={setFilters}
+        onSearch={searchUnicode}
+        busy={busy}
+      />
       <div
         id="goto-codepoint"
         popover="auto"
@@ -453,94 +400,20 @@ export default function App({ db }: { db: UnicodeDatabase }) {
         </form>
       </div>
       <div className="workspace">
-        <div
-          id="block-browser"
-          popover="auto"
-          className="utility-popover block-browser"
-          aria-label="ブロック一覧"
-          onToggle={(event) => {
-            if (event.currentTarget.matches(':popover-open')) {
-              const list = blockList.current;
-              const active = list?.querySelector<HTMLButtonElement>('button.active');
-              if (list && active) list.scrollTop = active.offsetTop - list.clientHeight / 2;
-            }
-          }}
-        >
-          <h2>ブロック一覧</h2>
-          <input
-            aria-label="ブロックを絞り込み"
-            placeholder="名前で絞り込み…"
-            value={blockFilter}
-            onChange={(event) => setBlockFilter(event.target.value)}
-          />
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={allPlanes}
-              onChange={(event) => {
-                setAllPlanes(event.target.checked);
-                if (!event.target.checked && !planeNames[plane]) locate(0);
-              }}
-            />
-            予約面も表示
-          </label>
-          <div className="block-list" ref={blockList} aria-label="Unicode ブロック">
-            {blocks.map(([start, end, name]) => (
-              <button
-                key={start}
-                className={block === name ? 'active' : ''}
-                onClick={() => {
-                  locate(start);
-                  document.getElementById('block-browser')?.hidePopover();
-                }}
-              >
-                <span>{name}</span>
-                <small>
-                  {hex(start)}–{hex(end)}
-                </small>
-              </button>
-            ))}
-            {!blocks.length && <p className="muted">一致するブロックはありません。</p>}
-          </div>
-        </div>
         <CharacterDisplay
           navigation={
-            <>
-              <select
-                aria-label="Unicode 面"
-                value={plane}
-                onChange={(event) => locate(Number(event.target.value) * 0x10000)}
-              >
-                {Array.from({ length: 17 }, (_, i) => i)
-                  .filter((i) => allPlanes || planeNames[i])
-                  .map((i) => (
-                    <option value={i} key={i}>
-                      {i.toString().padStart(2, '0')} · {planeNames[i] ?? '予約面'}
-                    </option>
-                  ))}
-              </select>
-              <select
-                className="block-select"
-                aria-label="ブロックへ移動"
-                value={planeBlocks.find(([, , name]) => name === selectedBlock)?.[0] ?? ''}
-                onChange={(event) => {
-                  if (event.target.value) locate(Number(event.target.value));
-                }}
-              >
-                <option value="">ブロックを選択…</option>
-                {planeBlocks.map(([start, , name]) => (
-                  <option key={start} value={start}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-              <button popoverTarget="block-browser" aria-label="ブロック一覧">
-                一覧
-              </button>
-            </>
+            <BlockNavigation
+              db={db}
+              plane={plane}
+              selectedBlock={selectedBlock}
+              allPlanes={allPlanes}
+              planeNames={planeNames}
+              onLocate={locate}
+              onAllPlanesChange={changeAllPlanes}
+            />
           }
           size={prefs.size}
-          onSizeCommit={(size) => update({ size })}
+          onSizeCommit={setSize}
           fontControls={
             <>
               <label>
@@ -595,11 +468,12 @@ export default function App({ db }: { db: UnicodeDatabase }) {
               <div className="tool-scroll" hidden={tab !== 'fonts'}>
                 <FontPanel
                   db={db}
-                  cp={selected}
+                  // Retain the loaded font, but only inspect selection while visible.
+                  cp={tab === 'fonts' ? selected : 0}
                   family={prefs.font}
-                  setFamily={(font) => update({ font })}
+                  setFamily={setFont}
                   composite={prefs.composite}
-                  setComposite={(composite) => update({ composite })}
+                  setComposite={setComposite}
                   notify={notify}
                   onShow={showResults}
                   onSelect={setSelected}
@@ -740,17 +614,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                     font={prefs.font}
                     colorBy={prefs.colorBy}
                     composite={prefs.composite}
-                    onMove={(delta) => {
-                      if (!listed) {
-                        const cp = selected + delta;
-                        if (isCodePoint(cp)) {
-                          locate(cp);
-                          requestAnimationFrame(() =>
-                            document.querySelector<HTMLButtonElement>(`[data-cp="${cp}"]`)?.focus(),
-                          );
-                        }
-                      }
-                    }}
+                    onMove={listed ? undefined : locate}
                   />
                 ) : (
                   <div className="empty-state">
@@ -822,7 +686,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
       <Editor
         db={db}
         text={prefs.buffer}
-        onChange={(buffer) => update({ buffer })}
+        onChange={setBuffer}
         font={prefs.font}
         onLocate={locate}
         notify={notify}

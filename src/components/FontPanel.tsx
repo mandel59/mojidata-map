@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { memo, useMemo, useRef, useState } from 'react';
 import type { Font } from 'fontkit';
 import { codeLabel, hex, isScalar, parseCodePoint, type UnicodeDatabase } from '../core/unicode';
 import { download, type LocalFont } from '../platform';
@@ -14,7 +14,7 @@ interface Props {
   onShow(points: number[], title: string): void;
   onSelect(cp: number): void;
 }
-export function FontPanel({
+export const FontPanel = memo(function FontPanel({
   db,
   cp,
   family,
@@ -474,4 +474,4 @@ export function FontPanel({
       </details>
     </section>
   );
-}
+});
