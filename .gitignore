@@ -1,1 +1,9 @@
 var/
+node_modules/
+dist/
+release/
+test-results/
+playwright-report/
+coverage/
+__pycache__/
+*.tsbuildinfo
