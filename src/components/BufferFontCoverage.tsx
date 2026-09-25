@@ -3,9 +3,19 @@ import { useMemo, useState } from 'react';
 import type { UnicodeDatabase } from '../core/unicode';
 import { useBufferFontSearch } from '../useBufferFontSearch';
 import { UtilityDialog } from './UtilityDialog';
+import { BufferFontPreview } from './BufferFontPreview';
+import type { LocalFont } from '../platform';
 
 const PAGE_SIZE = 50;
-export function BufferFontCoverage({ text, db }: { text: string; db: UnicodeDatabase }) {
+export function BufferFontCoverage({
+  text,
+  db,
+  onInspectFont,
+}: {
+  text: string;
+  db: UnicodeDatabase;
+  onInspectFont(font: LocalFont): void;
+}) {
   const { result, start, cancel, close } = useBufferFontSearch(db);
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(0);
@@ -96,8 +106,7 @@ export function BufferFontCoverage({ text, db }: { text: string; db: UnicodeData
                   >
                     <thead>
                       <tr>
-                        <th>フォント</th>
-                        <th>スタイル</th>
+                        <th>フォント・プレビュー</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -106,10 +115,25 @@ export function BufferFontCoverage({ text, db }: { text: string; db: UnicodeData
                         .map((font) => (
                           <tr key={font.postscriptName}>
                             <td>
-                              {font.fullName}
-                              <small>{font.postscriptName}</small>
+                              <div className="buffer-font-match-heading">
+                                <div>
+                                  {font.fullName}
+                                  <small>
+                                    {font.style} · {font.postscriptName}
+                                  </small>
+                                </div>
+                                <button
+                                  aria-label={`${font.fullName}をフォントタブで解析`}
+                                  onClick={() => {
+                                    close();
+                                    onInspectFont(font);
+                                  }}
+                                >
+                                  解析
+                                </button>
+                              </div>
+                              <BufferFontPreview font={font} text={result.text} />
                             </td>
-                            <td>{font.style}</td>
                           </tr>
                         ))}
                     </tbody>

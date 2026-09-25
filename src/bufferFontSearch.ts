@@ -1,7 +1,9 @@
 import { FONT_SIZE_LIMIT } from './core/fontFaceData';
 import type { LocalFont } from './platform';
 
-export type FontMatch = Pick<LocalFont, 'family' | 'fullName' | 'postscriptName' | 'style'>;
+export interface FontMatch extends LocalFont {
+  faceIndex: number;
+}
 export interface FontSearchProgress {
   checked: number;
   total: number;
@@ -9,8 +11,8 @@ export interface FontSearchProgress {
   matches: FontMatch[];
 }
 
-// Keep only matching names. Font bytes are transferred one face at a time and
-// discarded by the worker; no FontFace or fallback family is installed.
+// Keep matching metadata and a blob accessor for previews and inspection.
+// Scan bytes are transferred one face at a time and discarded by the worker.
 export async function findBufferFonts(
   fonts: LocalFont[],
   points: number[],
@@ -50,21 +52,30 @@ export async function findBufferFonts(
         if (blob.size > FONT_SIZE_LIMIT) throw new Error('Font exceeds 64 MB');
         const bytes = await blob.arrayBuffer();
         signal.throwIfAborted();
-        const covers = await new Promise<boolean>((resolve, reject) => {
+        const faceIndex = await new Promise<number | null>((resolve, reject) => {
           if (failure) return reject(failure);
           rejectPending = reject;
-          worker.onmessage = (event: MessageEvent<{ covers?: boolean; error?: string }>) => {
+          worker.onmessage = (
+            event: MessageEvent<{ faceIndex: number | null; error?: string }>,
+          ) => {
             rejectPending = null;
             if (event.data.error) reject(new Error(event.data.error));
-            else resolve(event.data.covers === true);
+            else resolve(event.data.faceIndex);
           };
           worker.postMessage({ bytes, postscriptName: font.postscriptName, matchOnly: true }, [
             bytes,
           ]);
         });
-        if (covers) {
+        if (faceIndex !== null) {
           const { fullName, family, postscriptName, style } = font;
-          matches.push({ fullName, family, postscriptName, style });
+          matches.push({
+            fullName,
+            family,
+            postscriptName,
+            style,
+            faceIndex,
+            blob: () => font.blob(),
+          });
         }
       } catch (error) {
         signal.throwIfAborted();

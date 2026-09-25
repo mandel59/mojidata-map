@@ -10,7 +10,7 @@ import {
   type OutputFormat,
 } from '../core/encoding';
 import { codeLabel, type UnicodeDatabase } from '../core/unicode';
-import { copyText, download } from '../platform';
+import { copyText, download, type LocalFont } from '../platform';
 
 export interface EditorHandle {
   insert(text: string): void;
@@ -21,6 +21,7 @@ interface Props {
   onChange(text: string): void;
   font: string;
   onLocate(cp: number): void;
+  onInspectFont(font: LocalFont): void;
   notify(message: string): void;
   handle: RefObject<EditorHandle | null>;
 }
@@ -30,6 +31,7 @@ export const Editor = memo(function Editor({
   onChange,
   font,
   onLocate,
+  onInspectFont,
   notify,
   handle,
 }: Props) {
@@ -88,7 +90,7 @@ export const Editor = memo(function Editor({
         <span className="muted">
           {stats.graphemes} 書記素 · {stats.codePoints} コードポイント · {stats.utf8} bytes
         </span>
-        <BufferFontCoverage db={db} text={text} />
+        <BufferFontCoverage db={db} text={text} onInspectFont={onInspectFont} />
         <button popoverTarget="editor-options">変換・保存</button>
       </div>
       <div className="editor-input-row">

@@ -4,16 +4,22 @@ import { Buffer } from 'buffer';
 function localFont(bytes: ArrayBuffer, postscriptName: string) {
   const parsed = create(Buffer.from(bytes));
   const collection = 'fonts' in parsed;
-  const font = collection
-    ? parsed.fonts.find((face) => face.postscriptName === postscriptName)
-    : parsed;
+  const fonts = collection ? parsed.fonts : [parsed];
+  const index = collection ? fonts.findIndex((face) => face.postscriptName === postscriptName) : 0;
+  const font = fonts[index];
   if (!font) throw new Error('フォントのフェイスが見つかりません。');
-  return { font, collection };
+  return { font, collection, index };
 }
 
 export function localFontCovers(bytes: ArrayBuffer, postscriptName: string, points: number[]) {
-  const { font } = localFont(bytes, postscriptName);
-  return points.length > 0 && points.every((cp) => font.hasGlyphForCodePoint(cp));
+  return localFontMatch(bytes, postscriptName, points) !== null;
+}
+
+// Return the matched face index so previews can extract the same TTC/OTC face
+// without parsing it again on the main thread.
+export function localFontMatch(bytes: ArrayBuffer, postscriptName: string, points: number[]) {
+  const { font, index } = localFont(bytes, postscriptName);
+  return points.length > 0 && points.every((cp) => font.hasGlyphForCodePoint(cp)) ? index : null;
 }
 
 export function localFontCoverage(bytes: ArrayBuffer, postscriptName: string) {

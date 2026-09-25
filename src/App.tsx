@@ -17,7 +17,8 @@ import { CharacterDetails } from './components/CharacterDetails';
 import { Editor, type EditorHandle } from './components/Editor';
 import { usePreferences } from './preferences';
 import { FontFallbackStyle, FallbackFontSettings, useFontFallback } from './useFontFallback';
-import { type AboutSection } from './platform';
+import { type AboutSection, type LocalFont } from './platform';
+import { useFontInspection } from './useFontInspection';
 import { UtilityDialog } from './components/UtilityDialog';
 import { useMediaQuery } from './useMediaQuery';
 import { AboutDialog } from './components/AboutDialog';
@@ -77,6 +78,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
   const [about, setAbout] = useState<AboutSection | null>(null);
   useEffect(() => window.mojidata?.onOpenAbout(setAbout), []);
   const [fontOpened, setFontOpened] = useState(false);
+  const [fontFocusRequest, setFontFocusRequest] = useState(0);
   const editor = useRef<EditorHandle | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sequenceProperties = useMemo<[string, string][]>(
@@ -201,6 +203,15 @@ export default function App({ db }: { db: UnicodeDatabase }) {
     if (next === 'statistics') setStatisticsOpened(true);
     setTab(next);
   }, []);
+  const inspection = useFontInspection(notify);
+  const inspectFont = useCallback(
+    (font: LocalFont) => {
+      changeTab('fonts');
+      setFontFocusRequest((request) => request + 1);
+      void inspection.inspect(() => font.blob(), font.fullName, font.postscriptName);
+    },
+    [changeTab, inspection.inspect],
+  );
   const selectMap = useCallback((cp: number) => {
     setMapSelected(cp);
     setSelected(cp);
@@ -436,6 +447,8 @@ export default function App({ db }: { db: UnicodeDatabase }) {
           >
             {fontOpened && (
               <FontPanel
+                inspection={inspection}
+                focusRequest={fontFocusRequest}
                 db={db}
                 // Retain the loaded font, but only inspect selection while visible.
                 cp={tab === 'fonts' ? selected : 0}
@@ -582,6 +595,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
         )}
       </div>
       <Editor
+        onInspectFont={inspectFont}
         db={db}
         text={prefs.buffer}
         onChange={setBuffer}

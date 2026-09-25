@@ -1866,13 +1866,35 @@ td button {
   table-layout: fixed;
   width: 100%;
 }
-.buffer-font-matches th:last-child {
-  width: 28%;
-}
 .buffer-font-matches td {
   overflow-wrap: anywhere;
 }
 .buffer-font-matches small {
   display: block;
   color: var(--muted);
+}
+
+.buffer-font-match-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.buffer-font-match-heading > div {
+  flex: 1;
+  min-width: 0;
+}
+.buffer-font-match-heading button {
+  flex-shrink: 0;
+}
+.buffer-font-preview {
+  margin-top: 8px;
+  height: 100px;
+  overflow: auto;
+}
+.buffer-font-preview-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 28px;
+  line-height: 1.5;
+  font-synthesis: none;
 }

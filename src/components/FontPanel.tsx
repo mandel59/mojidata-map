@@ -1,7 +1,7 @@
-import { memo, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { memo, useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import type { UnicodeDatabase } from '../core/unicode';
 import type { LocalFont } from '../platform';
-import { useFontInspection } from '../useFontInspection';
+import type { useFontInspection } from '../useFontInspection';
 import { FontCharacters } from './fonts/FontCharacters';
 import { FontSample } from './fonts/FontSample';
 
@@ -12,6 +12,8 @@ const sections = [
 ] as const;
 type Section = (typeof sections)[number][0];
 interface Props {
+  inspection: ReturnType<typeof useFontInspection>;
+  focusRequest: number;
   db: UnicodeDatabase;
   cp: number;
   active: boolean;
@@ -26,6 +28,8 @@ interface Props {
 export const FontPanel = memo(function FontPanel({
   db,
   cp,
+  inspection,
+  focusRequest,
   notify,
   active,
   compact,
@@ -37,10 +41,14 @@ export const FontPanel = memo(function FontPanel({
 }: Props) {
   const id = useId();
   const source = useRef<HTMLDivElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (focusRequest) heading.current?.focus();
+  }, [focusRequest]);
   const tabs = useRef<HTMLDivElement>(null);
   const [section, setSection] = useState<Section>('characters');
   const [sample, setSample] = useState('office العربية 日本語');
-  const { selection, pending, inspect, selectFace, clear } = useFontInspection(notify);
+  const { selection, pending, inspect, selectFace, clear } = inspection;
   const [localFonts, setLocalFonts] = useState<LocalFont[]>([]);
   const [localName, setLocalName] = useState('');
   const [enumerating, setEnumerating] = useState(false);
@@ -95,10 +103,17 @@ export const FontPanel = memo(function FontPanel({
       <header className="font-workspace-heading">
         <div>
           <span className="muted">解析対象のフォント</span>
-          <h2 title={font?.fullName}>{font?.fullName || 'フォントを選んでください'}</h2>
+          <h2 title={font?.fullName} ref={heading} tabIndex={-1}>
+            {font?.fullName || 'フォントを選んでください'}
+          </h2>
         </div>
         <button popoverTarget={`${id}-source`}>フォントを選ぶ</button>
       </header>
+      {busy && (
+        <p className="note" role="status">
+          フォントを解析中…
+        </p>
+      )}
       <div
         id={`${id}-source`}
         popover="auto"
@@ -163,7 +178,6 @@ export const FontPanel = memo(function FontPanel({
             追加フォントを解除
           </button>
         )}
-        {busy && <span role="status">フォントを解析中…</span>}
         <p className="note muted">
           読み込んだファイルは外部へ送信しません。このタブで選んだフォントは、共通の表示フォント設定を変更しません。
         </p>
