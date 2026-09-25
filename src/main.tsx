@@ -1,6 +1,8 @@
 import { Component, StrictMode, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { LocaleProvider } from './intl/LocaleProvider';
+import { DEFAULT_LOCALE } from './intl/locale';
 import { loadDatabase } from './data';
 import './styles.css';
 
@@ -34,7 +36,9 @@ loadDatabase()
     root.render(
       <StrictMode>
         <ErrorBoundary>
-          <App db={db} />
+          <LocaleProvider locale={DEFAULT_LOCALE}>
+            <App db={db} />
+          </LocaleProvider>
         </ErrorBoundary>
       </StrictMode>,
     ),

@@ -1,5 +1,6 @@
 import { create } from 'fontkit';
 import { Buffer } from 'buffer';
+import { fontNames } from './fontNames';
 
 function localFont(bytes: ArrayBuffer, postscriptName: string) {
   const parsed = create(Buffer.from(bytes));
@@ -17,9 +18,20 @@ export function localFontCovers(bytes: ArrayBuffer, postscriptName: string, poin
 
 // Return the matched face index so previews can extract the same TTC/OTC face
 // without parsing it again on the main thread.
-export function localFontMatch(bytes: ArrayBuffer, postscriptName: string, points: number[]) {
+export function localFontMatch(
+  bytes: ArrayBuffer,
+  postscriptName: string,
+  points: number[],
+  locale = 'en',
+) {
   const { font, index } = localFont(bytes, postscriptName);
-  return points.length > 0 && points.every((cp) => font.hasGlyphForCodePoint(cp)) ? index : null;
+  return points.length > 0 && points.every((cp) => font.hasGlyphForCodePoint(cp))
+    ? { faceIndex: index, ...fontNames(font, locale, postscriptName) }
+    : null;
+}
+
+export function localFontNames(bytes: ArrayBuffer, postscriptName: string, locale: string) {
+  return fontNames(localFont(bytes, postscriptName).font, locale, postscriptName);
 }
 
 export function localFontCoverage(bytes: ArrayBuffer, postscriptName: string) {

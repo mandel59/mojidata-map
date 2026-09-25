@@ -29,7 +29,7 @@
 
 `useFontInspection` はAppが保持し、フォント画面とカバレッジ結果からの解析を同じコントローラーへ集約する。状態と操作の参照を安定させ、入力に無関係なフォント画面の再描画を防ぐ。読込元のバイナリ・解析したフェイス一覧・選択インデックス・FontFaceを一体として確定する。未適用の端末フォント候補はPostScript名で保持し、コレクションの初期フェイスもその名前で解決する。blob取得前からリクエスト番号を進め、最新の要求だけを適用する。解除・アンマウントは要求を無効化し、再読込・フェイス切替は以前のFontFaceを登録解除する。解析に失敗した場合は直前の状態を維持し、表示だけに失敗した場合は解析を利用可能にして表示不可を明示する。
 
-`BufferFontCoverage` は編集バッファのカバレッジ操作を独立したダイアログとして表示する。`useBufferFontSearch` はクリック時のテキストを固定し、ユーザー操作から直接Local Font Accessを呼ぶ。中止・閉じる・再検索・アンマウントでAbortControllerを無効化し、古い完了は現在の結果へ反映しない。`bufferFontSearch` はPostScript名で重複を除いた各端末フォントを順次読み込み、既存の `fontCoverage.worker` の検索モードへバイナリを移譲する。対象文字はワーカーに一度だけ渡し、全対象文字が実グリフを持つか `localFontMatch` で判定し、一致したフェイスのインデックスを返す。TTC/OTCは指定PostScript名のフェイスを使い、.notdef・別フェイスの収録を混ぜない。一致したメタデータ・フェイス番号・blob取得関数を保持し、検索時のバイナリは蓄積しない。`BufferFontPreview` はIntersectionObserverで表示中の項目だけを読み込み、`fontFaceData` で該当フェイスを抽出して専用名のFontFaceへ登録する。画面外・絞り込み・ページ移動・再検索・閉じる場合は登録解除し、古い非同期完了を破棄する。プレビュー失敗時も検索結果と解析操作は利用できる。共通の表示・補完設定は変更しない。「解析」は元のblob取得関数とPostScript名を `useFontInspection` へ渡す。個別の破損・取得失敗・64MB超のフォントは数を表示して除外し、ワーカーの起動失敗は検索全体のエラーとする。補完用の従来のワーカーモードは全収録範囲と機能タグを返す。
+`BufferFontCoverage` は編集バッファのカバレッジ操作を独立したダイアログとして表示する。`useBufferFontSearch` はクリック時のテキストを固定し、ユーザー操作から直接Local Font Accessを呼ぶ。中止・閉じる・再検索・アンマウントでAbortControllerを無効化し、古い完了は現在の結果へ反映しない。`bufferFontSearch` はPostScript名で重複を除いた各端末フォントを順次読み込み、既存の `fontCoverage.worker` の検索モードへバイナリを移譲する。対象文字はワーカーに一度だけ渡し、全対象文字が実グリフを持つか `localFontMatch` で判定し、一致したフェイスのインデックスとUI言語優先の表示名を返す。TTC/OTCは指定PostScript名のフェイスを使い、.notdef・別フェイスの収録を混ぜない。一致したメタデータ・フェイス番号・blob取得関数を保持し、検索時のバイナリは蓄積しない。`BufferFontPreview` はIntersectionObserverで表示中の項目だけを読み込み、`fontFaceData` で該当フェイスを抽出して専用名のFontFaceへ登録する。画面外・絞り込み・ページ移動・再検索・閉じる場合は登録解除し、古い非同期完了を破棄する。プレビュー失敗時も検索結果と解析操作は利用できる。共通の表示・補完設定は変更しない。「解析」は元のblob取得関数とPostScript名を `useFontInspection` へ渡す。個別の破損・取得失敗・64MB超のフォントは数を表示して除外し、ワーカーの起動失敗は検索全体のエラーとする。補完用の従来のワーカーモードは全収録範囲と機能タグを返す。
 
 `core/fontFaceData` はTTC/OTCの選択フェイスを単独のsfntへ変換してFontFaceへ渡す。グリフIDと配置・色・可変軸等のテーブルを保ち、絶対オフセットを再配置する。[OpenTypeのファイル仕様](https://learn.microsoft.com/en-us/typography/opentype/spec/otff)に従い4バイト境界・チェックサムを再計算し、元ファイルの署名は引き継がない。ブラウザへコレクション全体を渡して先頭フェイスが表示される問題を避ける。
 
@@ -72,3 +72,10 @@ JSON は読込中の Promise と解決済みオブジェクトの参照をキャ
 Node.js 24 LTS と npm の lockfile を用いる。Vitest でデータ処理、Playwright でブラウザの操作を確認する。Windows 向け Electron パッケージ生成は CI でも実行可能にする。Linux から生成できることと、Windows 実機で動作することは区別して記録する。
 
 参照: [Electron セキュリティ](https://www.electronjs.org/docs/latest/tutorial/security)、[Vite](https://vite.dev/guide/)、[electron-builder](https://www.electron.build/)。
+
+
+## 共通ロケール
+
+`intl/LocaleProvider` をアプリの境界に置き、`useLocale` からUIロケールとIntlの書式・照合器を取得する。現在の入力は `DEFAULT_LOCALE = ja` で、将来の言語設定をこの入力へ接続する。DOMのlangはProviderから反映し、DOM・navigator・OS設定を個々の機能の言語選択元にしない。`core/fontNames` は言語を明示的な引数で受け、fontkitのnameレコードからUI言語・英語の順に選ぶ。名前を持たない言語の文字列を任意に返すfontkit／Local Font Accessの既定動作は表示名に使わない。PostScript名と描画用の専用FontFace名は識別子として維持する。
+
+カバレッジ検索は一度だけロケールをワーカーへ渡し、収録判定に使った同じフェイスから表示名を取得する。端末フォントの候補は `localizeFontNames` が順次取得・ワーカー解析してから、その言語で並べる。破損などで名前を読めない候補もPostScript名で選択できる。バイナリは保持しない。解析済みフォントの表示名はsourceとロケールから導出し、ロケール変更時に再解析・FontFace再登録は行わない。ロケール変更は進行中のカバレッジ検索・候補の名前取得を中止し、古い表示名の結果を無効にする。詳細と後続の翻訳・設定への接続は [intl.md](intl.md) に記載する。

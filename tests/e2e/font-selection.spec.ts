@@ -38,7 +38,7 @@ test('applies the chosen local PostScript face and retains the candidate after e
     ({ names }) => {
       let enumerations = 0;
       window.queryLocalFonts = async () => {
-        // Change sort order on re-enumeration: selection must use identity, not index.
+        // Change the API labels: binary names and the selected identity must stay stable.
         enumerations++;
         return names.map((font, i) => ({
           fullName: `${enumerations === 1 ? i : 1 - i} ${font.name}`,
@@ -60,7 +60,7 @@ test('applies the chosen local PostScript face and retains the candidate after e
   await expect(preview(page)).toHaveCSS('font-family', family);
   await expect(heading(page)).toHaveText(names[0].name);
   await page.getByRole('button', { name: '端末のフォントを取得', exact: true }).click();
-  await expect(candidate.locator('option').nth(1)).toHaveAttribute('value', names[1].ps);
+  await expect(candidate.locator('option').nth(1)).toHaveAttribute('value', names[0].ps);
   await expect(candidate).toHaveValue(names[1].ps);
   await page.getByRole('button', { name: '選択フォントを解析', exact: true }).click();
   await expect(heading(page)).toHaveText(names[1].name);
@@ -120,14 +120,17 @@ test('starts pending state before local blob retrieval and cancels obsolete impo
 }) => {
   await page.route('**/__collection', (route) => route.fulfill({ path: collectionFile }));
   await page.addInitScript(({ name, ps }) => {
+    let reads = 0;
     window.queryLocalFonts = async () => [
       {
         fullName: name,
         postscriptName: ps,
         family: 'fantasy',
         style: 'Regular',
-        blob: () =>
-          new Promise<Blob>((resolve) => {
+        blob: () => {
+          // Name enumeration reads the bytes first. Delay the subsequent import.
+          if (++reads === 1) return fetch('/__collection').then((response) => response.blob());
+          return new Promise<Blob>((resolve) => {
             document.documentElement.dataset.waitingBlob = 'true';
             window.addEventListener(
               'release-blob',
@@ -137,7 +140,8 @@ test('starts pending state before local blob retrieval and cancels obsolete impo
                   .then(resolve),
               { once: true },
             );
-          }),
+          });
+        },
       },
     ];
   }, names[1]);

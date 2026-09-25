@@ -42,8 +42,8 @@ test('requires every buffer code point in one face, including supplementary and 
   const { readFileSync } = await import('node:fs');
   const { localFontCovers, localFontMatch } = await import('../src/core/localFontCoverage');
   const bytes = new Uint8Array(readFileSync('tests/fixtures/FallbackCollection.ttc')).buffer;
-  expect(localFontMatch(bytes, 'FallbackBase', [0x41])).toBe(0);
-  expect(localFontMatch(bytes, 'FallbackExtra', [0x41, 0x323b0])).toBe(1);
+  expect(localFontMatch(bytes, 'FallbackBase', [0x41])?.faceIndex).toBe(0);
+  expect(localFontMatch(bytes, 'FallbackExtra', [0x41, 0x323b0])?.faceIndex).toBe(1);
   expect(localFontMatch(bytes, 'FallbackBase', [0x41, 0x323b0])).toBeNull();
   expect(localFontCovers(bytes, 'FallbackBase', [0x41, 0x323b0])).toBe(false);
   expect(localFontCovers(bytes, 'FallbackExtra', [0x41, 0x323b0, 0xf0000])).toBe(true);

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Font } from 'fontkit';
+import { fontNames } from './core/fontNames';
+import { useLocale } from './intl/LocaleProvider';
 import { fontFaceData, FONT_SIZE_LIMIT } from './core/fontFaceData';
 
 interface FontSource {
@@ -22,6 +24,11 @@ let previewSequence = 0;
 // The parsed face and its CSS preview become visible together. Pending choices
 // never change the committed selection; obsolete async work cannot restore it.
 export function useFontInspection(notify: (message: string) => void) {
+  const { locale } = useLocale();
+  const activeLocale = useRef(locale);
+  useEffect(() => {
+    activeLocale.current = locale;
+  }, [locale]);
   const [state, setState] = useState<Inspection>({ selection: null, pending: null });
   const request = useRef(0);
   const registered = useRef<FontFace | null>(null);
@@ -49,7 +56,9 @@ export function useFontInspection(notify: (message: string) => void) {
       if (registered.current) document.fonts.delete(registered.current);
       registered.current = preview;
       setState({ selection: { source, index, revision, preview }, pending: null });
-      notify(`${source.fonts[index].fullName || source.label} を読み込みました。`);
+      notify(
+        `${fontNames(source.fonts[index], activeLocale.current, source.label).fullName} を読み込みました。`,
+      );
       return true;
     },
     [notify],
@@ -117,8 +126,13 @@ export function useFontInspection(notify: (message: string) => void) {
     setState({ selection: null, pending: null });
   }, []);
 
+  const source = state.selection?.source;
+  const names = useMemo(
+    () => source?.fonts.map((font) => fontNames(font, locale, source.label)) ?? [],
+    [source, locale],
+  );
   return useMemo(
-    () => ({ ...state, inspect, selectFace, clear }),
-    [state, inspect, selectFace, clear],
+    () => ({ ...state, names, inspect, selectFace, clear }),
+    [state, names, inspect, selectFace, clear],
   );
 }

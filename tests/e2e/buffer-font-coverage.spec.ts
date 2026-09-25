@@ -26,8 +26,8 @@ async function localFonts(page: Page) {
     window.queryLocalFonts = async () => {
       document.documentElement.dataset.enumerated = 'true';
       return [
-        ['FallbackBase', 'Collection base', 'FallbackCollection.ttc'],
-        ['FallbackExtra', 'Collection extra', 'FallbackCollection.ttc'],
+        ['FallbackBase', 'FallbackBase', 'FallbackCollection.ttc'],
+        ['FallbackExtra', 'FallbackExtra', 'FallbackCollection.ttc'],
         ['Other', 'Other', 'FallbackOther.ttf'],
         ['Broken', 'Broken', 'Broken'],
       ].map(([postscriptName, fullName, file]) => ({
@@ -67,9 +67,9 @@ for (const width of [1024, 390]) {
     await expect(dialog).toContainText('読み込めない 1 フォントを除外しました。');
     const rows = dialog.locator('tbody tr');
     await expect(rows).toHaveCount(1);
-    await expect(rows).toContainText('Collection extra');
     await expect(rows).toContainText('FallbackExtra');
-    await expect(dialog.getByText('Collection base', { exact: true })).toHaveCount(0);
+    await expect(rows).toContainText('FallbackExtra');
+    await expect(dialog.getByText('FallbackBase', { exact: true })).toHaveCount(0);
     await expect(page.locator('.font-workspace-heading h2')).toHaveText('FallbackBase');
     await expect(sample).toHaveValue('Keep sample');
     await expect(editor).toHaveValue(text);
@@ -221,7 +221,7 @@ test('does not enumerate for controls-only or invalid text, and paginates and fi
       Array.from({ length: 51 }, (_, i) => ({
         family: 'Test',
         fullName: `Font ${String(i).padStart(2, '0')}`,
-        postscriptName: `Font${i}`,
+        postscriptName: `Font${String(i).padStart(2, '0')}`,
         style: 'Regular',
         blob: () => fetch('/__coverage/FallbackBase.ttf').then((r) => r.blob()),
       }));
@@ -232,14 +232,14 @@ test('does not enumerate for controls-only or invalid text, and paginates and fi
   await expect(dialog.locator('tbody tr')).toHaveCount(50);
   await dialog.getByRole('button', { name: '次のページ', exact: true }).click();
   await expect(dialog.locator('tbody tr')).toHaveCount(1);
-  await expect(dialog.locator('tbody tr')).toContainText('Font 50');
+  await expect(dialog.locator('tbody tr')).toContainText('Font50');
   const lastPreview = dialog.locator('.buffer-font-preview-text');
   await dialog.locator('.buffer-font-preview').scrollIntoViewIfNeeded();
   await expect.poll(() => previewFonts(page)).toHaveLength(1);
   const lastFamily = await lastPreview.evaluate((el) => getComputedStyle(el).fontFamily);
-  await dialog.getByLabel('フォント名で絞り込み').fill('font0');
+  await dialog.getByLabel('フォント名で絞り込み').fill('font00');
   await expect(dialog.locator('tbody tr')).toHaveCount(1);
-  await expect(dialog.locator('tbody tr')).toContainText('Font 00');
+  await expect(dialog.locator('tbody tr')).toContainText('Font00');
   await expect(dialog.locator('.pagination')).toContainText('1 / 1');
   await expect(dialog.locator('.buffer-font-preview-text')).not.toHaveCSS(
     'font-family',
@@ -279,9 +279,9 @@ for (const width of [1024, 390]) {
     const dialog = page.getByRole('dialog', { name: dialogName });
     // Works when the lazy font panel has never been opened, and when it already exists.
     for (const [label, name, index, advance] of [
-      ['Collection extra', 'FallbackExtra', '1', 90],
-      ['Collection base', 'FallbackBase', '0', 50],
-      ['Collection base', 'FallbackBase', '0', 50],
+      ['FallbackExtra', 'FallbackExtra', '1', 90],
+      ['FallbackBase', 'FallbackBase', '0', 50],
+      ['FallbackBase', 'FallbackBase', '0', 50],
     ] as const) {
       await open.click();
       await expect(dialog.getByRole('status')).toHaveText('4 フォントを確認しました');
@@ -343,7 +343,7 @@ test('keeps analysis available when a coverage preview fails, and discards late 
   const dialog = page.getByRole('dialog', { name: dialogName });
   await open.click();
   await expect(dialog.getByRole('status')).toHaveText('4 フォントを確認しました');
-  const row = dialog.locator('tbody tr').filter({ hasText: 'Collection extra' });
+  const row = dialog.locator('tbody tr').filter({ hasText: 'FallbackExtra' });
   await row.scrollIntoViewIfNeeded();
   await expect(row).toContainText('このフォントはブラウザでプレビューできません。');
   await expect(row.locator('.buffer-font-preview-text')).toHaveCount(0);

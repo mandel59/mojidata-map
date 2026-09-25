@@ -1,3 +1,4 @@
+import { useLocale } from './intl/LocaleProvider';
 import { useEffect, useRef, useState } from 'react';
 import { bufferCoverage } from './core/bufferCoverage';
 import type { UnicodeDatabase } from './core/unicode';
@@ -13,9 +14,13 @@ interface SearchResult extends FontSearchProgress {
 }
 
 export function useBufferFontSearch(db: UnicodeDatabase) {
+  const { locale } = useLocale();
   const [result, setResult] = useState<SearchResult | null>(null);
   const pending = useRef<AbortController | null>(null);
-  useEffect(() => () => pending.current?.abort(), []);
+  useEffect(() => {
+    setResult(null);
+    return () => pending.current?.abort();
+  }, [locale]);
 
   async function start(text: string) {
     pending.current?.abort();
@@ -52,6 +57,7 @@ export function useBufferFontSearch(db: UnicodeDatabase) {
       await findBufferFonts(
         fonts,
         points,
+        locale,
         (progress) => {
           if (!controller.signal.aborted)
             setResult({ ...initial, ...progress, status: 'scanning' });

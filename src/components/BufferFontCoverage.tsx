@@ -1,3 +1,4 @@
+import { useLocale } from '../intl/LocaleProvider';
 import { createPortal } from 'react-dom';
 import { useMemo, useState } from 'react';
 import type { UnicodeDatabase } from '../core/unicode';
@@ -16,17 +17,18 @@ export function BufferFontCoverage({
   db: UnicodeDatabase;
   onInspectFont(font: LocalFont): void;
 }) {
+  const { locale, numberFormat } = useLocale();
   const { result, start, cancel, close } = useBufferFontSearch(db);
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(0);
   const matches = useMemo(() => {
-    const term = query.trim().toLocaleLowerCase();
+    const term = query.trim().toLocaleLowerCase(locale);
     return (result?.matches ?? []).filter((font) =>
       [font.fullName, font.family, font.postscriptName, font.style].some((value) =>
-        value.toLocaleLowerCase().includes(term),
+        value.toLocaleLowerCase(locale).includes(term),
       ),
     );
-  }, [query, result?.matches]);
+  }, [query, result?.matches, locale]);
   const pages = Math.max(1, Math.ceil(matches.length / PAGE_SIZE));
   const currentPage = Math.min(page, pages - 1);
   const busy = result?.status === 'enumerating' || result?.status === 'scanning';
@@ -54,8 +56,8 @@ export function BufferFontCoverage({
                 <textarea value={result.text} readOnly rows={2} dir="auto" />
               </label>
               <p className="note muted">
-                対象 {result.required.toLocaleString()} 文字（重複を除く） · 制御・表示調整{' '}
-                {result.excluded.toLocaleString()} 文字を除外
+                対象 {numberFormat.format(result.required)} 文字（重複を除く） · 制御・表示調整{' '}
+                {numberFormat.format(result.excluded)} 文字を除外
                 <br />
                 各文字の収録で判定します。異体字列・絵文字列・合字の表示対応は別です。
               </p>
@@ -85,7 +87,9 @@ export function BufferFontCoverage({
               {result.skipped > 0 && (
                 <p className="note">読み込めない {result.skipped} フォントを除外しました。</p>
               )}
-              <strong>全対象文字を収録: {result.matches.length.toLocaleString()} フォント</strong>
+              <strong>
+                全対象文字を収録: {numberFormat.format(result.matches.length)} フォント
+              </strong>
               {!!result.matches.length && (
                 <label>
                   フォント名で絞り込み
@@ -119,7 +123,8 @@ export function BufferFontCoverage({
                                 <div>
                                   {font.fullName}
                                   <small>
-                                    {font.style} · {font.postscriptName}
+                                    {font.style && `${font.style} · `}
+                                    {font.postscriptName}
                                   </small>
                                 </div>
                                 <button
@@ -158,7 +163,7 @@ export function BufferFontCoverage({
                         →
                       </button>
                     </div>
-                    <span className="muted">{matches.length.toLocaleString()} フォント</span>
+                    <span className="muted">{numberFormat.format(matches.length)} フォント</span>
                   </div>
                 </>
               ) : (

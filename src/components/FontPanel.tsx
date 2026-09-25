@@ -1,6 +1,8 @@
 import { memo, useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import type { UnicodeDatabase } from '../core/unicode';
 import type { LocalFont } from '../platform';
+import { useLocale } from '../intl/LocaleProvider';
+import { localizeFontNames } from '../localFontNames';
 import type { useFontInspection } from '../useFontInspection';
 import { FontCharacters } from './fonts/FontCharacters';
 import { FontSample } from './fonts/FontSample';
@@ -39,6 +41,7 @@ export const FontPanel = memo(function FontPanel({
   onLocate,
   onSelect,
 }: Props) {
+  const { locale } = useLocale();
   const id = useId();
   const source = useRef<HTMLDivElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -52,7 +55,16 @@ export const FontPanel = memo(function FontPanel({
   const [localFonts, setLocalFonts] = useState<LocalFont[]>([]);
   const [localName, setLocalName] = useState('');
   const [enumerating, setEnumerating] = useState(false);
+  const [nameProgress, setNameProgress] = useState('');
+  const enumeration = useRef<AbortController | null>(null);
+  useEffect(() => {
+    setLocalFonts([]);
+    setEnumerating(false);
+    setNameProgress('');
+    return () => enumeration.current?.abort();
+  }, [locale]);
   const font = selection?.source.fonts[selection.index];
+  const names = selection && inspection.names[selection.index];
   const family = selection?.preview?.family ?? 'serif';
   const busy = pending !== null;
   const candidate = localFonts.find((font) => font.postscriptName === localName);
@@ -83,19 +95,37 @@ export const FontPanel = memo(function FontPanel({
     tabs.current?.querySelectorAll<HTMLButtonElement>('[role=tab]')[next]?.focus();
   }
   async function enumerate() {
+    const controller = new AbortController();
+    enumeration.current?.abort();
+    enumeration.current = controller;
     setEnumerating(true);
+    setNameProgress('');
     try {
       if (!window.queryLocalFonts)
         throw new Error(
           'この環境はフォント列挙に対応していません。フォントファイルを読み込んでください。',
         );
       const result = await window.queryLocalFonts();
-      setLocalFonts(result.sort((a, b) => a.fullName.localeCompare(b.fullName)));
-      notify(`${result.length} フォントを取得しました。`);
+      controller.signal.throwIfAborted();
+      const localized = await localizeFontNames(
+        result,
+        locale,
+        (checked, total) => {
+          if (!controller.signal.aborted) setNameProgress(`表示名を取得中… ${checked} / ${total}`);
+        },
+        controller.signal,
+      );
+      controller.signal.throwIfAborted();
+      setLocalFonts(localized);
+      notify(`${localized.length} フォントを取得しました。`);
     } catch (error) {
-      notify(String(error));
+      if (!controller.signal.aborted) notify(String(error));
     } finally {
-      setEnumerating(false);
+      if (enumeration.current === controller) {
+        enumeration.current = null;
+        setEnumerating(false);
+        setNameProgress('');
+      }
     }
   }
   return (
@@ -103,8 +133,8 @@ export const FontPanel = memo(function FontPanel({
       <header className="font-workspace-heading">
         <div>
           <span className="muted">解析対象のフォント</span>
-          <h2 title={font?.fullName} ref={heading} tabIndex={-1}>
-            {font?.fullName || 'フォントを選んでください'}
+          <h2 title={names?.fullName} ref={heading} tabIndex={-1}>
+            {names?.fullName || 'フォントを選んでください'}
           </h2>
         </div>
         <button popoverTarget={`${id}-source`}>フォントを選ぶ</button>
@@ -138,6 +168,7 @@ export const FontPanel = memo(function FontPanel({
         <button disabled={busy || enumerating} onClick={() => void enumerate()}>
           端末のフォントを取得
         </button>
+        {enumerating && <span role="status">{nameProgress || '端末フォントを取得中…'}</span>}
         {localFonts.length > 0 && (
           <>
             <select
@@ -193,7 +224,7 @@ export const FontPanel = memo(function FontPanel({
             >
               {selection.source.fonts.map((face, i) => (
                 <option value={i} key={i}>
-                  {face.fullName}
+                  {inspection.names[i].fullName}
                 </option>
               ))}
             </select>
@@ -270,8 +301,8 @@ export const FontPanel = memo(function FontPanel({
                 <h3>フォント情報</h3>
                 <dl className="property-list">
                   {Object.entries({
-                    Family: font.familyName,
-                    Style: font.subfamilyName,
+                    Family: names?.family,
+                    Style: names?.style,
                     Version: font.version,
                     'PostScript name': font.postscriptName,
                     Glyphs: font.numGlyphs,
