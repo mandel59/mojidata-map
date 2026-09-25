@@ -183,7 +183,7 @@ export function AboutDialog({ db, section, onSection, onClose }: Props) {
         <p>文字データとオープンソースソフトウェアの提供者に感謝します。</p>
         <article className="credit-card">
           <h4>Unicode データ</h4>
-          <p>{link('https://www.unicode.org/', 'Unicode Consortium')} — UCD・Unihan・Emoji</p>
+          <p>{link('https://www.unicode.org/', 'Unicode Consortium')} — UCD・Unihan・Emoji・IVD</p>
           <p className="muted">
             {credits?.unicode.match(/^Copyright .+$/m)?.[0] ?? 'Unicode, Inc.'} · Unicode License v3
           </p>

@@ -37,6 +37,13 @@ for (const width of [1024, 390]) {
     expect(
       await input.evaluate((el: HTMLTextAreaElement) => [el.selectionStart, el.selectionEnd]),
     ).toEqual([2, 4]);
+    await table
+      .getByRole('button', { name: 'U+0041 をサンプルで選択', exact: true })
+      .nth(1)
+      .click();
+    expect(
+      await input.evaluate((el: HTMLTextAreaElement) => [el.selectionStart, el.selectionEnd]),
+    ).toEqual([1, 2]);
     // Two different missing characters must retain their own code points.
     await input.fill(`B${String.fromCodePoint(0x323b2)}`);
     await expect(table.locator('tbody tr')).toHaveCount(2);
@@ -103,6 +110,27 @@ for (const width of [1024, 390]) {
     await expect(table.locator('tbody tr')).toHaveCount(128);
     await page.getByRole('button', { name: '次のページ', exact: true }).click();
     await expect(table.locator('tbody tr')).toHaveCount(1);
+    await table.getByRole('button', { name: 'U+0041 をサンプルで選択', exact: true }).click();
+    await expect(input).toBeFocused();
+    expect(
+      await input.evaluate((el: HTMLTextAreaElement) => [el.selectionStart, el.selectionEnd]),
+    ).toEqual([128, 129]);
+    await page.locator('input[type=file]').setInputFiles('tests/fixtures/GlyphVariants.ttf');
+    await input.fill('fifiA\u{E0100}A\u{E0100}');
+    await table
+      .getByRole('button', { name: 'U+0066 U+0069 をサンプルで選択', exact: true })
+      .nth(1)
+      .click();
+    expect(
+      await input.evaluate((el: HTMLTextAreaElement) => [el.selectionStart, el.selectionEnd]),
+    ).toEqual([2, 4]);
+    await table
+      .getByRole('button', { name: 'U+0041 U+E0100 をサンプルで選択', exact: true })
+      .nth(1)
+      .click();
+    expect(
+      await input.evaluate((el: HTMLTextAreaElement) => [el.selectionStart, el.selectionEnd]),
+    ).toEqual([7, 10]);
     await input.fill('');
     await expect(
       page.getByText('サンプルテキストを入力するか、編集バッファから読み込んでください。', {

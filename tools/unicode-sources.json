@@ -16,6 +16,11 @@
       "sha256": "8f3735cda1f92a779d78af67cf86066bb1f07143dc22f2ac29394d9bc57ab21a",
       "bytes": 671655
     },
+    "IVD_Sequences.txt": {
+      "url": "https://www.unicode.org/ivd/data/2026-08-03/IVD_Sequences.txt",
+      "sha256": "2b466659c2bfde1c52e60bd9fc883ab14dfa5c583df024b80352420265d2cd87",
+      "bytes": 1346505
+    },
     "license.txt": {
       "url": "https://www.unicode.org/license.txt",
       "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96",

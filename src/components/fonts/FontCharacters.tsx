@@ -1,12 +1,26 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Font } from 'fontkit';
 import { hex, parseCodePoint, type UnicodeDatabase } from '../../core/unicode';
+import { loadData, peekData } from '../../data';
 import { FontGlyphDetails } from './FontGlyphDetails';
-import { fontGlyphIndex, glyphReferences } from '../../core/fontGlyphIndex';
+import {
+  fontGlyphIndex,
+  glyphReferences,
+  fontVariationEntries,
+  type GlyphEntry,
+  type GlyphReference,
+  type FontVariationSequences,
+} from '../../core/fontGlyphIndex';
 import { GlyphCollection } from './GlyphCollection';
 import { CharacterCollection } from '../CharacterCollection';
 
 const noComposite: Record<string, string> = {};
+const glyphScopes: Record<string, string> = {
+  '@glyphs': '全グリフ',
+  '@unmapped': '単一文字の割当なし',
+  '@svs': 'SVS（標準化異体字列）',
+  '@ivs': 'IVS（漢字異体字列）',
+};
 export function FontCharacters({
   font,
   family,
@@ -33,36 +47,69 @@ export function FontCharacters({
   notify(message: string): void;
 }) {
   const [block, setBlock] = useState('');
-  const glyphMode = block === '@glyphs' || block === '@unmapped';
+  const glyphMode = Object.hasOwn(glyphScopes, block);
+  const variationKind = block === '@svs' ? 'svs' : block === '@ivs' ? 'ivs' : null;
   const [glyphId, setGlyphId] = useState(0);
+  const [variationSelection, setVariationSelection] = useState(0);
   const [glyphPage, setGlyphPage] = useState(0);
   const [referenceIndex, setReferenceIndex] = useState(0);
-  function selectGlyph(id: number) {
-    setGlyphId(id);
+  const [page, setPage] = useState(0);
+  const variationData = peekData<FontVariationSequences>('font-variation-sequences');
+  const [variationStatus, setVariationStatus] = useState({ error: '' });
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    if (!active || !variationKind || variationData) return;
+    let current = true;
+    setVariationStatus({ error: '' });
+    void loadData<FontVariationSequences>('font-variation-sequences').then(
+      () => {
+        if (current) setVariationStatus({ error: '' });
+      },
+      (error) => {
+        if (current) setVariationStatus({ error: String(error) });
+      },
+    );
+    return () => {
+      current = false;
+    };
+  }, [active, variationKind, variationData, retry]);
+  const variationError = variationKind && !variationData ? variationStatus.error : '';
+  const variationBusy = Boolean(variationKind && !variationData && !variationError);
+  const index = useMemo(() => (glyphMode ? fontGlyphIndex(font) : null), [font, glyphMode]);
+  const entries: GlyphEntry[] = useMemo(() => {
+    if (!index) return [];
+    if (variationKind)
+      return variationData ? fontVariationEntries(font, index, variationData[variationKind]) : [];
+    const ids =
+      block === '@unmapped'
+        ? index.unmapped
+        : Array.from({ length: font.numGlyphs }, (_, id) => id);
+    return ids.map((id) => ({ id }));
+  }, [font, index, block, variationKind, variationData]);
+  const selectedPosition = variationKind
+    ? variationSelection
+    : entries.findIndex((entry) => entry.id === glyphId);
+  const selectedEntry = entries[selectedPosition];
+  function selectEntry(position: number) {
+    const entry = entries[position];
+    if (!entry) return;
+    if (variationKind) setVariationSelection(position);
+    else setGlyphId(entry.id);
     setReferenceIndex(0);
   }
-  const [page, setPage] = useState(0);
-  const jumpValue = glyphMode ? String(glyphId) : hex(cp);
+  const references: GlyphReference[] = useMemo(() => {
+    if (!index || !selectedEntry) return [];
+    return selectedEntry.points
+      ? [{ points: selectedEntry.points, kind: 'variation' }]
+      : glyphReferences(index, selectedEntry.id);
+  }, [index, selectedEntry]);
+  const jumpValue = glyphMode ? (selectedEntry ? String(selectedEntry.id) : '') : hex(cp);
   const [jump, setJump] = useState(jumpValue);
   const [previousJump, setPreviousJump] = useState(jumpValue);
   if (jumpValue !== previousJump) {
     setPreviousJump(jumpValue);
     setJump(jumpValue);
   }
-  const index = useMemo(() => (glyphMode ? fontGlyphIndex(font) : null), [font, glyphMode]);
-  const glyphs = useMemo(
-    () =>
-      !glyphMode
-        ? []
-        : block === '@unmapped'
-          ? (index?.unmapped ?? [])
-          : Array.from({ length: font.numGlyphs }, (_, id) => id),
-    [font, index, block, glyphMode],
-  );
-  const references = useMemo(
-    () => (index ? glyphReferences(index, glyphId) : []),
-    [index, glyphId],
-  );
   const all = useMemo(
     () => font.characterSet.filter((cp) => font.hasGlyphForCodePoint(cp)).sort((a, b) => a - b),
     [font],
@@ -90,14 +137,18 @@ export function FontCharacters({
             onChange={(event) => {
               const next = event.target.value;
               setBlock(next);
-              if (next === '@glyphs' || next === '@unmapped') {
-                const id = glyphMode ? glyphId : font.glyphForCodePoint(cp).id;
+              setReferenceIndex(0);
+              if (next === '@svs' || next === '@ivs') {
+                setVariationSelection(0);
+                setGlyphPage(0);
+              } else if (next === '@glyphs' || next === '@unmapped') {
+                const id = glyphMode ? (selectedEntry?.id ?? 0) : font.glyphForCodePoint(cp).id;
                 const ids =
                   next === '@unmapped'
                     ? fontGlyphIndex(font).unmapped
                     : Array.from({ length: font.numGlyphs }, (_, i) => i);
                 const position = Math.max(0, ids.indexOf(id));
-                selectGlyph(ids[position] ?? 0);
+                setGlyphId(ids[position] ?? 0);
                 setGlyphPage(Math.floor(position / 128));
               } else {
                 setPage(0);
@@ -110,6 +161,10 @@ export function FontCharacters({
             <optgroup label="グリフ">
               <option value="@glyphs">全グリフ ({font.numGlyphs.toLocaleString()})</option>
               <option value="@unmapped">単一文字の割当なし</option>
+            </optgroup>
+            <optgroup label="異体字列">
+              <option value="@svs">{glyphScopes['@svs']}</option>
+              <option value="@ivs">{glyphScopes['@ivs']}</option>
             </optgroup>
             <optgroup label="Unicodeブロック">
               {blocks.map(([name, count]) => (
@@ -130,12 +185,16 @@ export function FontCharacters({
                 notify(`Glyph IDは0〜${font.numGlyphs - 1}の整数で指定してください。`);
                 return;
               }
-              const position = glyphs.indexOf(value);
+              const position = entries.findIndex((entry) => entry.id === value);
               if (position < 0) {
                 setBlock('@glyphs');
+                setGlyphId(value);
+                setReferenceIndex(0);
                 setGlyphPage(Math.floor(value / 128));
-              } else setGlyphPage(Math.floor(position / 128));
-              selectGlyph(value);
+              } else {
+                setGlyphPage(Math.floor(position / 128));
+                selectEntry(position);
+              }
               return;
             }
             const value = parseCodePoint(jump);
@@ -171,20 +230,30 @@ export function FontCharacters({
                 <GlyphCollection
                   font={font}
                   index={index}
-                  ids={glyphs}
+                  entries={entries}
                   page={glyphPage}
                   onPage={(page) => {
                     setGlyphPage(page);
-                    selectGlyph(glyphs[page * 128] ?? 0);
+                    selectEntry(page * 128);
                   }}
-                  selected={glyphId}
-                  onSelect={selectGlyph}
-                  onInsert={(id) => {
+                  selected={selectedPosition}
+                  onSelect={selectEntry}
+                  onInsert={(position) => {
+                    const entry = entries[position];
+                    if (!entry) return;
                     const reference =
-                      id === glyphId ? references[referenceIndex] : glyphReferences(index, id)[0];
+                      position === selectedPosition
+                        ? references[referenceIndex]
+                        : entry.points
+                          ? { points: entry.points }
+                          : glyphReferences(index, entry.id)[0];
                     if (reference) onInsertText(String.fromCodePoint(...reference.points));
                   }}
-                  title={block === '@unmapped' ? '単一文字の割当なし' : '全グリフ'}
+                  title={glyphScopes[block]}
+                  sequences={variationKind !== null}
+                  busy={variationBusy}
+                  error={variationError || index.variationError}
+                  onRetry={variationError ? () => setRetry((value) => value + 1) : undefined}
                 />
               ) : (
                 <CharacterCollection
@@ -209,19 +278,23 @@ export function FontCharacters({
                 />
               )}
             </div>
-            <FontGlyphDetails
-              font={font}
-              family={family}
-              db={db}
-              target={glyphMode ? { kind: 'glyph', id: glyphId } : { kind: 'character', cp }}
-              references={references}
-              referenceIndex={referenceIndex}
-              onReferenceIndex={setReferenceIndex}
-              referenceError={index?.variationError ?? ''}
-              compact={compact}
-              onInsert={onInsertText}
-              notify={notify}
-            />
+            {(!glyphMode || selectedEntry) && (
+              <FontGlyphDetails
+                font={font}
+                family={family}
+                db={db}
+                target={
+                  glyphMode ? { kind: 'glyph', id: selectedEntry.id } : { kind: 'character', cp }
+                }
+                references={references}
+                referenceIndex={referenceIndex}
+                onReferenceIndex={setReferenceIndex}
+                referenceError={index?.variationError ?? ''}
+                compact={compact}
+                onInsert={onInsertText}
+                notify={notify}
+              />
+            )}
           </>
         )}
       </div>

@@ -11,6 +11,7 @@ from collections import defaultdict
 from pathlib import Path
 
 VERSION = "18.0.0"
+IVD_VERSION = "2026-08-03"
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / "var" / "unicode" / VERSION
 OUTPUT = ROOT / "public" / "data"
@@ -19,6 +20,7 @@ SOURCES = {
     "UCD.zip": f"https://www.unicode.org/Public/{VERSION}/ucd/UCD.zip",
     "Unihan.zip": f"https://www.unicode.org/Public/{VERSION}/ucd/Unihan.zip",
     "emoji-test.txt": f"https://www.unicode.org/Public/{VERSION}/emoji/emoji-test.txt",
+    "IVD_Sequences.txt": f"https://www.unicode.org/ivd/data/{IVD_VERSION}/IVD_Sequences.txt",
     "license.txt": "https://www.unicode.org/license.txt",
 }
 
@@ -66,6 +68,11 @@ def build(update_lock=False):
     emoji_version = ".".join(VERSION.split(".")[:2])
     if not emoji_header or emoji_header[1] != emoji_version:
         raise ValueError("Emoji data version does not match the requested Unicode version")
+
+    ivd_text = blobs["IVD_Sequences.txt"].decode("utf-8-sig")
+    ivd_header = re.search(r"^# (\d{4}-\d{2}-\d{2})\b", ivd_text, re.MULTILINE)
+    if not ivd_header or ivd_header[1] != IVD_VERSION:
+        raise ValueError("IVD source is not the requested version; refresh its cache before updating the lock")
 
     records, first = [], None
     for row in fields(read("UnicodeData.txt")):
@@ -207,12 +214,17 @@ def build(update_lock=False):
     write("east-asian-index.json", {"fields": east_fields, "rows": east_index})
     write("emoji.json", emoji)
     write("variations.json", dict(variations))
+    # Keep standardized sequences separate from emoji presentation sequences.
+    svs = sorted({tuple(int(cp, 16) for cp in row[0].split())
+                  for row in fields(read("StandardizedVariants.txt"))})
+    ivs = sorted({tuple(int(cp, 16) for cp in row[0].split()) for row in fields(ivd_text)})
+    write("font-variation-sequences.json", {"svs": svs, "ivs": ivs, "ivdVersion": IVD_VERSION})
     for shard, values in sorted(shards.items()):
         write(f"unihan/{shard}.json", values)
     for shard, values in sorted(east_shards.items()):
         write(f"east-asian/{shard}.json", values)
     (OUTPUT / "LICENSE-UNICODE.txt").write_bytes(blobs["license.txt"])
-    manifest = {"unicodeVersion": VERSION, "emojiVersion": emoji_version, "sources": sources, "counts": {
+    manifest = {"unicodeVersion": VERSION, "ivdVersion": IVD_VERSION, "emojiVersion": emoji_version, "sources": sources, "counts": {
         "records": len(records), "nameRanges": len(names), "blocks": len(props["Block"]),
         "unihanCharacters": len(unihan), "eastAsianCharacters": len(east_asian),
         "eastAsianProperties": len(east_fields), "emojiSequences": len(emoji)},

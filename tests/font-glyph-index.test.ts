@@ -1,7 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { create, type Font } from 'fontkit';
 import { expect, test } from 'vitest';
-import { fontGlyphIndex, glyphReferences } from '../src/core/fontGlyphIndex';
+import {
+  fontGlyphIndex,
+  glyphReferences,
+  fontVariationEntries,
+  type FontVariationSequences,
+} from '../src/core/fontGlyphIndex';
 
 function fixture(): Font {
   const font = create(readFileSync('tests/fixtures/GlyphVariants.ttf'));
@@ -46,4 +51,41 @@ test('caches the index for each parsed face without sharing different font mappi
   expect(first).not.toBe(second);
   expect(first.characters.get(2)).toEqual([0x41]);
   expect(second.characters.get(2)).toEqual([0x1e4d0]);
+});
+
+const registry: FontVariationSequences = JSON.parse(
+  readFileSync('public/data/font-variation-sequences.json', 'utf8'),
+);
+function scopedFixture(name = 'VariationScopes'): Font {
+  const font = create(readFileSync(`tests/fixtures/${name}.ttf`));
+  if ('fonts' in font) throw new Error('Expected a single font');
+  return font;
+}
+test('lists registered SVS with default UVS and shared glyphs, excluding emoji and unknown pairs', () => {
+  const font = scopedFixture();
+  expect(fontVariationEntries(font, fontGlyphIndex(font), registry.svs)).toEqual([
+    { id: 9, points: [0x30, 0xfe00] },
+    { id: 4, points: [0x1820, 0x180b] },
+    { id: 5, points: [0x4e38, 0xfe00] },
+    { id: 5, points: [0x4e41, 0xfe00] },
+    { id: 4, points: [0x1d49c, 0xfe00] },
+    { id: 7, points: [0x1d49c, 0xfe01] },
+  ]);
+});
+test('lists registered IVS without collapsing a shared glyph or including a missing base glyph', () => {
+  const font = scopedFixture();
+  expect(fontVariationEntries(font, fontGlyphIndex(font), registry.ivs)).toEqual([
+    { id: 2, points: [0x4e38, 0xe0100] },
+    { id: 5, points: [0x4e38, 0xe0101] },
+    { id: 5, points: [0x4e38, 0xe0102] },
+    { id: 5, points: [0x4e41, 0xe0100] },
+    { id: 7, points: [0x20000, 0xe0100] },
+  ]);
+});
+test('does not count ordinary cmap fallback as variation-sequence coverage', () => {
+  const parsed = create(readFileSync('tests/fixtures/LiberationSans-Regular.ttf'));
+  if ('fonts' in parsed) throw new Error('Expected a single font');
+  expect(parsed.hasGlyphForCodePoint(0x30)).toBe(true);
+  expect(fontVariationEntries(parsed, fontGlyphIndex(parsed), registry.svs)).toEqual([]);
+  expect(fontVariationEntries(parsed, fontGlyphIndex(parsed), registry.ivs)).toEqual([]);
 });

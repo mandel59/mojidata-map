@@ -109,3 +109,48 @@ export function glyphReferences(index: FontGlyphIndex, id: number): GlyphReferen
     references.push({ points: sequence, kind: 'variation' });
   return references;
 }
+
+export interface GlyphEntry {
+  id: number;
+  points?: number[];
+}
+export interface FontVariationSequences {
+  svs: [number, number][];
+  ivs: [number, number][];
+  ivdVersion: string;
+}
+
+// Intersect the registered sequences with cmap format 14. A default UVS is
+// covered only when its base has a real cmap glyph; an absent UVS is not fallback.
+export function fontVariationEntries(
+  font: Font,
+  index: FontGlyphIndex,
+  sequences: [number, number][],
+): GlyphEntry[] {
+  const explicit = new Map<string, number>();
+  for (const [id, rows] of index.variations)
+    for (const points of rows) explicit.set(points.join('-'), id);
+  const selectors = new Map(index.defaults.map((record) => [record.varSelector, record]));
+  const entries: GlyphEntry[] = [];
+  for (const points of sequences) {
+    const [base, vs] = points;
+    let id = explicit.get(points.join('-'));
+    if (id === undefined) {
+      const ranges = selectors.get(vs)?.defaultUVS ?? [];
+      let low = 0,
+        high = ranges.length - 1;
+      while (low <= high) {
+        const middle = (low + high) >>> 1;
+        const range = ranges[middle];
+        if (base < range.startUnicodeValue) high = middle - 1;
+        else if (base > range.startUnicodeValue + range.additionalCount) low = middle + 1;
+        else {
+          id = font.glyphForCodePoint(base).id;
+          break;
+        }
+      }
+    }
+    if (id !== undefined && id > 0 && id < font.numGlyphs) entries.push({ id, points });
+  }
+  return entries;
+}

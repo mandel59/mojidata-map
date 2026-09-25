@@ -1806,12 +1806,6 @@ td button {
 .glyph-baseline {
   stroke-dasharray: 3 3;
 }
-.glyph-preview-caption {
-  margin: 0 0 6px;
-  color: var(--muted);
-  font-size: 9px;
-  text-align: center;
-}
 .glyph-strip-preview .glyph-baseline,
 .glyph-strip-preview .glyph-origin {
   display: none;
@@ -1846,6 +1840,9 @@ td button {
 }
 .font-glyph-grid .character-cell::after {
   display: none;
+}
+.glyph-references {
+  margin-bottom: 8px;
 }
 .glyph-references select {
   width: 100%;

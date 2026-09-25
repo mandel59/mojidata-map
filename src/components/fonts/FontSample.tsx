@@ -2,7 +2,12 @@ import { useId, useMemo, useRef, useState } from 'react';
 import type { Font } from 'fontkit';
 import { bufferCoverage } from '../../core/bufferCoverage';
 import { codeLabel, isScalar, type UnicodeDatabase } from '../../core/unicode';
-import { featureSettings, sampleLayout, SAMPLE_LIMIT } from '../../core/sampleLayout';
+import {
+  featureSettings,
+  sampleLayout,
+  SAMPLE_LIMIT,
+  type SampleSourceRange,
+} from '../../core/sampleLayout';
 import { download } from '../../platform';
 import { LayoutGlyph } from './LayoutGlyph';
 
@@ -64,6 +69,7 @@ export function FontSample({
         return {
           glyph,
           position: analysis!.layout!.run.positions[i],
+          sourceRange: analysis!.layout!.sourceRanges[i],
           invalid,
           control,
           missing,
@@ -77,13 +83,10 @@ export function FontSample({
     setPrevious(rows);
     setPage(0);
   }
-  function selectText(points: number[]) {
-    const text = String.fromCodePoint(...points);
-    // Some shaping operations rearrange code points. Only select an actual match.
-    const start = sample.indexOf(text);
-    if (!text || start < 0) return;
+  function selectText(range: SampleSourceRange | null) {
+    if (!range) return;
     input.current?.focus();
-    input.current?.setSelectionRange(start, start + text.length);
+    input.current?.setSelectionRange(range.start, range.end);
   }
   const counts = analysis?.counts;
   const layout = analysis?.layout;
@@ -191,7 +194,7 @@ export function FontSample({
             <tbody>
               {rows
                 .slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
-                .map(({ glyph, position, missing, invalid, control, index }) => (
+                .map(({ glyph, position, sourceRange, missing, invalid, control, index }) => (
                   <tr
                     key={index}
                     data-glyph-id={glyph.id}
@@ -210,7 +213,8 @@ export function FontSample({
                       {control && <span className="muted">制御・表示調整</span>}
                       <button
                         className="text-button"
-                        onClick={() => selectText(glyph.codePoints)}
+                        onClick={() => selectText(sourceRange)}
+                        disabled={!sourceRange}
                         title="サンプル内の文字を選択"
                         aria-label={`${glyph.codePoints.map(codeLabel).join(' ')} をサンプルで選択`}
                       >

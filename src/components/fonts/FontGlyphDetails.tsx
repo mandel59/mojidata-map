@@ -199,9 +199,6 @@ export function FontGlyphDetails({
     <div className="character-info font-glyph-info">
       <div className="detail-code">{title}</div>
       <div className="glyph-detail-preview">{preview}</div>
-      {drawing ? (
-        <p className="glyph-preview-caption">破線はベースライン、下の両端付き線は横送り幅です。</p>
-      ) : null}
       <h2 className="character-name">{name}</h2>
       {id !== null && (
         <div className="glyph-references">

@@ -31,11 +31,15 @@
 
 `core/fontFaceData` はTTC/OTCの選択フェイスを単独のsfntへ変換してFontFaceへ渡す。グリフIDと配置・色・可変軸等のテーブルを保ち、絶対オフセットを再配置する。[OpenTypeのファイル仕様](https://learn.microsoft.com/en-us/typography/opentype/spec/otff)に従い4バイト境界・チェックサムを再計算し、元ファイルの署名は引き継がない。ブラウザへコレクション全体を渡して先頭フェイスが表示される問題を避ける。
 
-`core/sampleLayout` は入力を先頭1,000コードポイントまでに制限し、fontkitのグリフIDキャッシュに入力コードポイントが混ざらないよう、同期配置中だけグリフを出現ごとのラッパーにする。例外でも元のメソッドを復元する。機能タグはコピーを渡し、fontkitが既定タグを書き加えてもCSSの指定を変更しない。`core/glyphDrawing` がGlyph IDから輪郭・カラーレイヤーを取得し、`LayoutGlyph` の配置表と `FontGlyphDetails` の詳細・SVG出力で共通利用する。`glyphFrame` はアセンダー・ディセンダーとフォント全体のbboxを含む共通座標枠を作る。グリフのbboxごとに拡大・上下移動せず、横方向は横送り幅を中央に置く。例外的な張り出しは固定枠内へ位置を制限する。詳細・サンプル表・SVG・PNGのベースラインを揃える。文字表示のPNGは同じ縮尺と原点を使い、Canvasの `alphabetic` ベースラインで描く。Glyph ID表示のPNGはSVG輪郭をCanvasへ描き、再シェーピングを避ける。CSSで入力文字を描き直さないため、代替フォントや別の置換グリフを表に混入させない。
+`core/sampleLayout` は入力を先頭1,000コードポイントまでに制限し、fontkitのグリフIDキャッシュに入力コードポイントが混ざらないよう、同期配置中だけグリフを出現ごとのラッパーにする。入力グリフと元テキストのUTF-16範囲を対応付け、置換後のコードポイントを論理順の出現ごとに消費して各出力行へ割り当てる。同じ文字や合字が繰り返されても先頭の出現を再利用しない。位置処理だけで配列が反転する場合は入力オブジェクトの対応を保持する。fontkitはクラスタ位置を公開しないため、元文字の欠落・追加などで出現数が一致しない場合は推測で選択せず無効にする。例外でも元のメソッドを復元する。機能タグはコピーを渡し、fontkitが既定タグを書き加えてもCSSの指定を変更しない。`core/glyphDrawing` がGlyph IDから輪郭・カラーレイヤーを取得し、`LayoutGlyph` の配置表と `FontGlyphDetails` の詳細・SVG出力で共通利用する。`glyphFrame` はアセンダー・ディセンダーとフォント全体のbboxを含む共通座標枠を作る。グリフのbboxごとに拡大・上下移動せず、横方向は横送り幅を中央に置く。例外的な張り出しは固定枠内へ位置を制限する。詳細・サンプル表・SVG・PNGのベースラインを揃える。文字表示のPNGは同じ縮尺と原点を使い、Canvasの `alphabetic` ベースラインで描く。Glyph ID表示のPNGはSVG輪郭をCanvasへ描き、再シェーピングを避ける。CSSで入力文字を描き直さないため、代替フォントや別の置換グリフを表に混入させない。
 
 `core/fontGlyphIndex` は解析済みフェイスごとにWeakMapで、通常cmapのGlyph ID→コードポイントとformat 14の非デフォルトVS対応を保持する。`Glyph.codePoints` は過去の検索・配置処理に依存するため逆引きに使わない。[cmap format 14の仕様](https://learn.microsoft.com/en-us/typography/opentype/spec/cmap#format-14-unicode-variation-sequences)に従い、デフォルトVSは選択グリフの通常cmapから解決する。巨大な範囲を全グリフ分展開しない。format 14の解析失敗は対応情報の警告にとどめ、全グリフ表示を継続する。GSUB規則やグリフ名から入力文字列を推測しない。`FontGlyphDetails`は選択したVS列を共通キャッシュの`variations`データと完全一致で照合し、シーケンス名を表示する。未ロードなら非同期取得し、選択変更後の古い完了通知を破棄する。キャッシュ済みの場合は同期で表示し、未登録列に基底文字や別のVSの名前を流用しない。
 
-`GlyphCollection` は0〜numGlyphs−1を128件ずつ列挙し、表示ページの輪郭だけを`LayoutGlyph`で描く。通常cmap割当なしの絞り込みは、VS対応の有無やGSUBからの参照に関係なく行う。`CharacterGridSurface`・`useGridNavigation`・`usePageKeys`を文字一覧と共有する。グリフ選択・ページ・対応文字列の選択は`FontCharacters`が持ち、文字検索等の共有コードポイントをGlyph IDで上書きしない。詳細ボタンと一覧のEnterは同じ対応文字列を挿入する。フォント再読込・TTCフェイス切替は既存の選択revisionによる再マウントでリセットする。
+`GlyphCollection` は通常範囲では0〜numGlyphs−1を128件ずつ列挙し、表示ページの輪郭だけを`LayoutGlyph`で描く。通常cmap割当なしの絞り込みは、VS対応の有無やGSUBからの参照に関係なく行う。`CharacterGridSurface`・`useGridNavigation`・`usePageKeys`を文字一覧と共有する。グリフ選択・ページ・対応文字列の選択は`FontCharacters`が持ち、文字検索等の共有コードポイントをGlyph IDで上書きしない。詳細ボタンと一覧のEnterは同じ対応文字列を挿入する。フォント再読込・TTCフェイス切替は既存の選択revisionによる再マウントでリセットする。
+
+`font-variation-sequences.json`はUnicode 18.0.0のStandardizedVariantsと、固定版[IVD 2026-08-03](https://www.unicode.org/ivd/data/2026-08-03/)の登録列を別々に保持する。IVDの複数コレクションに属する同一列は重複を除く。原本のURL・SHA-256・サイズはunicode-sources.jsonとmanifestへ記録し、既存のUnicode License v3とともにオフライン配布する。
+
+`fontVariationEntries`は登録列と解析済みcmap format 14の非デフォルト対応・デフォルト範囲を照合する。デフォルト範囲は二分探索し、基底文字が.notdefに対応する列を除く。絵文字表示列、未登録列、単一文字のフォールバックをSVS／IVS収録とみなさない。[Unicodeの異体字列の分類](https://unicode.org/faq/vs.html)に従う。`FontCharacters`は必要時にだけ列データをロードし、対象フォント・範囲ごとの結果をメモ化する。`GlyphCollection`はグリフIDと任意のシーケンスを持つエントリを表示し、選択をエントリ位置で管理する。同じGIDの複数列でも選択・キー操作・ページ送りを混同しない。データ読み込み完了時も現在の範囲を使用し、空の範囲では古いグリフ詳細を表示しない。
 
 JSON は読込中の Promise と解決済みオブジェクトの参照をキャッシュする。文字詳細は解決済みデータを同期参照し、キャッシュ済みのページ移動で余分な state 更新を起こさない。未読込の Unihan / 東アジア文字 / 異体字データだけを非同期で取得し、古い選択に対する完了通知は破棄する。読込失敗は表示し、次の選択で再取得できる。
 
