@@ -129,3 +129,24 @@ test('does not misidentify an ignorable replacement as an occurrence of a space'
   // code point. The resulting ambiguous rows must not point at the first space.
   expect(result.sourceRanges).toEqual([null, null, null]);
 });
+
+test('applies reverse chaining from end to start, with context, extensions and ignored marks', () => {
+  const f = font('ReverseChaining.ttf');
+  const gids = (text: string, features: Record<string, boolean> = {}) =>
+    sampleLayout(f, text, features, db).run.glyphs.map((glyph) => glyph.id);
+  expect(gids('AAAB')).toEqual([5, 5, 5, 3]);
+  expect(gids('AAAB', { calt: false })).toEqual([2, 2, 2, 3]);
+  expect(gids('AAAC')).toEqual([2, 2, 2, 4]);
+  expect(gids('ABAC', { calt: false, ss01: true })).toEqual([2, 3, 5, 4]);
+  expect(gids('BAAC', { calt: false, ss01: true })).toEqual([3, 2, 2, 4]);
+  expect(gids('AAAB', { calt: false, ss02: true })).toEqual([5, 5, 5, 3]);
+  expect(gids('AA\u0301B', { calt: false, ss03: true })).toEqual([5, 5, 6, 3]);
+  const result = sampleLayout(f, 'AAAB', {}, db);
+  expect(result.run.glyphs.map((glyph) => glyph.codePoints)).toEqual([[65], [65], [65], [66]]);
+  expect(result.sourceRanges).toEqual([
+    { start: 0, end: 1 },
+    { start: 1, end: 2 },
+    { start: 2, end: 3 },
+    { start: 3, end: 4 },
+  ]);
+});

@@ -79,3 +79,9 @@ Node.js 24 LTS と npm の lockfile を用いる。Vitest でデータ処理、P
 `intl/LocaleProvider` をアプリの境界に置き、`useLocale` からUIロケールとIntlの書式・照合器を取得する。現在の入力は `DEFAULT_LOCALE = ja` で、将来の言語設定をこの入力へ接続する。DOMのlangはProviderから反映し、DOM・navigator・OS設定を個々の機能の言語選択元にしない。`core/fontNames` は言語を明示的な引数で受け、fontkitのnameレコードからUI言語・英語の順に選ぶ。名前を持たない言語の文字列を任意に返すfontkit／Local Font Accessの既定動作は表示名に使わない。PostScript名と描画用の専用FontFace名は識別子として維持する。
 
 カバレッジ検索は一度だけロケールをワーカーへ渡し、収録判定に使った同じフェイスから表示名を取得する。`useLocalFontList` は端末フォントを列挙した直後にPostScript名順で公開する。`localizeFontNames` は順次取得・ワーカー解析した表示名をコールバックで返し、フックは50ms単位にまとめて該当行へ反映する。名前の解析完了を選択の前提にせず、途中の検索・選択・中止に対応する。行の並び順とキーを名前更新で変えず、`FontPicker` が縦タブとキーボードのフォーカスを管理する。選択中と解析中は別の状態として表示し、行の名前・スタイルを解析状況で置き換えない。破損などで名前を読めない候補もPostScript名で選択できる。バイナリは保持しない。解析済みフォントの表示名はsourceとロケールから導出し、ロケール変更時に再解析・FontFace再登録は行わない。ロケール変更は進行中のカバレッジ検索・候補の名前取得を中止し、古い表示名の結果を無効にする。詳細と後続の翻訳・設定への接続は [intl.md](intl.md) に記載する。
+
+## fontkitのGSUB互換修正
+
+`tools/patch-fontkit.mjs` は固定したfontkit 2.0.4のNode／ブラウザ用配布コードへ、GSUB type 8（逆順連鎖文脈単一置換）の修正を適用する。欠落していたbacktrackGlyphCountを読み取り、末尾から先頭へ走査して前後のCoverageを照合する。type 7経由の拡張形式も同じ方向で処理し、LookupFlagによる結合文字の除外を維持する。Nishiki-teki 4.0.5で発生した `Not a fixed size` と、読み取り修正後の未対応lookupエラーを解消する。仕様: [OpenType GSUB type 8](https://learn.microsoft.com/en-us/typography/opentype/spec/gsub#RCCS)。
+
+依存インストール後とビルド前に適用し、適用済みの場合は何もしない。別バージョンや想定外の配布コードは失敗させ、依存更新時の見直しを必須にする。独自の幾何図形だけから生成した `ReverseChaining.ttf` で、逆順走査・文脈照合・拡張形式・無効化・結合文字・サンプル内の文字位置を検証する。Nishiki-tekiのフォントデータはリポジトリへ含めない。

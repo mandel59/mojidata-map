@@ -23,8 +23,9 @@
     "format:check": "prettier --check src desktop tools/*.mjs tests *.ts *.json",
     "test:desktop": "node tools/smoke-desktop.mjs",
     "credits:generate": "node tools/build-credits.mjs",
-    "prebuild": "npm run credits:generate",
-    "predev": "npm run credits:generate"
+    "prebuild": "node tools/patch-fontkit.mjs && npm run credits:generate",
+    "predev": "npm run credits:generate",
+    "postinstall": "node tools/patch-fontkit.mjs"
   },
   "build": {
     "appId": "org.mojidata.map",

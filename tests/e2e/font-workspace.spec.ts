@@ -168,3 +168,27 @@ test('draws the selected collection face rather than its first face', async ({ p
   await expect(table.locator('tbody tr')).toHaveAttribute('data-glyph-id', String(glyph.id));
   await expect(table.locator('svg path')).toHaveAttribute('d', glyph.path.toSVG());
 });
+
+test('renders reverse-chaining font samples and selects each substituted occurrence', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await fontSample(page);
+  await page.locator('input[type=file]').setInputFiles('tests/fixtures/ReverseChaining.ttf');
+  const input = page.getByLabel('サンプルテキスト', { exact: true });
+  await input.fill('AAAB');
+  const rows = page.locator('.sample-glyph-table tbody tr');
+  await expect(rows).toHaveCount(4);
+  expect(
+    await rows.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-glyph-id'))),
+  ).toEqual(['5', '5', '5', '3']);
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await rows.nth(1).getByRole('button', { name: 'U+0041 をサンプルで選択', exact: true }).click();
+  expect(
+    await input.evaluate((el: HTMLTextAreaElement) => [el.selectionStart, el.selectionEnd]),
+  ).toEqual([1, 2]);
+  await page.getByRole('button', { name: 'OpenType設定', exact: true }).click();
+  await page.getByLabel('機能タグ（無効化は -liga のように指定）').fill('-calt');
+  await page.keyboard.press('Escape');
+  await expect(rows.first()).toHaveAttribute('data-glyph-id', '2');
+});
