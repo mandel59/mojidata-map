@@ -1,3 +1,4 @@
+import { expectFontFace } from './navigation';
 import { expect, test, type Page } from '@playwright/test';
 import { fontSample } from './navigation';
 
@@ -294,7 +295,7 @@ for (const width of [1024, 390]) {
       const heading = page.locator('.font-workspace-heading h2');
       await expect(heading).toHaveText(name);
       await expect(heading).toBeFocused();
-      await expect(page.getByLabel('コレクションの解析対象')).toHaveValue(index);
+      await expectFontFace(page, index);
       await expect.poll(() => previewFonts(page)).toHaveLength(0);
       await page.getByRole('tab', { name: 'サンプル', exact: true }).click();
       await expect

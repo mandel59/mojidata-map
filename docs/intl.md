@@ -6,7 +6,7 @@
 
 `main.tsx` → `LocaleProvider` → `useLocale` を言語の受け渡し経路とする。現在は `DEFAULT_LOCALE = ja` を渡す。Providerは渡された値を正規化し、Intl.NumberFormat・Intl.Collatorを再利用する。`document.documentElement.lang` はこの状態の出力であり、入力として読まない。navigator.languageやElectronのOSロケールに表示言語を決めさせない。
 
-Reactコンポーネント・フックはContextを参照し、ワーカー・core関数はロケールを引数として受ける。単体テストでも日本語・英語や地域付き言語を明示できる。フォント名選択、フォントの並び順、カバレッジの名前検索・件数表示はこの経路を使う。
+Reactコンポーネント・フックはContextを参照し、ワーカー・core関数はロケールを引数として受ける。単体テストでも日本語・英語や地域付き言語を明示できる。フォント名選択、カバレッジ結果の並び順、カバレッジの名前検索・件数表示はこの経路を使う。
 
 ## フォント名
 
@@ -14,7 +14,7 @@ OpenType nameテーブルのfullName、family、subfamilyを使う。言語タ�
 
 PostScript名は端末フォントとTTCフェイスを選ぶ識別子であり、翻訳しない。描画用FontFaceの内部名も表示名と分離する。カバレッジのプレビューや解析は、表示名が変わっても同じフェイスを使う。
 
-解析済みフォントの名前はロケール変更時に導出し直す。カバレッジ検索と端末候補の名前取得は開始時の言語を固定し、Providerのロケールが変わった場合は中止・結果の無効化を行う。読み込み通知は完了時のロケールを使う。
+解析済みフォントの名前はロケール変更時に導出し直す。カバレッジ検索と端末候補の名前取得は開始時の言語を固定し、Providerのロケールが変わった場合は中止・結果の無効化を行う。端末フォント一覧はまずPostScript名で表示し、ワーカーから受け取った名前を順次反映する。更新中も選択でき、並び順はPostScript名順に固定する。読み込み完了の通知は表示しない。
 
 WindowsのLocal Font Accessは要求言語のfull nameがない場合、先頭のローカライズ名へフォールバックするため、その文字列をそのまま表示しない。参照: [Chromiumの列挙処理](https://chromium.googlesource.com/chromium/src/+/HEAD/content/browser/font_access/font_enumeration_data_source_win.cc)、[OpenType name仕様](https://learn.microsoft.com/en-us/typography/opentype/spec/name)。
 

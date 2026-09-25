@@ -8,6 +8,7 @@ interface FontSource {
   bytes: ArrayBuffer;
   fonts: Font[];
   label: string;
+  postscriptName?: string;
 }
 interface Selection {
   source: FontSource;
@@ -16,8 +17,9 @@ interface Selection {
   preview: FontFace | null;
 }
 interface Inspection {
+  error: string;
   selection: Selection | null;
-  pending: { index: number | null } | null;
+  pending: { index: number | null; postscriptName?: string; label: string } | null;
 }
 let previewSequence = 0;
 
@@ -29,7 +31,7 @@ export function useFontInspection(notify: (message: string) => void) {
   useEffect(() => {
     activeLocale.current = locale;
   }, [locale]);
-  const [state, setState] = useState<Inspection>({ selection: null, pending: null });
+  const [state, setState] = useState<Inspection>({ selection: null, pending: null, error: '' });
   const request = useRef(0);
   const registered = useRef<FontFace | null>(null);
   useEffect(
@@ -41,34 +43,29 @@ export function useFontInspection(notify: (message: string) => void) {
     [],
   );
 
-  const commit = useCallback(
-    async (source: FontSource, index: number, revision: number) => {
-      let preview: FontFace | null = null;
-      try {
-        const bytes = fontFaceData(source.bytes, index);
-        preview = await new FontFace(`Mojidata Imported Font${++previewSequence}`, bytes).load();
-      } catch {
-        // Keep analysis available, but never show a previously selected font as
-        // though it were the new face. The UI marks the unavailable preview.
-      }
-      if (revision !== request.current) return false;
-      if (preview) document.fonts.add(preview);
-      if (registered.current) document.fonts.delete(registered.current);
-      registered.current = preview;
-      setState({ selection: { source, index, revision, preview }, pending: null });
-      notify(
-        `${fontNames(source.fonts[index], activeLocale.current, source.label).fullName} を読み込みました。`,
-      );
-      return true;
-    },
-    [notify],
-  );
+  const commit = useCallback(async (source: FontSource, index: number, revision: number) => {
+    let preview: FontFace | null = null;
+    try {
+      const bytes = fontFaceData(source.bytes, index);
+      preview = await new FontFace(`Mojidata Imported Font${++previewSequence}`, bytes).load();
+    } catch {
+      // Keep analysis available, but never show a previously selected font as
+      // though it were the new face. The UI marks the unavailable preview.
+    }
+    if (revision !== request.current) return false;
+    if (preview) document.fonts.add(preview);
+    if (registered.current) document.fonts.delete(registered.current);
+    registered.current = preview;
+    setState({ selection: { source, index, revision, preview }, pending: null, error: '' });
+    return true;
+  }, []);
 
   const failed = useCallback(
     (revision: number, error: unknown) => {
       if (revision !== request.current) return;
-      setState((previous) => ({ ...previous, pending: null }));
-      notify(`フォントを解析できません: ${String(error)}`);
+      const message = `フォントを解析できません: ${String(error)}`;
+      setState((previous) => ({ ...previous, pending: null, error: message }));
+      notify(message);
     },
     [notify],
   );
@@ -76,7 +73,11 @@ export function useFontInspection(notify: (message: string) => void) {
   const inspect = useCallback(
     async (read: () => Promise<Blob>, label: string, postscriptName?: string) => {
       const revision = ++request.current;
-      setState((previous) => ({ ...previous, pending: { index: null } }));
+      setState((previous) => ({
+        ...previous,
+        error: '',
+        pending: { index: null, postscriptName, label },
+      }));
       try {
         const blob = await read();
         if (revision !== request.current) return false;
@@ -95,7 +96,7 @@ export function useFontInspection(notify: (message: string) => void) {
             ? fonts.findIndex((font) => font.postscriptName === postscriptName)
             : 0;
         if (index < 0) throw new Error('選択したフォントがコレクション内に見つかりません。');
-        return await commit({ bytes, fonts, label }, index, revision);
+        return await commit({ bytes, fonts, label, postscriptName }, index, revision);
       } catch (error) {
         failed(revision, error);
         return false;
@@ -107,13 +108,22 @@ export function useFontInspection(notify: (message: string) => void) {
   const selectFace = useCallback(
     async (index: number) => {
       const source = state.selection?.source;
-      if (!source || !source.fonts[index]) return;
+      if (!source || !source.fonts[index]) return false;
       const revision = ++request.current;
-      setState((previous) => ({ ...previous, pending: { index } }));
+      setState((previous) => ({
+        ...previous,
+        error: '',
+        pending: {
+          index,
+          postscriptName: source.fonts[index].postscriptName,
+          label: fontNames(source.fonts[index], activeLocale.current).fullName,
+        },
+      }));
       try {
-        await commit(source, index, revision);
+        return await commit(source, index, revision);
       } catch (error) {
         failed(revision, error);
+        return false;
       }
     },
     [state.selection, commit, failed],
@@ -123,7 +133,7 @@ export function useFontInspection(notify: (message: string) => void) {
     request.current++;
     if (registered.current) document.fonts.delete(registered.current);
     registered.current = null;
-    setState({ selection: null, pending: null });
+    setState({ selection: null, pending: null, error: '' });
   }, []);
 
   const source = state.selection?.source;

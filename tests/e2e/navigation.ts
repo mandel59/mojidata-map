@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 
 export async function searchMethod(
   page: Page,
@@ -25,4 +25,25 @@ export async function fontSample(page: Page) {
   if (await tab.isVisible()) await tab.click();
   else await page.getByLabel('ツールを選択').selectOption('fonts');
   await page.getByRole('tab', { name: 'サンプル', exact: true }).click();
+}
+
+export async function openFontPicker(page: Page) {
+  const dialog = page.getByRole('dialog', { name: 'フォント一覧', exact: true });
+  const open = page.getByRole('button', { name: 'フォント一覧', exact: true });
+  if (!(await dialog.count()) && (await open.isVisible())) await open.click();
+}
+export async function selectFontFace(page: Page, index: string) {
+  await openFontPicker(page);
+  await page.locator(`[data-face-index="${index}"]`).click();
+}
+export async function expectFontFace(page: Page, index: string) {
+  const dialog = page.getByRole('dialog', { name: 'フォント一覧', exact: true });
+  const wasOpen = await dialog.count();
+  await openFontPicker(page);
+  await expect(
+    page
+      .getByRole('tablist', { name: 'コレクションの解析対象' })
+      .getByRole('tab', { selected: true }),
+  ).toHaveAttribute('data-face-index', index);
+  if (!wasOpen && (await dialog.count())) await page.keyboard.press('Escape');
 }

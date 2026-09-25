@@ -1,3 +1,4 @@
+import { openFontPicker, selectFontFace } from './navigation';
 import { fontSample } from './navigation';
 import { expect, test } from '@playwright/test';
 import { create } from 'fontkit';
@@ -16,7 +17,7 @@ for (const width of [1024, 390]) {
     const sampleTab = tabs.getByRole('tab', { name: 'サンプル', exact: true });
     await expect(tabs.getByRole('tab')).toHaveCount(3);
     await expect(sampleTab).toHaveAttribute('aria-selected', 'true');
-    await page.getByRole('button', { name: 'フォントを選ぶ', exact: true }).click();
+    await openFontPicker(page);
     await page.locator('input[type=file]').setInputFiles('tests/fixtures/FallbackBase.ttf');
     await page.getByRole('button', { name: '編集バッファから読み込む', exact: true }).click();
     const input = page.getByLabel('サンプルテキスト', { exact: true });
@@ -158,7 +159,7 @@ test('draws the selected collection face rather than its first face', async ({ p
       return context.measureText('A').width;
     });
   await expect.poll(widthOfA).toBe(50);
-  await page.getByLabel('コレクションの解析対象').selectOption('1');
+  await selectFontFace(page, '1');
   await expect(table.locator('.missing-glyph-row')).toHaveCount(0);
   await expect.poll(widthOfA).toBe(90);
   const parsed = create(readFileSync('tests/fixtures/FallbackCollection.ttc'));

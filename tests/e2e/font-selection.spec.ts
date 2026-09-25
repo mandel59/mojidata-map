@@ -1,3 +1,4 @@
+import { expectFontFace, openFontPicker } from './navigation';
 import { fontSample } from './navigation';
 import { expect, test, type Page } from '@playwright/test';
 import { create } from 'fontkit';
@@ -20,6 +21,7 @@ async function openSample(page: Page, file = baseFile) {
   await fontSample(page);
   await page.locator('input[type=file]').setInputFiles(file);
   await expect(heading(page)).toHaveText(names[0].name);
+  await expect(page.locator('.toast')).not.toContainText('読み込みました');
   await page.getByRole('button', { name: '編集バッファから読み込む', exact: true }).click();
 }
 async function widthOfA(page: Page) {
@@ -52,19 +54,15 @@ test('applies the chosen local PostScript face and retains the candidate after e
     { names },
   );
   await openSample(page);
-  const family = await preview(page).evaluate((el) => getComputedStyle(el).fontFamily);
-  await page.getByRole('button', { name: 'フォントを選ぶ', exact: true }).click();
+  await openFontPicker(page);
   await page.getByRole('button', { name: '端末のフォントを取得', exact: true }).click();
-  const candidate = page.getByLabel('端末のフォント', { exact: true });
-  await candidate.selectOption(names[1].ps);
-  await expect(preview(page)).toHaveCSS('font-family', family);
-  await expect(heading(page)).toHaveText(names[0].name);
-  await page.getByRole('button', { name: '端末のフォントを取得', exact: true }).click();
-  await expect(candidate.locator('option').nth(1)).toHaveAttribute('value', names[0].ps);
-  await expect(candidate).toHaveValue(names[1].ps);
-  await page.getByRole('button', { name: '選択フォントを解析', exact: true }).click();
+  const candidate = page.locator(`[data-font-id="${names[1].ps}"]`);
+  await candidate.click();
   await expect(heading(page)).toHaveText(names[1].name);
-  await expect(page.getByLabel('コレクションの解析対象')).toHaveValue('1');
+  await expect(candidate).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('button', { name: '端末のフォントを取得', exact: true }).click();
+  await expect(candidate).toHaveAttribute('aria-selected', 'true');
+  await expectFontFace(page, '1');
   await expect.poll(() => widthOfA(page)).toBe(90);
   await expect.poll(() => registered(page)).toBe(1);
 });
@@ -90,24 +88,27 @@ test('commits only the latest collection choice and cannot restore a cleared fac
   await openSample(page, collectionFile);
   const face = page.getByLabel('コレクションの解析対象');
   const family = await preview(page).evaluate((el) => getComputedStyle(el).fontFamily);
-  await face.selectOption('1');
+  const labels = await face.innerText();
+  const tabsBox = await page.locator('.font-tabs').boundingBox();
+  await face.locator('[data-face-index="1"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-waiting-font', '2');
+  expect(await face.innerText()).toBe(labels);
+  expect(await page.locator('.font-tabs').boundingBox()).toEqual(tabsBox);
   await expect(heading(page)).toHaveText(names[0].name);
   await expect(preview(page)).toHaveCSS('font-family', family);
-  await face.selectOption('0');
+  await face.locator('[data-face-index="0"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-waiting-font', '3');
   await page.evaluate(() => window.dispatchEvent(new Event('release-font-3')));
   await expect(preview(page)).not.toHaveCSS('font-family', family);
   const current = await preview(page).evaluate((el) => getComputedStyle(el).fontFamily);
   await page.evaluate(() => window.dispatchEvent(new Event('release-font-2')));
   await expect(heading(page)).toHaveText(names[0].name);
-  await expect(face).toHaveValue('0');
+  await expectFontFace(page, '0');
   await expect(preview(page)).toHaveCSS('font-family', current);
   await expect.poll(() => widthOfA(page)).toBe(50);
   await expect.poll(() => registered(page)).toBe(1);
-  await face.selectOption('1');
+  await face.locator('[data-face-index="1"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-waiting-font', '4');
-  await page.getByRole('button', { name: 'フォントを選ぶ', exact: true }).click();
   await page.getByRole('button', { name: '追加フォントを解除', exact: true }).click();
   await page.evaluate(() => window.dispatchEvent(new Event('release-font-4')));
   await expect(preview(page)).toHaveCount(0);
@@ -146,13 +147,17 @@ test('starts pending state before local blob retrieval and cancels obsolete impo
     ];
   }, names[1]);
   await openSample(page);
-  await page.getByRole('button', { name: 'フォントを選ぶ', exact: true }).click();
+  await openFontPicker(page);
   await page.getByRole('button', { name: '端末のフォントを取得', exact: true }).click();
-  await page.getByLabel('端末のフォント', { exact: true }).selectOption(names[1].ps);
-  const apply = page.getByRole('button', { name: '選択フォントを解析', exact: true });
+  const apply = page.locator(`[data-font-id="${names[1].ps}"]`);
+  await expect(apply).toHaveAttribute('data-name-status', 'ready');
+  const label = await apply.innerText();
+  const tabsBox = await page.locator('.font-tabs').boundingBox();
   await apply.click();
   await expect(page.locator('html')).toHaveAttribute('data-waiting-blob', 'true');
-  await expect(apply).toBeDisabled();
+  expect(await apply.innerText()).toBe(label);
+  expect(await page.locator('.font-tabs').boundingBox()).toEqual(tabsBox);
+  await expect(apply).toHaveAttribute('aria-busy', 'true');
   await page.getByRole('button', { name: '追加フォントを解除', exact: true }).click();
   await page.locator('input[type=file]').setInputFiles(baseFile);
   await expect(heading(page)).toHaveText(names[0].name);
@@ -183,7 +188,9 @@ test('preserves the committed font on parse failure and explicitly marks unavail
   await page
     .locator('input[type=file]')
     .setInputFiles({ name: 'broken.ttf', mimeType: 'font/ttf', buffer: Buffer.from('not a font') });
-  await expect(page.getByText(/フォントを解析できません:/)).toBeVisible();
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'フォントを解析できません:' }),
+  ).toBeVisible();
   await expect(heading(page)).toHaveText(names[0].name);
   await expect(preview(page)).toHaveCSS('font-family', family);
   await page.evaluate(() => window.dispatchEvent(new Event('reject-font')));

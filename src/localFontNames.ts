@@ -7,9 +7,9 @@ import type { LocalFont } from './platform';
 export async function localizeFontNames(
   fonts: LocalFont[],
   locale: string,
-  progress: (checked: number, total: number) => void,
+  onName: (postscriptName: string, names: FontNames | null) => void,
   signal: AbortSignal,
-): Promise<LocalFont[]> {
+): Promise<void> {
   signal.throwIfAborted();
   const worker = new Worker(new URL('./fontCoverage.worker.ts', import.meta.url), {
     type: 'module',
@@ -25,16 +25,10 @@ export async function localizeFontNames(
     rejectPending?.(signal.reason);
   };
   signal.addEventListener('abort', abort, { once: true });
-  const result: LocalFont[] = [];
   try {
-    progress(0, fonts.length);
-    for (const [index, font] of fonts.entries()) {
+    for (const font of fonts) {
       signal.throwIfAborted();
-      let names: FontNames = {
-        fullName: font.postscriptName,
-        family: font.postscriptName,
-        style: '',
-      };
+      let names: FontNames | null = null;
       try {
         const blob = await font.blob();
         signal.throwIfAborted();
@@ -61,15 +55,8 @@ export async function localizeFontNames(
         // replace an unavailable UI/English label with an arbitrary language.
       }
       signal.throwIfAborted();
-      result.push({ ...names, postscriptName: font.postscriptName, blob: () => font.blob() });
-      progress(index + 1, fonts.length);
+      onName(font.postscriptName, names);
     }
-    const collator = new Intl.Collator(locale);
-    return result.sort(
-      (a, b) =>
-        collator.compare(a.fullName, b.fullName) ||
-        collator.compare(a.postscriptName, b.postscriptName),
-    );
   } finally {
     worker.terminate();
     signal.removeEventListener('abort', abort);

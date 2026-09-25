@@ -1,3 +1,4 @@
+import { selectFontFace } from './navigation';
 import { expect, test } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { create } from 'fontkit';
@@ -129,7 +130,7 @@ test('updates exact glyphs and metrics when the inspected collection face change
     .filter({ has: page.getByText('横送り幅', { exact: true }) })
     .locator('dd');
   await expect(advance).toHaveText('500');
-  await page.getByLabel('コレクションの解析対象').selectOption('1');
+  await selectFontFace(page, '1');
   await expect(advance).toHaveText('900');
   const collection = create(readFileSync('tests/fixtures/FallbackCollection.ttc'));
   if (!('fonts' in collection)) throw new Error('Expected a collection');

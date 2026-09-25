@@ -53,7 +53,7 @@ for (const viewport of [
     await expect(page.getByLabel('編集テキスト')).toBeInViewport();
     await page.getByRole('button', { name: 'フォント', exact: true }).click();
     await expect(
-      page.getByRole('button', { name: 'フォントを選ぶ', exact: true }),
+      page.getByRole('button', { name: 'フォントファイルを開く', exact: true }),
     ).toBeInViewport();
     await expect(page.getByLabel('編集テキスト')).toBeInViewport();
   });

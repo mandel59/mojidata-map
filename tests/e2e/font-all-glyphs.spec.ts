@@ -1,3 +1,4 @@
+import { selectFontFace } from './navigation';
 import { expect, test, type Download } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { create } from 'fontkit';
@@ -148,7 +149,7 @@ test('pages all glyphs with the shared keys and resets on collection face change
   await expect(scope).toHaveValue('');
   await scope.selectOption('@glyphs');
   await expect(page.locator('.font-glyph-grid .character-cell')).toHaveCount(3);
-  await page.getByLabel('コレクションの解析対象').selectOption('1');
+  await selectFontFace(page, '1');
   await expect(scope).toHaveValue('');
   await scope.selectOption('@glyphs');
   await expect(page.locator('.font-glyph-grid .character-cell')).toHaveCount(6);

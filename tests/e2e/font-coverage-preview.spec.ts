@@ -1,3 +1,4 @@
+import { openFontPicker, selectFontFace } from './navigation';
 import { readFileSync } from 'node:fs';
 import { create } from 'fontkit';
 import { expect, test, type Page } from '@playwright/test';
@@ -49,7 +50,8 @@ for (const width of [1024, 390]) {
       'font-family',
       /Mojidata Imported/,
     );
-    const columns = width === 1024 ? 16 : 8;
+    // The sidebar and glyph details leave fewer than 600px for this grid.
+    const columns = 8;
     expect(
       await preview
         .locator('.character-grid')
@@ -121,13 +123,12 @@ test('resets coverage on replacement, collection face change and removal', async
   const before = await preview
     .locator('.character-cell')
     .evaluateAll((elements) => elements.map((el) => el.getAttribute('data-cp')));
-  await page.getByLabel('コレクションの解析対象').selectOption('1');
+  await selectFontFace(page, '1');
   await expect(preview.locator('.character-cell')).toHaveCount(5);
   const after = await preview
     .locator('.character-cell')
     .evaluateAll((elements) => elements.map((el) => el.getAttribute('data-cp')));
   expect(after).not.toEqual(before);
-  await page.getByRole('button', { name: 'フォントを選ぶ', exact: true }).click();
   await page.getByRole('button', { name: '追加フォントを解除', exact: true }).click();
   await expect(preview).toHaveCount(0);
 });

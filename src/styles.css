@@ -1470,13 +1470,13 @@ td button {
   }
 }
 
-/* Font inspection keeps its source and task navigation fixed above one workspace. */
+/* The font library stays beside the inspection workspace. */
 .main-content > .font-workspace {
   flex: 1;
   min-height: 0;
   min-width: 0;
 }
-.font-workspace:not([hidden]),
+.font-inspection,
 .font-panels,
 .font-tab-panel:not([hidden]),
 .font-characters-view {
@@ -1507,17 +1507,6 @@ td button {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-.font-source:popover-open {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.font-source .file-button {
-  align-self: flex-start;
-}
-.font-source select {
-  width: 100%;
 }
 .font-tabs {
   display: flex;
@@ -1897,4 +1886,167 @@ td button {
   font-size: 28px;
   line-height: 1.5;
   font-synthesis: none;
+}
+
+.font-workspace:not([hidden]) {
+  display: flex;
+  flex-direction: row;
+  min-height: 0;
+  overflow: hidden;
+}
+.font-picker-sidebar {
+  width: clamp(220px, 23vw, 280px);
+  flex-shrink: 0;
+  min-height: 0;
+  border-right: 1px solid var(--border);
+  background: var(--sidebar);
+}
+.font-picker {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+.font-picker-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 10px 8px;
+}
+.font-picker-heading h2 {
+  font-size: 14px;
+}
+.font-picker-actions {
+  display: flex;
+  gap: 6px;
+  padding: 0 10px 10px;
+}
+.font-picker-actions button {
+  flex: 1;
+  font-size: 11px;
+  padding: 6px 4px;
+}
+.font-picker-search {
+  padding: 0 10px 10px;
+  font-size: 11px;
+}
+.font-picker-search input {
+  width: 100%;
+}
+.font-picker-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding: 0 5px 5px;
+}
+.font-picker-group h3 {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 7px 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.font-picker-source {
+  padding: 0 7px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.font-picker-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 56px;
+  text-align: start;
+  padding: 8px 9px;
+  border: 1px solid transparent;
+  border-left: 3px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  position: relative;
+}
+.font-picker-item > span,
+.font-picker-item > small {
+  display: block;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.font-picker-item > span {
+  font-size: 12px;
+  font-weight: 550;
+}
+.font-picker-item > small {
+  font-size: 10px;
+  color: var(--muted);
+}
+.font-picker-item[aria-selected='true'] {
+  background: var(--soft);
+  border-left-color: var(--accent);
+  color: var(--accent);
+}
+.font-picker-item[aria-busy='true'] {
+  border-color: var(--border);
+}
+.font-picker-item:focus-visible {
+  z-index: 1;
+  outline-offset: -2px;
+}
+.font-picker-empty {
+  padding: 12px 7px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.font-picker-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  flex: 0 0 44px;
+  min-height: 44px;
+}
+.font-picker-footer p {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.font-picker-footer button {
+  padding: 3px 6px;
+  font-size: 11px;
+}
+.font-picker-error {
+  padding: 0 10px 8px;
+  font-size: 11px;
+}
+.font-inspection-caption {
+  display: block;
+  height: 16px;
+  line-height: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.utility-dialog:has(.font-picker) .utility-dialog-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: min(620px, calc(100dvh - 110px));
+  padding: 0;
+}
+.utility-dialog .font-picker-heading {
+  display: none;
+}
+.utility-dialog .font-picker-actions {
+  padding-top: 12px;
 }

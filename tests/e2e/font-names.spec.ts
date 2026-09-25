@@ -1,3 +1,4 @@
+import { openFontPicker, selectFontFace, expectFontFace } from './navigation';
 import { expect, test } from '@playwright/test';
 import { fontSample } from './navigation';
 
@@ -41,28 +42,32 @@ for (const width of [1024, 390]) {
     await dialog.getByRole('button', { name: 'Localized Italicをフォントタブで解析' }).click();
     const heading = page.locator('.font-workspace-heading h2');
     await expect(heading).toHaveText('Localized Italic');
+    await openFontPicker(page);
     const faces = page.getByLabel('コレクションの解析対象');
-    await expect(faces).toHaveValue('1');
+    await expectFontFace(page, '1');
     await expect(faces).toContainText('日本語テスト 標準');
     await expect(faces).not.toContainText('Cursiva');
-    await faces.selectOption('0');
+    await selectFontFace(page, '0');
     await expect(heading).toHaveText('日本語テスト 標準');
     await page.getByRole('tab', { name: '情報', exact: true }).click();
     await expect(page.getByRole('tabpanel', { name: '情報' })).toContainText('日本語テスト');
     await expect(page.getByRole('tabpanel', { name: '情報' })).toContainText('標準');
-    await page.getByRole('button', { name: 'フォントを選ぶ', exact: true }).click();
+    await openFontPicker(page);
     await page.getByRole('button', { name: '端末のフォントを取得', exact: true }).click();
     const candidates = page.getByLabel('端末のフォント', { exact: true });
-    await expect(candidates.locator('option')).toHaveText([
-      'フォントを選択…',
-      'Localized Italic',
-      'OnlyOtherNames',
+    await expect(candidates.locator('[data-font-id]')).toHaveCount(3);
+    await expect(candidates.locator('[data-font-id="LocalizedBase"] > span')).toHaveText(
       '日本語テスト 標準',
-    ]);
-    await candidates.selectOption('LocalizedItalic');
-    await page.getByRole('button', { name: '選択フォントを解析', exact: true }).click();
+    );
+    await expect(candidates.locator('[data-font-id="LocalizedItalic"] > span')).toHaveText(
+      'Localized Italic',
+    );
+    await expect(candidates.locator('[data-font-id="OnlyOtherNames"] > span')).toHaveText(
+      'OnlyOtherNames',
+    );
+    await candidates.locator('[data-font-id="LocalizedItalic"]').click();
     await expect(heading).toHaveText('Localized Italic');
-    await expect(faces).toHaveValue('1');
+    await expectFontFace(page, '1');
     // File import shares the same policy rather than fontkit's default language.
     await page.locator('input[type=file]').setInputFiles('tests/fixtures/LocalizedNames.ttc');
     await expect(heading).toHaveText('日本語テスト 標準');
@@ -84,11 +89,12 @@ test('keeps unreadable local fonts selectable by PostScript name', async ({ page
   });
   await page.goto('/');
   await fontSample(page);
-  await page.getByRole('button', { name: 'フォントを選ぶ', exact: true }).click();
+  await openFontPicker(page);
   await page.getByRole('button', { name: '端末のフォントを取得', exact: true }).click();
   const candidates = page.getByLabel('端末のフォント', { exact: true });
-  await expect(candidates.locator('option')).toHaveText(['フォントを選択…', 'BrokenPS']);
-  await candidates.selectOption('BrokenPS');
-  await page.getByRole('button', { name: '選択フォントを解析', exact: true }).click();
-  await expect(page.getByText(/フォントを解析できません:/)).toBeVisible();
+  await expect(candidates.locator('[data-font-id="BrokenPS"] > span')).toHaveText('BrokenPS');
+  await candidates.locator('[data-font-id="BrokenPS"]').click();
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'フォントを解析できません:' }),
+  ).toBeVisible();
 });

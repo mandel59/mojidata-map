@@ -1,3 +1,4 @@
+import { selectFontFace } from './navigation';
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 
@@ -90,7 +91,7 @@ for (const width of [1024, 390]) {
     await expect(
       collection.getByRole('button', { name: '一覧を保存', exact: true }),
     ).toBeDisabled();
-    await page.getByLabel('コレクションの解析対象').selectOption('1');
+    await selectFontFace(page, '1');
     await expect(scope).toHaveValue('');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
