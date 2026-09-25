@@ -1,5 +1,6 @@
 import { useFontStyle } from '../useFontFallback';
-import { memo, useEffect, useRef, type KeyboardEvent } from 'react';
+import { memo, useRef } from 'react';
+import { useGridNavigation } from '../useGridNavigation';
 import { CharacterGridSurface } from './CharacterDisplay';
 import { codeLabel, hex, isCodePoint, type UnicodeDatabase } from '../core/unicode';
 
@@ -33,41 +34,21 @@ export const CharacterGrid = memo(function CharacterGrid({
 }: Props) {
   const fontStyle = useFontStyle();
   const container = useRef<HTMLDivElement>(null);
-  const focusAfterMove = useRef(false);
-  useEffect(() => {
-    const active = container.current?.querySelector<HTMLButtonElement>(`[data-cp="${selected}"]`);
-    if (focusAfterMove.current) {
-      active?.focus({ preventScroll: true });
-      focusAfterMove.current = false;
-    }
-    active?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  }, [selected, points[0], columns]);
-  const hasSelection = points.includes(selected);
-  function handleKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
-    const delta = {
-      ArrowRight: 1,
-      ArrowLeft: -1,
-      ArrowUp: -columns,
-      ArrowDown: columns,
-      Home: -index % columns,
-      End: columns - 1 - (index % columns),
-    }[event.key];
-    if (delta !== undefined) {
-      event.preventDefault();
-      const next = index + delta;
-      if (points[next] !== undefined) {
-        onSelect(points[next]);
-        container.current?.querySelector<HTMLButtonElement>(`[data-cp="${points[next]}"]`)?.focus();
-      } else if (onMove && isCodePoint(points[index] + delta)) {
-        focusAfterMove.current = true;
-        onMove(points[index] + delta);
-      }
-    }
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      onInsert(points[index]);
-    }
-  }
+  const navigation = useGridNavigation({
+    container,
+    columns,
+    count: points.length,
+    selectedIndex: points.indexOf(selected),
+    pageKey: points[0],
+    onSelect: (index) => onSelect(points[index]),
+    onInsert: (index) => onInsert(points[index]),
+    onMove: (index, delta) => {
+      const next = points[index] + delta;
+      if (!onMove || !isCodePoint(next)) return false;
+      onMove(next);
+      return true;
+    },
+  });
   return (
     <CharacterGridSurface containerRef={container} columns={columns}>
       {points.map((cp, index) => {
@@ -84,11 +65,11 @@ export const CharacterGrid = memo(function CharacterGrid({
             className={`character-cell ${selected === cp ? 'selected' : ''} ${category === 'Cn' || category === 'Cs' ? 'unassigned' : ''} ${colorBy === 'none' ? '' : `tint-${colorIndex(color)}`}`}
             aria-label={`${codeLabel(cp)} ${name}`}
             aria-pressed={selected === cp}
-            tabIndex={cp === selected || (!hasSelection && index === 0) ? 0 : -1}
+            tabIndex={navigation.tabIndex(index)}
             title={`${codeLabel(cp)} · ${name}\nダブルクリック / Enter で追加`}
             onClick={() => onSelect(cp)}
             onDoubleClick={() => onInsert(cp)}
-            onKeyDown={(event) => handleKey(event, index)}
+            onKeyDown={(event) => navigation.onKeyDown(event, index)}
           >
             <span className="cell-glyph" style={fontStyle(fontFamily)} dir="ltr">
               {db.glyph(cp)}

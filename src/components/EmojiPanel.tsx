@@ -2,6 +2,7 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { loadData, type Emoji } from '../data';
 import { codeLabel } from '../core/unicode';
 import { usePageKeys } from '../usePageKeys';
+import { useGridNavigation } from '../useGridNavigation';
 import { CharacterGridSurface } from './CharacterDisplay';
 const PAGE_SIZE = 64;
 
@@ -10,7 +11,7 @@ interface Props {
   version: string;
   onInsert(text: string): void;
   selected: Emoji | null;
-  onSelect(emoji: Emoji): void;
+  onSelect(emoji: Emoji | null): void;
 }
 export const EmojiPanel = memo(function EmojiPanel({
   active,
@@ -65,15 +66,27 @@ export const EmojiPanel = memo(function EmojiPanel({
     [matches, page],
   );
   const selectedKey = selected?.cps.join('-');
-  usePageKeys(active && matches.length > 0, (direction) => {
-    const next = page + direction;
+  const selectedIndex = visible.findIndex((emoji) => emoji.cps.join('-') === selectedKey);
+  const navigation = useGridNavigation({
+    container: grid,
+    columns,
+    count: visible.length,
+    selectedIndex,
+    pageKey: visible[0]?.cps.join('-'),
+    active,
+    onSelect: (index) => onSelect(visible[index]),
+    onInsert: (index) => onInsert(String.fromCodePoint(...visible[index].cps)),
+  });
+  useEffect(() => {
+    onSelect(matches[0] ?? null);
+  }, [matches, onSelect]);
+  function movePage(next: number, offset = 0) {
     if (next < 0 || next * PAGE_SIZE >= matches.length) return;
-    const offset = Math.max(
-      0,
-      visible.findIndex((emoji) => emoji.cps.join('-') === selectedKey),
-    );
     setPage(next);
     onSelect(matches[Math.min(next * PAGE_SIZE + offset, matches.length - 1)]);
+  }
+  usePageKeys(active && matches.length > 0, (direction) => {
+    movePage(page + direction, Math.max(0, selectedIndex));
   });
   return (
     <section className="emoji-workspace" aria-label="絵文字検索" hidden={!active} ref={container}>
@@ -131,7 +144,9 @@ export const EmojiPanel = memo(function EmojiPanel({
               aria-label={emoji.name}
               title={`${emoji.name}\n${emoji.cps.map(codeLabel).join(' ')}`}
               onClick={() => onSelect(emoji)}
-              aria-pressed={selectedKey === emoji.cps.join('-')}
+              aria-pressed={selectedIndex === index}
+              tabIndex={navigation.tabIndex(index)}
+              onKeyDown={(event) => navigation.onKeyDown(event, index)}
               onDoubleClick={() => onInsert(String.fromCodePoint(...emoji.cps))}
             >
               <span className="cell-glyph">{String.fromCodePoint(...emoji.cps)}</span>
@@ -146,7 +161,7 @@ export const EmojiPanel = memo(function EmojiPanel({
       )}
       <div className="pagination">
         <div className="button-row">
-          <button aria-label="前のページ" disabled={page === 0} onClick={() => setPage(page - 1)}>
+          <button aria-label="前のページ" disabled={page === 0} onClick={() => movePage(page - 1)}>
             ←
           </button>
           <span>
@@ -155,7 +170,7 @@ export const EmojiPanel = memo(function EmojiPanel({
           <button
             aria-label="次のページ"
             disabled={(page + 1) * PAGE_SIZE >= matches.length}
-            onClick={() => setPage(page + 1)}
+            onClick={() => movePage(page + 1)}
           >
             →
           </button>

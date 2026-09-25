@@ -81,6 +81,7 @@ for (const width of [1024, 390]) {
     // A different filter reuses the same slots, including their event handlers.
     await page.getByRole('combobox', { name: 'グループ', exact: true }).selectOption('Flags');
     await expect(cells.first()).toHaveAttribute('aria-label', flags[0].name);
+    await expect(cells.first()).toHaveAttribute('aria-pressed', 'true');
     expect(await cells.first().evaluate((cell, original) => cell === original, first)).toBe(true);
     await expect(page.locator('.emoji-workspace .pagination')).toContainText('1 / 5');
     await cells.last().click();
@@ -111,8 +112,10 @@ for (const width of [1024, 390]) {
 
     await page.getByRole('textbox', { name: '英語の名前', exact: true }).fill('no such emoji xyz');
     await expect(cells).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'バッファに追加', exact: true })).toHaveCount(0);
     await page.getByRole('textbox', { name: '英語の名前', exact: true }).fill('');
     await expect(cells).toHaveCount(pageSize);
     await expect(cells.first()).toHaveAttribute('aria-label', flags[0].name);
+    await expect(cells.first()).toHaveAttribute('aria-pressed', 'true');
   });
 }
