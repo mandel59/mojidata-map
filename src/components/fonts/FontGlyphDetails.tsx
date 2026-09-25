@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Font } from 'fontkit';
 import { codeLabel, hex, isScalar, type UnicodeDatabase } from '../../core/unicode';
+import type { GlyphReference } from '../../core/fontGlyphIndex';
 import { glyphDrawing, glyphFrame, glyphSvg } from '../../core/glyphDrawing';
 import { copyText, download } from '../../platform';
 import { UtilityDialog } from '../UtilityDialog';
@@ -9,7 +10,11 @@ export function FontGlyphDetails({
   font,
   family,
   db,
-  cp,
+  target,
+  references,
+  referenceIndex,
+  onReferenceIndex,
+  referenceError,
   compact,
   onInsert,
   notify,
@@ -17,24 +22,37 @@ export function FontGlyphDetails({
   font: Font;
   family: string | null;
   db: UnicodeDatabase;
-  cp: number;
+  target: { kind: 'character'; cp: number } | { kind: 'glyph'; id: number };
+  references: GlyphReference[];
+  referenceIndex: number;
+  onReferenceIndex(index: number): void;
+  referenceError: string;
   compact: boolean;
-  onInsert(cp: number): void;
+  onInsert(text: string): void;
   notify(message: string): void;
 }) {
   const [open, setOpen] = useState(false);
   useEffect(() => {
     if (!compact) setOpen(false);
   }, [compact]);
-  const scalar = isScalar(cp);
+  const cp = target.kind === 'character' ? target.cp : null;
+  const id = target.kind === 'glyph' ? target.id : null;
+  const scalar = cp !== null && isScalar(cp);
+  const reference = references[referenceIndex] ?? references[0];
+  const text = scalar
+    ? String.fromCodePoint(cp)
+    : id !== null && reference
+      ? String.fromCodePoint(...reference.points)
+      : '';
+  const filename = id === null ? hex(cp!) : `glyph-${id}`;
   const info = useMemo(() => {
     try {
-      if (!isScalar(cp)) return null;
-      const glyph = font.glyphForCodePoint(cp);
+      if (id === null && (cp === null || !isScalar(cp))) return null;
+      const glyph = id !== null ? font.getGlyph(id) : font.glyphForCodePoint(cp!);
       const box = glyph.bbox;
       return {
         id: glyph.id,
-        covered: font.hasGlyphForCodePoint(cp),
+        covered: id !== null || font.hasGlyphForCodePoint(cp!),
         name: glyph.name || '—',
         advance: glyph.advanceWidth,
         bounds: [box.minX, box.minY, box.maxX, box.maxY].every(Number.isFinite)
@@ -45,7 +63,7 @@ export function FontGlyphDetails({
     } catch {
       return null;
     }
-  }, [font, cp]);
+  }, [font, cp, id]);
   const drawing = info?.drawing;
   const advanceY = drawing ? drawing.top + drawing.height - font.unitsPerEm * 0.035 : 0;
   const preview = drawing ? (
@@ -105,47 +123,92 @@ export function FontGlyphDetails({
     <span className="muted">描画不可</span>
   );
   async function exportPng() {
-    if (!family || !scalar) return;
+    if (id === null && (!family || !scalar)) return;
+    if (id !== null && !drawing) return;
     try {
       const canvas = document.createElement('canvas');
       canvas.width = canvas.height = 512;
       const ctx = canvas.getContext('2d')!;
-      const frame = glyphFrame(font, font.glyphForCodePoint(cp));
-      const scale = Math.min(canvas.width / frame.width, canvas.height / frame.height);
-      const cssFont = `${font.unitsPerEm * scale}px "${family.replace(/["\\]/g, '')}"`;
-      await document.fonts.load(cssFont);
-      ctx.font = cssFont;
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'alphabetic';
-      ctx.fillText(
-        String.fromCodePoint(cp),
-        (canvas.width - frame.width * scale) / 2 - frame.left * scale,
-        (canvas.height - frame.height * scale) / 2 - frame.top * scale,
-      );
+      if (id !== null && drawing) {
+        // Rasterize the actual glyph, including unencoded substitutions. Text
+        // rendering would shape it again and could choose a different glyph.
+        const svg = glyphSvg(drawing).replace('<svg ', '<svg width="512" height="512" ');
+        const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+        try {
+          const image = new Image();
+          await new Promise<void>((resolve, reject) => {
+            image.onload = () => resolve();
+            image.onerror = () => reject(new Error('グリフ画像を作成できません。'));
+            image.src = url;
+          });
+          ctx.drawImage(image, 0, 0);
+        } finally {
+          URL.revokeObjectURL(url);
+        }
+      } else {
+        const frame = glyphFrame(font, font.glyphForCodePoint(cp!));
+        const scale = Math.min(canvas.width / frame.width, canvas.height / frame.height);
+        const cssFont = `${font.unitsPerEm * scale}px "${family!.replace(/["\\]/g, '')}"`;
+        await document.fonts.load(cssFont);
+        ctx.font = cssFont;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText(
+          text,
+          (canvas.width - frame.width * scale) / 2 - frame.left * scale,
+          (canvas.height - frame.height * scale) / 2 - frame.top * scale,
+        );
+      }
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve));
-      if (blob) download(`${hex(cp)}-preview.png`, blob, 'image/png');
+      if (blob) download(`${filename}${id === null ? '-preview' : ''}.png`, blob, 'image/png');
     } catch (error) {
       notify(String(error));
     }
   }
+  const title = cp !== null ? `${codeLabel(cp)} · Glyph ID ${info?.id ?? '—'}` : `Glyph ID ${id}`;
+  const name = cp !== null ? db.name(cp) : (info?.name ?? '—');
   const content = (
     <div className="character-info font-glyph-info">
-      <div className="detail-code">
-        {codeLabel(cp)} <span>· Glyph ID {info?.id ?? '—'}</span>
-      </div>
+      <div className="detail-code">{title}</div>
       <div className="glyph-detail-preview">{preview}</div>
       {drawing ? (
         <p className="glyph-preview-caption">破線はベースライン、下の両端付き線は横送り幅です。</p>
       ) : null}
-      <h2 className="character-name">{db.name(cp)}</h2>
+      <h2 className="character-name">{name}</h2>
+      {id !== null && (
+        <div className="glyph-references">
+          {references.length ? (
+            <label>
+              対応する文字・VS列
+              <select
+                aria-label="対応する文字・VS列"
+                value={referenceIndex}
+                onChange={(event) => onReferenceIndex(Number(event.target.value))}
+              >
+                {references.map((ref, i) => (
+                  <option key={i} value={i}>
+                    {ref.points.map(codeLabel).join(' ')}
+                    {ref.kind === 'variation' ? ' (VS)' : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <p className="note">
+              単一文字・VS列の割当なし。文字列としての追加・コピーはできません。
+            </p>
+          )}
+          {referenceError && <p className="note coverage-missing">{referenceError}</p>}
+        </div>
+      )}
       <div className="button-row">
-        <button className="primary" disabled={!scalar} onClick={() => onInsert(cp)}>
+        <button className="primary" disabled={!text} onClick={() => onInsert(text)}>
           バッファに追加
         </button>
         <button
-          disabled={!scalar}
+          disabled={!text}
           onClick={() =>
-            void copyText(String.fromCodePoint(cp))
+            void copyText(text)
               .then(() => notify('コピーしました'))
               .catch((error) => notify(String(error)))
           }
@@ -154,13 +217,19 @@ export function FontGlyphDetails({
         </button>
       </div>
       <p className={`note glyph-coverage ${info?.covered ? '' : 'coverage-missing'}`}>
-        {!scalar
-          ? 'Unicodeスカラー値ではありません。'
-          : !info
+        {id !== null
+          ? !info
             ? 'グリフ情報を取得できません。'
-            : info.covered
-              ? 'このフォントに収録'
-              : 'このフォントには未収録 (.notdef)'}
+            : id === 0
+              ? '欠字用グリフ (.notdef)'
+              : 'フォント内のグリフ'
+          : !scalar
+            ? 'Unicodeスカラー値ではありません。'
+            : !info
+              ? 'グリフ情報を取得できません。'
+              : info.covered
+                ? 'このフォントに収録'
+                : 'このフォントには未収録 (.notdef)'}
       </p>
       <dl className="property-list">
         {[
@@ -168,9 +237,13 @@ export function FontGlyphDetails({
           ['横送り幅', info?.advance ?? '—'],
           ['輪郭の範囲', info?.bounds ?? '—'],
           ['Units per em', font.unitsPerEm],
-          ['ブロック', db.property(cp, 'Block')],
-          ['スクリプト', db.property(cp, 'Script')],
-          ['一般カテゴリ', db.category(cp)],
+          ...(cp === null
+            ? []
+            : [
+                ['ブロック', db.property(cp, 'Block')],
+                ['スクリプト', db.property(cp, 'Script')],
+                ['一般カテゴリ', db.category(cp)],
+              ]),
         ].map(([label, value]) => (
           <div key={label}>
             <dt>{label}</dt>
@@ -183,17 +256,27 @@ export function FontGlyphDetails({
         <button
           disabled={!drawing?.paths.length}
           onClick={() =>
-            drawing && download(`${hex(cp)}-glyph.svg`, glyphSvg(drawing), 'image/svg+xml')
+            drawing &&
+            download(
+              `${filename}${id === null ? '-glyph' : ''}.svg`,
+              glyphSvg(drawing),
+              'image/svg+xml',
+            )
           }
         >
           SVG を保存
         </button>
-        <button disabled={!family || !scalar} onClick={() => void exportPng()}>
+        <button
+          disabled={id !== null ? !drawing?.paths.length : !family || !scalar}
+          onClick={() => void exportPng()}
+        >
           PNG を保存
         </button>
       </div>
       <p className="note muted">
-        輪郭・SVGは解析対象のグリフです。PNGは表示用フォントとOSのフォールバックを含みます。
+        {id !== null
+          ? '輪郭・SVG・PNGは解析対象のグリフです。'
+          : '輪郭・SVGは解析対象のグリフです。PNGは表示用フォントとOSのフォールバックを含みます。'}
       </p>
     </div>
   );
@@ -208,12 +291,10 @@ export function FontGlyphDetails({
       <aside className="detail-strip" aria-label="選択中のグリフ">
         <span className="strip-glyph glyph-strip-preview">{preview}</span>
         <div>
-          <strong>
-            {codeLabel(cp)} · Glyph ID {info?.id ?? '—'}
-          </strong>
-          <span>{db.name(cp)}</span>
+          <strong>{title}</strong>
+          <span>{name}</span>
         </div>
-        <button disabled={!scalar} onClick={() => onInsert(cp)}>
+        <button disabled={!text} onClick={() => onInsert(text)}>
           追加
         </button>
         <button aria-haspopup="dialog" onClick={() => setOpen(true)}>

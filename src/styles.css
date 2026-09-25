@@ -1832,3 +1832,22 @@ td button {
 .glyph-strip-preview .glyph-empty-label {
   display: none;
 }
+
+.font-glyph-grid .layout-glyph,
+.font-glyph-grid .character-cell > .muted {
+  width: 100%;
+  height: calc(var(--glyph-size) * 1.35);
+}
+.font-glyph-grid .character-cell > .muted {
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  color: inherit;
+}
+.font-glyph-grid .character-cell::after {
+  display: none;
+}
+.glyph-references select {
+  width: 100%;
+  min-width: 0;
+}

@@ -450,6 +450,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                 compact={compact}
                 buffer={prefs.buffer}
                 bufferRequest={bufferCoverageRequest}
+                onInsertText={insert}
                 onInsert={insertCp}
                 onLocate={locate}
                 onSelect={setSelected}

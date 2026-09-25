@@ -20,6 +20,7 @@ interface Props {
   bufferRequest: number;
   notify(message: string): void;
   onInsert(cp: number): void;
+  onInsertText(text: string): void;
   onLocate(cp: number): void;
   onSelect(cp: number): void;
 }
@@ -32,6 +33,7 @@ export const FontPanel = memo(function FontPanel({
   buffer,
   bufferRequest,
   onInsert,
+  onInsertText,
   onLocate,
   onSelect,
 }: Props) {
@@ -246,6 +248,7 @@ export const FontPanel = memo(function FontPanel({
                 cp={cp}
                 onSelect={onSelect}
                 onInsert={onInsert}
+                onInsertText={onInsertText}
                 onLocate={onLocate}
               />
             ) : key === 'sample' ? (
