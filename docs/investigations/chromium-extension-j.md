@@ -128,3 +128,10 @@ Chromium 公開トラッカーで `323B0` と `"Extension J"` を検索し、い
 検証: ビルド、単体 33 件、E2E 57 件、Linux Electron のデスクトップ smoke が成功。合成テストフォントにより、拡張 J 以外のスクリプト、補助私用面、重複収録、コレクションの非先頭フェイス、指定フォント優先、取得拒否、中止、再読み込み、フォント解析タブとの分離を確認。Windows の実測と画面は `var/chromium-ext-j/app-fallback-windows.json` / `app-fallback-windows.png`、再現用スクリプトは `verify-app-fallback.mjs` に保存した。
 
 実装時の参照: [CSS Fonts の合成フォントと文字範囲](https://drafts.csswg.org/css-fonts/#composite-fonts)、[Local Font Access](https://wicg.github.io/local-font-access/)、[OpenType のフォントコレクション](https://learn.microsoft.com/en-us/typography/opentype/spec/otff#collections)。
+
+
+## Windows デスクトップ配布版の確認
+
+同日、配布 ZIP の更新漏れを修正。`release/Mojidata Map-0.1.0-win.zip` を欠字補完実装入りに更新した。Windows 上の Electron 44.4.5 / Chromium 152.0.7977.130 で、`mojidata://app/index.html` の `queryLocalFonts` が利用可能で、表示設定の取得ボタンから 335 フォントを確認し、44 フォントを補完に使用できた。U+323B0 の文字一覧・詳細は Jigmo3、編集欄も字形が表示されることを確認した。ソースを更新しただけでは展開済みの実行ファイルは更新されないため、利用時は新しい ZIP を展開して起動する。
+
+検証データ: `var/windows-fallback-package/result.json`、`settings.png`、`glyphs.png`。配布版は Windows ローカルの一時フォルダーにコピーして、製品の sandbox を有効にしたまま検証した。
