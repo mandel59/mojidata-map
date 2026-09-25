@@ -54,10 +54,12 @@ test('keeps file import, local font selection and removal inside the font tab', 
   await expect(page.getByLabel('編集テキスト')).toHaveCSS('font-family', 'monospace');
   await page.getByRole('button', { name: 'フォントを選ぶ', exact: true }).click();
   await page.getByRole('button', { name: '端末のフォントを取得', exact: true }).click();
+  const originalFamily = await preview.evaluate((el) => getComputedStyle(el).fontFamily);
   await page.getByLabel('端末のフォント', { exact: true }).selectOption({ label: 'Test Sans' });
-  await expect(preview).toHaveCSS('font-family', 'sans-serif');
+  await expect(preview).toHaveCSS('font-family', originalFamily);
   await expect(page.getByLabel('編集テキスト')).toHaveCSS('font-family', 'monospace');
   await page.getByRole('button', { name: '選択フォントを解析', exact: true }).click();
+  await expect(preview).not.toHaveCSS('font-family', originalFamily);
   await expect(preview).toHaveCSS('font-family', /Mojidata Imported/);
   const importedFamily = await preview.evaluate((el) => getComputedStyle(el).fontFamily);
   await page.getByRole('tab', { name: '字形', exact: true }).click();

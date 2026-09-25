@@ -13,7 +13,6 @@ import { copyText, download } from '../platform';
 
 export interface EditorHandle {
   insert(text: string): void;
-  selectCharacter(cp: number): void;
 }
 interface Props {
   db: UnicodeDatabase;
@@ -52,18 +51,6 @@ export const Editor = memo(function Editor({
     onChange(value);
   }
   handle.current = {
-    selectCharacter(cp) {
-      const character = String.fromCodePoint(cp);
-      let offset = 0;
-      for (const current of text) {
-        if (current === character) {
-          textarea.current?.focus();
-          textarea.current?.setSelectionRange(offset, offset + current.length);
-          return;
-        }
-        offset += current.length;
-      }
-    },
     insert(value) {
       const start = textarea.current?.selectionStart ?? text.length;
       const end = textarea.current?.selectionEnd ?? start;

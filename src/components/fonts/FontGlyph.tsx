@@ -11,7 +11,7 @@ export function FontGlyph({
   notify,
 }: {
   font: Font;
-  family: string;
+  family: string | null;
   cp: number;
   onSelect(cp: number): void;
   notify(message: string): void;
@@ -48,6 +48,7 @@ export function FontGlyph({
       );
   }
   async function exportPng() {
+    if (!family) return;
     try {
       const canvas = document.createElement('canvas');
       canvas.width = canvas.height = 512;
@@ -101,7 +102,7 @@ export function FontGlyph({
           <button disabled={!svg} onClick={exportSvg}>
             SVG を保存
           </button>
-          <button disabled={!isScalar(cp)} onClick={() => void exportPng()}>
+          <button disabled={!family || !isScalar(cp)} onClick={() => void exportPng()}>
             PNG を保存
           </button>
         </div>

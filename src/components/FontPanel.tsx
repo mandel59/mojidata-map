@@ -1,17 +1,15 @@
 import { memo, useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
-import type { Font } from 'fontkit';
 import type { UnicodeDatabase } from '../core/unicode';
 import type { LocalFont } from '../platform';
+import { useFontInspection } from '../useFontInspection';
 import { FontCharacters } from './fonts/FontCharacters';
-import { FontBuffer } from './fonts/FontBuffer';
 import { FontGlyph } from './fonts/FontGlyph';
-import { FontLayout } from './fonts/FontLayout';
+import { FontSample } from './fonts/FontSample';
 
 const sections = [
   ['characters', '収録文字'],
-  ['buffer', 'バッファ'],
+  ['sample', 'サンプル'],
   ['glyph', '字形'],
-  ['layout', 'OpenType'],
   ['info', '情報'],
 ] as const;
 type Section = (typeof sections)[number][0];
@@ -25,7 +23,6 @@ interface Props {
   onInsert(cp: number): void;
   onLocate(cp: number): void;
   onSelect(cp: number): void;
-  onBufferLocate(cp: number): void;
 }
 export const FontPanel = memo(function FontPanel({
   db,
@@ -37,24 +34,31 @@ export const FontPanel = memo(function FontPanel({
   onInsert,
   onLocate,
   onSelect,
-  onBufferLocate,
 }: Props) {
   const id = useId();
   const source = useRef<HTMLDivElement>(null);
   const tabs = useRef<HTMLDivElement>(null);
   const [section, setSection] = useState<Section>('characters');
-  const [family, setFamily] = useState('serif');
-  const [fonts, setFonts] = useState<Font[]>([]);
-  const addedFaces = useRef<FontFace[]>([]);
-  const [index, setIndex] = useState(0);
-  const [revision, setRevision] = useState(0);
+  const [sample, setSample] = useState('office العربية 日本語');
+  const loadedBufferRequest = useRef(0);
+  const { selection, pending, inspect, selectFace, clear } = useFontInspection(notify);
   const [localFonts, setLocalFonts] = useState<LocalFont[]>([]);
-  const [localIndex, setLocalIndex] = useState('');
-  const [busy, setBusy] = useState(false);
-  const font = fonts[index];
+  const [localName, setLocalName] = useState('');
+  const [enumerating, setEnumerating] = useState(false);
+  const font = selection?.source.fonts[selection.index];
+  const family = selection?.preview?.family ?? 'serif';
+  const busy = pending !== null;
+  const candidate = localFonts.find((font) => font.postscriptName === localName);
+  async function openFont(read: () => Promise<Blob>, label: string, postscriptName?: string) {
+    if (await inspect(read, label, postscriptName)) source.current?.hidePopover();
+  }
   useEffect(() => {
-    if (bufferRequest) setSection('buffer');
-  }, [bufferRequest]);
+    if (bufferRequest && loadedBufferRequest.current !== bufferRequest) {
+      loadedBufferRequest.current = bufferRequest;
+      setSample(buffer);
+      setSection('sample');
+    }
+  }, [bufferRequest, buffer]);
   function moveTab(event: KeyboardEvent<HTMLButtonElement>, current: number) {
     const next =
       event.key === 'ArrowRight'
@@ -78,42 +82,8 @@ export const FontPanel = memo(function FontPanel({
     setSection(sections[next][0]);
     tabs.current?.querySelectorAll<HTMLButtonElement>('[role=tab]')[next]?.focus();
   }
-  async function inspect(blob: Blob, label: string) {
-    if (blob.size > 64 * 1024 * 1024) {
-      notify('64 MB 以下のフォントを選んでください。');
-      return;
-    }
-    setBusy(true);
-    try {
-      const [{ create }, { Buffer }] = await Promise.all([import('fontkit'), import('buffer')]);
-      const bytes = await blob.arrayBuffer();
-      const parsed = create(Buffer.from(bytes));
-      const list = 'fonts' in parsed ? parsed.fonts : [parsed];
-      if (!list.length) throw new Error('フォントが含まれていません。');
-      setRevision((value) => value + 1);
-      setFonts(list);
-      setIndex(0);
-      // Keep every word a valid CSS identifier, including the timestamp.
-      const cssName = `Mojidata Imported Font${Date.now()}`;
-      try {
-        const face = await new FontFace(cssName, bytes).load();
-        document.fonts.add(face);
-        addedFaces.current.push(face);
-        setFamily(cssName);
-        notify(`${label} を読み込みました。`);
-      } catch {
-        notify(
-          '解析は完了しました。ブラウザで表示できない形式のため、プレビューのフォントは変更していません。',
-        );
-      }
-      source.current?.hidePopover();
-    } catch (error) {
-      notify(`フォントを解析できません: ${String(error)}`);
-    } finally {
-      setBusy(false);
-    }
-  }
   async function enumerate() {
+    setEnumerating(true);
     try {
       if (!window.queryLocalFonts)
         throw new Error(
@@ -124,6 +94,8 @@ export const FontPanel = memo(function FontPanel({
       notify(`${result.length} フォントを取得しました。`);
     } catch (error) {
       notify(String(error));
+    } finally {
+      setEnumerating(false);
     }
   }
   return (
@@ -151,54 +123,48 @@ export const FontPanel = memo(function FontPanel({
             disabled={busy}
             onChange={(event) => {
               const file = event.target.files?.[0];
-              if (file) void inspect(file, file.name);
+              if (file) void openFont(() => Promise.resolve(file), file.name);
               event.target.value = '';
             }}
           />
         </label>
-        <button disabled={busy} onClick={() => void enumerate()}>
+        <button disabled={busy || enumerating} onClick={() => void enumerate()}>
           端末のフォントを取得
         </button>
         {localFonts.length > 0 && (
           <>
             <select
               aria-label="端末のフォント"
-              value={localIndex}
+              value={localName}
               disabled={busy}
-              onChange={(event) => {
-                setLocalIndex(event.target.value);
-                if (event.target.value) setFamily(localFonts[Number(event.target.value)].family);
-              }}
+              onChange={(event) => setLocalName(event.target.value)}
             >
               <option value="">フォントを選択…</option>
-              {localFonts.map((font, i) => (
-                <option key={`${font.postscriptName}-${i}`} value={i}>
+              {localFonts.map((font) => (
+                <option key={font.postscriptName} value={font.postscriptName}>
                   {font.fullName}
                 </option>
               ))}
             </select>
             <button
-              disabled={!localIndex || busy}
+              disabled={!candidate || busy}
               onClick={() => {
-                const chosen = localFonts[Number(localIndex)];
-                void chosen
-                  .blob()
-                  .then((blob) => inspect(blob, chosen.fullName))
-                  .catch((error) => notify(String(error)));
+                if (candidate)
+                  void openFont(
+                    () => candidate.blob(),
+                    candidate.fullName,
+                    candidate.postscriptName,
+                  );
               }}
             >
               選択フォントを解析
             </button>
           </>
         )}
-        {font && (
+        {(font || busy) && (
           <button
-            disabled={busy}
             onClick={() => {
-              addedFaces.current.forEach((face) => document.fonts.delete(face));
-              addedFaces.current = [];
-              setFonts([]);
-              if (family.startsWith('Mojidata Imported ')) setFamily('serif');
+              clear();
               source.current?.hidePopover();
             }}
           >
@@ -210,20 +176,29 @@ export const FontPanel = memo(function FontPanel({
           読み込んだファイルは外部へ送信しません。このタブで選んだフォントは、共通の表示フォント設定を変更しません。
         </p>
       </div>
-      {fonts.length > 1 && (
+      {selection && selection.source.fonts.length > 1 && (
         <div className="font-view-toolbar">
           <label>
             コレクションの解析対象
-            <select value={index} onChange={(event) => setIndex(Number(event.target.value))}>
-              {fonts.map((face, i) => (
+            <select
+              value={pending?.index ?? selection.index}
+              disabled={busy && pending?.index === null}
+              onChange={(event) => void selectFace(Number(event.target.value))}
+            >
+              {selection.source.fonts.map((face, i) => (
                 <option value={i} key={i}>
                   {face.fullName}
                 </option>
               ))}
             </select>
           </label>
-          <small className="muted">プレビュー・PNGは先頭のフェイスで表示します。</small>
+          {pending?.index != null && <small role="status">フェイスを読み込み中…</small>}
         </div>
+      )}
+      {font && !selection?.preview && (
+        <p className="note" role="status">
+          このフェイスはブラウザで表示できません。入力欄と文字一覧は標準フォントで表示します。グリフ表・輪郭・収録判定は解析対象の結果です。
+        </p>
       )}
       <div className="font-tabs" role="tablist" aria-label="フォントの表示内容" ref={tabs}>
         {sections.map(([key, label], position) => (
@@ -241,7 +216,7 @@ export const FontPanel = memo(function FontPanel({
           </button>
         ))}
       </div>
-      <div className="font-panels" key={`${revision}-${index}`}>
+      <div className="font-panels" key={selection?.revision}>
         {sections.map(([key]) => (
           <div
             key={key}
@@ -253,7 +228,9 @@ export const FontPanel = memo(function FontPanel({
           >
             {!font ? (
               <div className="empty-state">
-                <h3>{key === 'buffer' ? 'バッファの収録状況を調べる' : 'フォントを読み込む'}</h3>
+                <h3>
+                  {key === 'sample' ? 'サンプルの字形と収録状況を調べる' : 'フォントを読み込む'}
+                </h3>
                 <p>
                   上の「フォントを選ぶ」から、ファイルを開くか端末のフォントを選択してください。
                 </p>
@@ -270,15 +247,24 @@ export const FontPanel = memo(function FontPanel({
                 onLocate={onLocate}
                 onGlyph={() => setSection('glyph')}
               />
-            ) : key === 'buffer' ? (
-              active &&
-              section === key && (
-                <FontBuffer font={font} db={db} text={buffer} onLocate={onBufferLocate} />
-              )
             ) : key === 'glyph' ? (
-              <FontGlyph font={font} family={family} cp={cp} onSelect={onSelect} notify={notify} />
-            ) : key === 'layout' ? (
-              <FontLayout font={font} family={family} active={active && section === key} />
+              <FontGlyph
+                font={font}
+                family={selection?.preview?.family ?? null}
+                cp={cp}
+                onSelect={onSelect}
+                notify={notify}
+              />
+            ) : key === 'sample' ? (
+              <FontSample
+                font={font}
+                family={family}
+                active={active && section === key}
+                db={db}
+                sample={sample}
+                onChange={setSample}
+                buffer={buffer}
+              />
             ) : (
               <div className="font-section-scroll">
                 <h3>フォント情報</h3>

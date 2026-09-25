@@ -194,7 +194,6 @@ export default function App({ db }: { db: UnicodeDatabase }) {
     setTab('fonts');
     setBufferCoverageRequest((request) => request + 1);
   }, []);
-  const locateBuffer = useCallback((cp: number) => editor.current?.selectCharacter(cp), []);
   const insertCp = useCallback(
     (cp: number) => {
       if (isScalar(cp)) insert(String.fromCodePoint(cp));
@@ -450,7 +449,6 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                 active={tab === 'fonts'}
                 buffer={prefs.buffer}
                 bufferRequest={bufferCoverageRequest}
-                onBufferLocate={locateBuffer}
                 onInsert={insertCp}
                 onLocate={locate}
                 onSelect={setSelected}

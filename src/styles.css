@@ -840,13 +840,6 @@ details[open] > summary {
   margin: 7px 0;
   font-size: 11px;
 }
-.font-preview {
-  margin: 15px 0;
-  padding: 20px;
-  font-size: 30px;
-  background: var(--sidebar);
-  overflow-wrap: anywhere;
-}
 .table-scroll {
   overflow: auto;
   max-height: 500px;
@@ -1499,8 +1492,7 @@ td button {
 .font-workspace:not([hidden]),
 .font-panels,
 .font-tab-panel:not([hidden]),
-.font-characters-view,
-.font-buffer-view {
+.font-characters-view {
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -1604,9 +1596,6 @@ td button {
 .font-section-scroll .property-list {
   max-width: 800px;
 }
-.font-layout-view .muted {
-  overflow-wrap: anywhere;
-}
 .font-glyph-view {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(180px, 1fr);
@@ -1620,61 +1609,6 @@ td button {
 .font-glyph-view > .note {
   grid-column: 1 / -1;
 }
-.font-buffer-summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 16px;
-  padding: 10px 8px;
-  flex-shrink: 0;
-}
-.font-buffer-summary span {
-  font-size: 11px;
-  color: var(--muted);
-}
-.font-buffer-table {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-}
-.font-buffer-table table {
-  table-layout: fixed;
-}
-.font-buffer-table th:first-child {
-  width: 45px;
-}
-.font-buffer-table th:nth-child(3) {
-  width: 90px;
-}
-.font-buffer-table th:nth-child(4) {
-  width: 50px;
-}
-.font-buffer-table th:last-child {
-  width: 65px;
-}
-.font-buffer-table td {
-  overflow-wrap: anywhere;
-}
-.font-buffer-table td small {
-  display: block;
-  color: var(--muted);
-  font-size: 10px;
-}
-.buffer-coverage-glyph {
-  font: 26px serif;
-  text-align: center;
-}
-.coverage-missing {
-  color: var(--error);
-}
-.font-buffer-view > .note {
-  padding: 0 8px;
-  flex-shrink: 0;
-}
-.font-buffer-view .pagination {
-  justify-content: flex-start;
-  gap: 8px;
-}
 @media (max-width: 600px) {
   .font-glyph-view {
     grid-template-columns: 1fr;
@@ -1686,22 +1620,6 @@ td button {
   .font-view-toolbar > .muted {
     flex-basis: 100%;
   }
-  .font-buffer-table td,
-  .font-buffer-table th {
-    padding: 6px 4px;
-  }
-  .font-buffer-table th:first-child {
-    width: 35px;
-  }
-  .font-buffer-table th:nth-child(3) {
-    width: 70px;
-  }
-  .font-buffer-table th:nth-child(4) {
-    width: 35px;
-  }
-  .font-buffer-table th:last-child {
-    width: 50px;
-  }
   .editor-heading {
     flex-wrap: wrap;
   }
@@ -1711,5 +1629,117 @@ td button {
   .editor-heading .muted {
     order: 1;
     flex-basis: 100%;
+  }
+}
+
+.font-sample-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.sample-editor {
+  padding: 8px;
+  flex-shrink: 0;
+}
+.sample-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.sample-heading label {
+  color: var(--text);
+}
+.sample-heading button,
+.sample-toolbar button {
+  font-size: 11px;
+  padding: 3px 7px;
+}
+.sample-input {
+  display: block;
+  width: 100%;
+  height: 52px;
+  padding: 6px 8px;
+  font-size: 26px;
+  line-height: 1.4;
+  resize: vertical;
+  background: var(--sidebar);
+}
+.sample-coverage,
+.sample-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 4px 8px;
+  flex-shrink: 0;
+}
+.sample-coverage {
+  font-size: 11px;
+}
+.sample-coverage strong {
+  font-size: 12px;
+}
+.sample-toolbar {
+  border-bottom: 1px solid var(--border);
+}
+.sample-features .note {
+  overflow-wrap: anywhere;
+}
+.sample-table-scroll {
+  flex: 1 0 150px;
+  min-height: 150px;
+  overflow: auto;
+}
+.sample-glyph-table {
+  min-width: 640px;
+}
+.sample-glyph-table th:first-child {
+  width: 65px;
+}
+.sample-glyph-table th:nth-child(2) {
+  width: 65px;
+}
+.sample-glyph-table th:nth-child(3) {
+  min-width: 185px;
+}
+.sample-glyph-table td {
+  padding: 4px 8px;
+}
+.sample-glyph-table .text-button {
+  display: block;
+}
+.layout-glyph {
+  display: block;
+  width: 44px;
+  height: 44px;
+}
+.coverage-missing,
+.missing-glyph-badge {
+  color: var(--error);
+}
+.missing-glyph-badge {
+  display: block;
+  font-size: 11px;
+}
+.missing-glyph-row {
+  background: color-mix(in srgb, var(--error) 9%, var(--surface));
+}
+.missing-glyph-row td:first-child {
+  border-left: 3px solid var(--error);
+}
+.font-sample-view > .pagination,
+.font-sample-view > .note {
+  flex-shrink: 0;
+}
+.font-sample-view > .note {
+  padding: 0 8px;
+}
+@media (max-width: 600px) {
+  .sample-input {
+    height: 68px;
   }
 }
