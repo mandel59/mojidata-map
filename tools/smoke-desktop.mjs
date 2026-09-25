@@ -29,6 +29,12 @@ try {
   expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(
     true,
   );
+  const selectedCell = page.locator('.character-cell.selected');
+  await selectedCell.press('PageDown');
+  await expect(selectedCell).toHaveAttribute('data-cp', String(0x30c2));
+  await expect(selectedCell).toBeFocused();
+  await selectedCell.press('PageUp');
+  await expect(selectedCell).toHaveAttribute('data-cp', String(0x3042));
   await page.getByLabel('文字を検索', { exact: true }).fill('GRINNING FACE');
   await page.getByRole('button', { name: '検索', exact: true }).click();
   await page.getByRole('button', { name: 'U+1F600 GRINNING FACE', exact: true }).dblclick();
@@ -99,7 +105,7 @@ try {
   await expect(page.locator('.property-list')).toContainText(['kTGT_MergedSrc']);
   expect(errors).toEqual([]);
   console.log(
-    'Desktop smoke passed: custom protocol, worker, buffer, clipboard, isolation, always-on-top, About, credits, external-link validation, local font fallback, UAX #60 offline search.',
+    'Desktop smoke passed: custom protocol, worker, buffer, clipboard, isolation, always-on-top, About, credits, external-link validation, local font fallback, UAX #60 offline search, Page Up/Down navigation.',
   );
 } finally {
   if (app) await app.close();

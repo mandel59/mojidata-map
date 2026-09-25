@@ -1,13 +1,16 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 import { loadData, type Emoji } from '../data';
 import { codeLabel } from '../core/unicode';
+import { usePageKeys } from '../usePageKeys';
 interface Props {
+  active: boolean;
   version: string;
   onInsert(text: string): void;
   selected: Emoji | null;
   onSelect(emoji: Emoji): void;
 }
 export const EmojiPanel = memo(function EmojiPanel({
+  active,
   version,
   onInsert,
   selected,
@@ -19,16 +22,16 @@ export const EmojiPanel = memo(function EmojiPanel({
   const [page, setPage] = useState(0);
   const [error, setError] = useState('');
   useEffect(() => {
-    let active = true;
+    let current = true;
     loadData<Emoji[]>('emoji')
       .then((data) => {
-        if (active) setAll(data);
+        if (current) setAll(data);
       })
       .catch((error) => {
-        if (active) setError(String(error));
+        if (current) setError(String(error));
       });
     return () => {
-      active = false;
+      current = false;
     };
   }, []);
   const matches = useMemo(
@@ -43,6 +46,14 @@ export const EmojiPanel = memo(function EmojiPanel({
       ),
     [all, group, query],
   );
+  usePageKeys(active && matches.length > 0, (direction) => {
+    const next = page + direction;
+    if (next < 0 || next * 120 >= matches.length) return;
+    const index = matches.findIndex((emoji) => emoji.cps.join('-') === selected?.cps.join('-'));
+    const offset = index >= page * 120 && index < (page + 1) * 120 ? index % 120 : 0;
+    setPage(next);
+    onSelect(matches[Math.min(next * 120 + offset, matches.length - 1)]);
+  });
   return (
     <section className="tool-panel">
       <div className="tool-title">

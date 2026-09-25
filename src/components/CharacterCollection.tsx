@@ -2,6 +2,7 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { codeLabel, type UnicodeDatabase } from '../core/unicode';
 import { download } from '../platform';
 import { CharacterGrid } from './CharacterGrid';
+import { usePageKeys } from '../usePageKeys';
 
 export const CharacterCollection = memo(function CharacterCollection({
   db,
@@ -48,6 +49,13 @@ export const CharacterCollection = memo(function CharacterCollection({
     return () => observer.disconnect();
   }, [columns]);
   const visible = useMemo(() => points.slice(page * 128, (page + 1) * 128), [points, page]);
+  usePageKeys(!busy && points.length > 0, (direction) => {
+    const next = page + direction;
+    if (next < 0 || next * 128 >= points.length) return;
+    const offset = Math.max(0, visible.indexOf(selected));
+    onPage(next);
+    onSelect(points[Math.min(next * 128 + offset, points.length - 1)]);
+  });
   return (
     <section className="character-collection" ref={container}>
       <h2 className="collection-heading">{title}</h2>

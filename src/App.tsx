@@ -8,6 +8,7 @@ import type { Emoji } from './data';
 import { CharacterCollection } from './components/CharacterCollection';
 import { CodePointNavigation } from './components/CodePointNavigation';
 import { useCharacterSearch } from './useCharacterSearch';
+import { usePageKeys } from './usePageKeys';
 import { BlockNavigation } from './components/BlockNavigation';
 import { CharacterDisplay } from './components/CharacterDisplay';
 import { BlockFontSettings } from './components/BlockFontSettings';
@@ -236,6 +237,16 @@ export default function App({ db }: { db: UnicodeDatabase }) {
       ),
     [pageStart, assignedOnly, db],
   );
+  usePageKeys(tab === 'map', (direction) => {
+    const start = pageStart + direction * PAGE_SIZE;
+    if (start < plane * 0x10000 || start >= (plane + 1) * 0x10000) return;
+    const preferred = start + Math.max(0, Math.min(PAGE_SIZE - 1, mapSelected - pageStart));
+    const visible = Array.from({ length: PAGE_SIZE }, (_, i) => start + i).filter(
+      (cp) => !assignedOnly || db.category(cp) !== 'Cn',
+    );
+    setPageStart(start);
+    selectMap(visible.find((cp) => cp >= preferred) ?? visible.at(-1) ?? preferred);
+  });
   const tabs: [Tab, string][] = [
     ['map', '文字マップ'],
     ['search', '文字検索'],
@@ -326,7 +337,8 @@ export default function App({ db }: { db: UnicodeDatabase }) {
           <div className="help-content">
             <p>
               名前（英語）・別名・文字・U+コードで検索します。文字をクリックすると詳細を表示し、ダブルクリックまたは
-              Enter で編集バッファへ追加します。矢印キーで文字を移動できます。
+              Enter で編集バッファへ追加します。矢印キーで文字を移動し、Page Up / Page Down
+              でページを送れます（入力欄を除く）。
             </p>
             <p>
               文字マップの検索は現在位置の次の一致へ移動し、末尾から先頭へ戻ります。同じ条件で検索を繰り返すと順に移動できます。
@@ -442,6 +454,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
             {sequencesOpened && (
               <div className="tool-scroll" hidden={tab !== 'sequences'}>
                 <EmojiPanel
+                  active={tab === 'sequences'}
                   version={db.data.emojiVersion}
                   onInsert={insert}
                   selected={selectedEmoji}
