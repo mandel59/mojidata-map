@@ -454,15 +454,13 @@ export default function App({ db }: { db: UnicodeDatabase }) {
               </div>
             )}
             {sequencesOpened && (
-              <div className="tool-scroll" hidden={tab !== 'sequences'}>
-                <EmojiPanel
-                  active={tab === 'sequences'}
-                  version={db.data.emojiVersion}
-                  onInsert={insert}
-                  selected={selectedEmoji}
-                  onSelect={setSelectedEmoji}
-                />
-              </div>
+              <EmojiPanel
+                active={tab === 'sequences'}
+                version={db.data.emojiVersion}
+                onInsert={insert}
+                selected={selectedEmoji}
+                onSelect={setSelectedEmoji}
+              />
             )}
             {statisticsOpened && (
               <div className="tool-scroll" hidden={tab !== 'statistics'}>

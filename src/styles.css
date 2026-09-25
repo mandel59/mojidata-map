@@ -445,7 +445,8 @@ details[open] > summary {
 .results-heading .check {
   font: 11px/1.4 sans-serif;
 }
-.grid-scroll {
+.grid-scroll,
+.emoji-scroll {
   flex: 1;
   min-height: 0;
   padding: 0 6px;
@@ -453,7 +454,8 @@ details[open] > summary {
   overscroll-behavior: contain;
   scrollbar-width: thin;
 }
-.character-grid {
+.character-grid,
+.emoji-grid {
   display: grid;
   isolation: isolate;
   grid-template-columns: repeat(var(--grid-columns), minmax(0, 1fr));
@@ -463,7 +465,8 @@ details[open] > summary {
   border-radius: 4px;
   overflow: hidden;
 }
-.character-cell {
+.character-cell,
+.emoji-cell {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -476,15 +479,18 @@ details[open] > summary {
   position: relative;
 }
 
-.character-cell:hover {
+.character-cell:hover,
+.emoji-cell:hover {
   background: var(--hover);
   z-index: 1;
 }
 /* Keep keyboard focus above adjacent cells, including the hovered cell. */
-.character-cell:focus-visible {
+.character-cell:focus-visible,
+.emoji-cell:focus-visible {
   z-index: 2;
 }
-.character-cell .cell-glyph {
+.character-cell .cell-glyph,
+.emoji-cell .cell-glyph {
   font-size: var(--glyph-size);
   height: 1.35em;
   line-height: 1.35;
@@ -508,12 +514,14 @@ details[open] > summary {
   right: 25%;
   opacity: 0.6;
 }
-.character-cell.selected {
+.character-cell.selected,
+.emoji-cell[aria-pressed='true'] {
   background: var(--accent);
   color: var(--on-accent);
   box-shadow: inset 0 0 0 2px var(--accent);
 }
-.character-cell.selected .cell-code {
+.character-cell.selected .cell-code,
+.emoji-cell[aria-pressed='true'] .cell-code {
   color: var(--on-accent);
   opacity: 0.8;
 }
@@ -880,31 +888,23 @@ td button {
   white-space: normal;
   text-align: left;
 }
-.emoji-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
-  gap: 8px;
-}
-.emoji-grid button {
-  padding: 7px 4px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  white-space: normal;
-}
-.emoji-grid span {
-  font-size: 30px;
+.emoji-grid .cell-glyph {
   font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
 }
-.emoji-grid small {
-  font-size: 9px;
-  color: var(--muted);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+.emoji-name {
+  max-width: 100%;
+  padding: 0 2px;
   overflow: hidden;
-  height: 28px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: inherit;
+}
+.emoji-workspace > :not(.emoji-scroll):not(.empty-state) {
+  flex-shrink: 0;
+}
+.emoji-workspace .results-heading select {
+  max-width: 60%;
+  font: 12px/1.6 sans-serif;
 }
 .emoji-selection p {
   font-size: 10px;
@@ -1275,7 +1275,8 @@ td button {
 .context-title {
   font-weight: 600;
 }
-.search-workspace:not([hidden]) {
+.search-workspace:not([hidden]),
+.emoji-workspace:not([hidden]) {
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -1482,10 +1483,6 @@ td button {
 .sequence-preview {
   font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;
   overflow-wrap: anywhere;
-}
-.emoji-grid button[aria-pressed='true'] {
-  background: var(--soft);
-  border-color: var(--accent);
 }
 
 @media (max-width: 700px) and (max-height: 650px) {

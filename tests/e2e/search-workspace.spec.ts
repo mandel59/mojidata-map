@@ -21,7 +21,7 @@ test('shows map navigation only in the map and preserves search results across t
   await searchMethod(page, 'unicode');
   await expect(page.getByLabel('文字を検索', { exact: true })).toHaveValue('LATIN');
   await expect(page.locator('.character-cell.selected')).toHaveAttribute('data-cp', cp!);
-  await expect(page.locator('.pagination')).toContainText('2 /');
+  await expect(page.locator('.search-workspace .pagination')).toContainText('2 /');
   await expect(page.getByLabel('Unicode 面')).toHaveCount(0);
   await page.getByLabel('文字を検索', { exact: true }).fill('GREEK');
   await page.getByRole('button', { name: '文字マップ', exact: true }).click();
@@ -37,7 +37,7 @@ test('shows map navigation only in the map and preserves search results across t
   await searchMethod(page, 'unicode');
   await expect(page.getByLabel('文字を検索', { exact: true })).toHaveValue('GREEK');
   await expect(page.locator('.character-cell.selected')).toHaveAttribute('data-cp', cp!);
-  await expect(page.locator('.pagination')).toContainText('2 /');
+  await expect(page.locator('.search-workspace .pagination')).toContainText('2 /');
 });
 
 test('adds, replaces and removes condition chips with keyboard-operable vertical tabs', async ({

@@ -150,9 +150,7 @@ test('uses Unicode 18 in search, statistics and the emoji picker', async ({ page
   await page.getByRole('button', { name: 'Unicode データ', exact: true }).click();
   await expect(page.getByText('18.0.0', { exact: true })).toBeVisible();
   await searchMethod(page, 'emoji');
-  await expect(
-    page.getByText('Unicode Emoji 18.0 の単体・肌色・国旗・ZWJ シーケンス。', { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText('Emoji 18.0', { exact: true })).toBeVisible();
   await page.getByLabel('英語の名前').fill('cracking face');
   await page.getByRole('button', { name: 'cracking face', exact: true }).click();
   await page.getByRole('button', { name: 'バッファに追加', exact: true }).click();
@@ -194,7 +192,7 @@ test('previews size while dragging, commits on release and restores it with othe
 
 test('keeps size across keyboard edits, tab switches and grid navigation', async ({ page }) => {
   const size = page.getByRole('slider', { name: '文字サイズ' });
-  const glyph = page.locator('.cell-glyph').first();
+  const glyph = page.locator('.character-cell .cell-glyph').first();
   await page.getByRole('button', { name: '表示設定', exact: true }).click();
   await size.press('End');
   await size.press('ArrowLeft');

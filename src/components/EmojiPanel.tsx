@@ -1,7 +1,8 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { loadData, type Emoji } from '../data';
 import { codeLabel } from '../core/unicode';
 import { usePageKeys } from '../usePageKeys';
+import { CharacterGridSurface } from './CharacterDisplay';
 interface Props {
   active: boolean;
   version: string;
@@ -21,6 +22,16 @@ export const EmojiPanel = memo(function EmojiPanel({
   const [group, setGroup] = useState('');
   const [page, setPage] = useState(0);
   const [error, setError] = useState('');
+  const container = useRef<HTMLElement>(null);
+  const grid = useRef<HTMLDivElement>(null);
+  const [columns, setColumns] = useState(16);
+  useEffect(() => {
+    const observer = new ResizeObserver(([entry]) =>
+      setColumns(entry.contentRect.width < 600 ? 8 : 16),
+    );
+    if (container.current) observer.observe(container.current);
+    return () => observer.disconnect();
+  }, []);
   useEffect(() => {
     let current = true;
     loadData<Emoji[]>('emoji')
@@ -46,82 +57,105 @@ export const EmojiPanel = memo(function EmojiPanel({
       ),
     [all, group, query],
   );
+  const groups = useMemo(() => [...new Set(all.map((emoji) => emoji.group))], [all]);
+  const visible = useMemo(() => matches.slice(page * 120, (page + 1) * 120), [matches, page]);
+  const selectedKey = selected?.cps.join('-');
   usePageKeys(active && matches.length > 0, (direction) => {
     const next = page + direction;
     if (next < 0 || next * 120 >= matches.length) return;
-    const index = matches.findIndex((emoji) => emoji.cps.join('-') === selected?.cps.join('-'));
-    const offset = index >= page * 120 && index < (page + 1) * 120 ? index % 120 : 0;
+    const offset = Math.max(
+      0,
+      visible.findIndex((emoji) => emoji.cps.join('-') === selectedKey),
+    );
     setPage(next);
     onSelect(matches[Math.min(next * 120 + offset, matches.length - 1)]);
   });
   return (
-    <section className="tool-panel">
-      <div className="tool-title">
-        <span className="eyebrow">EMOJI COLLECTION</span>
-        <h2>絵文字を探す</h2>
-        <p>Unicode Emoji {version} の単体・肌色・国旗・ZWJ シーケンス。</p>
-      </div>
-      <div className="filter-fields">
-        <label>
-          英語の名前
+    <section className="emoji-workspace" aria-label="絵文字検索" hidden={!active} ref={container}>
+      <div className="search-input-row">
+        <div className="search-bar">
           <input
-            placeholder="例: cat, family, japan"
+            aria-label="英語の名前"
+            placeholder="絵文字の英語名で検索（cat, family, japan）"
             value={query}
             onChange={(event) => {
               setQuery(event.target.value);
               setPage(0);
             }}
           />
-        </label>
-        <label>
-          グループ
-          <select
-            value={group}
-            onChange={(event) => {
-              setGroup(event.target.value);
-              setPage(0);
-            }}
-          >
-            <option value="">すべて</option>
-            {[...new Set(all.map((emoji) => emoji.group))].map((name) => (
-              <option key={name}>{name}</option>
-            ))}
-          </select>
-        </label>
+        </div>
+        <button type="button" popoverTarget="display-options">
+          表示設定
+        </button>
       </div>
       <div className="results-heading">
-        <span>{matches.length.toLocaleString()} シーケンス</span>
-        <div className="button-row">
-          <button disabled={page === 0} onClick={() => setPage(page - 1)}>
-            前へ
-          </button>
-          <span>
-            {page + 1} / {Math.max(1, Math.ceil(matches.length / 120))}
-          </span>
-          <button disabled={(page + 1) * 120 >= matches.length} onClick={() => setPage(page + 1)}>
-            次へ
-          </button>
-        </div>
+        <span aria-live="polite">{matches.length.toLocaleString()} シーケンス</span>
+        <select
+          aria-label="グループ"
+          value={group}
+          onChange={(event) => {
+            setGroup(event.target.value);
+            setPage(0);
+          }}
+        >
+          <option value="">すべてのグループ</option>
+          {groups.map((name) => (
+            <option key={name}>{name}</option>
+          ))}
+        </select>
       </div>
       {error && (
         <p role="alert" className="error">
           {error}
         </p>
       )}
-      <div className="emoji-grid">
-        {matches.slice(page * 120, (page + 1) * 120).map((emoji) => (
-          <button
-            key={emoji.cps.join('-')}
-            aria-label={emoji.name}
-            title={`${emoji.name}\n${emoji.cps.map(codeLabel).join(' ')}`}
-            onClick={() => onSelect(emoji)}
-            aria-pressed={selected?.cps.join('-') === emoji.cps.join('-')}
-            onDoubleClick={() => onInsert(String.fromCodePoint(...emoji.cps))}
-          >
-            <span>{String.fromCodePoint(...emoji.cps)}</span>
-            <small>{emoji.name}</small>
+      {visible.length ? (
+        <CharacterGridSurface
+          containerRef={grid}
+          columns={columns}
+          className="emoji-grid"
+          scrollClassName="emoji-scroll"
+          label="絵文字一覧"
+        >
+          {visible.map((emoji, index) => (
+            <button
+              // Reuse stateless page slots; labels, selection and handlers all
+              // update together, including when filters or page length change.
+              key={index}
+              className="emoji-cell"
+              aria-label={emoji.name}
+              title={`${emoji.name}\n${emoji.cps.map(codeLabel).join(' ')}`}
+              onClick={() => onSelect(emoji)}
+              aria-pressed={selectedKey === emoji.cps.join('-')}
+              onDoubleClick={() => onInsert(String.fromCodePoint(...emoji.cps))}
+            >
+              <span className="cell-glyph">{String.fromCodePoint(...emoji.cps)}</span>
+              <span className="cell-code emoji-name">{emoji.name}</span>
+            </button>
+          ))}
+        </CharacterGridSurface>
+      ) : (
+        <div className="empty-state">
+          <p>{all.length ? '一致する絵文字がありません。' : '絵文字を読み込み中…'}</p>
+        </div>
+      )}
+      <div className="pagination">
+        <div className="button-row">
+          <button aria-label="前のページ" disabled={page === 0} onClick={() => setPage(page - 1)}>
+            ←
           </button>
-        ))}
+          <span>
+            {page + 1} / {Math.max(1, Math.ceil(matches.length / 120))}
+          </span>
+          <button
+            aria-label="次のページ"
+            disabled={(page + 1) * 120 >= matches.length}
+            onClick={() => setPage(page + 1)}
+          >
+            →
+          </button>
+        </div>
+        <span className="muted">Emoji {version}</span>
       </div>
     </section>
   );

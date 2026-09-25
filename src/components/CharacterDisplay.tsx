@@ -16,18 +16,24 @@ export function CharacterGridSurface({
   children,
   containerRef,
   columns,
+  className = 'character-grid',
+  scrollClassName = 'grid-scroll',
+  label = '文字一覧',
 }: {
   columns: number;
   children: ReactNode;
   containerRef: RefObject<HTMLDivElement | null>;
+  className?: string;
+  scrollClassName?: string;
+  label?: string;
 }) {
   const size = useContext(GlyphSize);
   return (
-    <div className="grid-scroll">
+    <div className={scrollClassName}>
       <div
-        className="character-grid"
+        className={className}
         ref={containerRef}
-        aria-label="文字一覧"
+        aria-label={label}
         style={{ '--glyph-size': `${size}px`, '--grid-columns': columns } as CSSProperties}
       >
         {children}
