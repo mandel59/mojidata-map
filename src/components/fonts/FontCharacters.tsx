@@ -111,11 +111,13 @@ export function FontCharacters({
               <option value="@glyphs">全グリフ ({font.numGlyphs.toLocaleString()})</option>
               <option value="@unmapped">単一文字の割当なし</option>
             </optgroup>
-            {blocks.map(([name, count]) => (
-              <option key={name} value={name}>
-                {name} ({count.toLocaleString()})
-              </option>
-            ))}
+            <optgroup label="Unicodeブロック">
+              {blocks.map(([name, count]) => (
+                <option key={name} value={name}>
+                  {name} ({count.toLocaleString()})
+                </option>
+              ))}
+            </optgroup>
           </select>
         </label>
         <form
