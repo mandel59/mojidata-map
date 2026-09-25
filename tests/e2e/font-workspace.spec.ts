@@ -1,3 +1,4 @@
+import { fontSample } from './navigation';
 import { expect, test } from '@playwright/test';
 import { create } from 'fontkit';
 import { readFileSync } from 'node:fs';
@@ -10,13 +11,14 @@ for (const width of [1024, 390]) {
     await page.goto('/');
     const text = `AA${String.fromCodePoint(0x323b0, 0x323b1)}\n\u200d\ufe0f`;
     await page.getByLabel('編集テキスト').fill(text);
-    await page.getByRole('button', { name: 'カバレッジ', exact: true }).click();
+    await fontSample(page);
     const tabs = page.getByRole('tablist', { name: 'フォントの表示内容' });
     const sampleTab = tabs.getByRole('tab', { name: 'サンプル', exact: true });
     await expect(tabs.getByRole('tab')).toHaveCount(3);
     await expect(sampleTab).toHaveAttribute('aria-selected', 'true');
     await page.getByRole('button', { name: 'フォントを選ぶ', exact: true }).click();
     await page.locator('input[type=file]').setInputFiles('tests/fixtures/FallbackBase.ttf');
+    await page.getByRole('button', { name: '編集バッファから読み込む', exact: true }).click();
     const input = page.getByLabel('サンプルテキスト', { exact: true });
     await expect(input).toHaveValue(text);
     await expect(input).toHaveCSS('font-family', /Mojidata Imported/);
@@ -57,7 +59,7 @@ for (const width of [1024, 390]) {
     await expect(table.locator('tbody tr')).toHaveCount(1);
     await expect(table.locator('.missing-glyph-row')).toHaveCount(0);
     await editor.fill(String.fromCodePoint(0x323b0));
-    await page.getByRole('button', { name: 'カバレッジ', exact: true }).click();
+    await page.getByRole('button', { name: '編集バッファから読み込む', exact: true }).click();
     await expect(input).toHaveValue(String.fromCodePoint(0x323b0));
     await page
       .locator('input[type=file]')
@@ -143,8 +145,9 @@ for (const width of [1024, 390]) {
 test('draws the selected collection face rather than its first face', async ({ page }) => {
   await page.goto('/');
   await page.getByLabel('編集テキスト').fill(String.fromCodePoint(0x323b0));
-  await page.getByRole('button', { name: 'カバレッジ', exact: true }).click();
+  await fontSample(page);
   await page.locator('input[type=file]').setInputFiles('tests/fixtures/FallbackCollection.ttc');
+  await page.getByRole('button', { name: '編集バッファから読み込む', exact: true }).click();
   const table = page.getByRole('table', { name: 'サンプルのグリフ配置' });
   await expect(table.locator('.missing-glyph-row')).toHaveCount(1);
   const input = page.getByLabel('サンプルテキスト', { exact: true });

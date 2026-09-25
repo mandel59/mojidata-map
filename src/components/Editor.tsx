@@ -1,3 +1,4 @@
+import { BufferFontCoverage } from './BufferFontCoverage';
 import { useFontStyle } from '../useFontFallback';
 import { memo, useMemo, useRef, useState, type RefObject } from 'react';
 import {
@@ -20,7 +21,6 @@ interface Props {
   onChange(text: string): void;
   font: string;
   onLocate(cp: number): void;
-  onInspectFont(): void;
   notify(message: string): void;
   handle: RefObject<EditorHandle | null>;
 }
@@ -30,7 +30,6 @@ export const Editor = memo(function Editor({
   onChange,
   font,
   onLocate,
-  onInspectFont,
   notify,
   handle,
 }: Props) {
@@ -89,9 +88,7 @@ export const Editor = memo(function Editor({
         <span className="muted">
           {stats.graphemes} 書記素 · {stats.codePoints} コードポイント · {stats.utf8} bytes
         </span>
-        <button disabled={!text} onClick={onInspectFont}>
-          カバレッジ
-        </button>
+        <BufferFontCoverage db={db} text={text} />
         <button popoverTarget="editor-options">変換・保存</button>
       </div>
       <div className="editor-input-row">

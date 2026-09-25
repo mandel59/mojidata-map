@@ -37,3 +37,17 @@ test('reads the requested collection member rather than claiming the first face�
   expect(extra.points).not.toContain(0x20);
   expect(() => localFontCoverage(bytes, 'Unknown')).toThrow('フェイスが見つかりません');
 });
+
+test('requires every buffer code point in one face, including supplementary and private use characters', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { localFontCovers } = await import('../src/core/localFontCoverage');
+  const bytes = new Uint8Array(readFileSync('tests/fixtures/FallbackCollection.ttc')).buffer;
+  expect(localFontCovers(bytes, 'FallbackBase', [0x41, 0x323b0])).toBe(false);
+  expect(localFontCovers(bytes, 'FallbackExtra', [0x41, 0x323b0, 0xf0000])).toBe(true);
+  // Individual faces must cover the entire query; their cmaps are not combined.
+  expect(localFontCovers(bytes, 'FallbackBase', [0x20, 0x323b0])).toBe(false);
+  expect(localFontCovers(bytes, 'FallbackExtra', [0x20, 0x323b0])).toBe(false);
+  expect(localFontCovers(bytes, 'FallbackExtra', [0])).toBe(false);
+  expect(localFontCovers(bytes, 'FallbackExtra', [])).toBe(false);
+  expect(() => localFontCovers(bytes, 'Unknown', [0x41])).toThrow('フェイスが見つかりません');
+});

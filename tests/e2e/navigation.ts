@@ -18,3 +18,11 @@ export async function searchMethod(
       .click();
   }
 }
+
+export async function fontSample(page: Page) {
+  await page.getByLabel('ツールを選択').waitFor({ state: 'attached' });
+  const tab = page.getByRole('button', { name: 'フォント', exact: true });
+  if (await tab.isVisible()) await tab.click();
+  else await page.getByLabel('ツールを選択').selectOption('fonts');
+  await page.getByRole('tab', { name: 'サンプル', exact: true }).click();
+}

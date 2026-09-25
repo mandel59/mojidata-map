@@ -1,4 +1,4 @@
-import { memo, useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { memo, useId, useRef, useState, type KeyboardEvent } from 'react';
 import type { UnicodeDatabase } from '../core/unicode';
 import type { LocalFont } from '../platform';
 import { useFontInspection } from '../useFontInspection';
@@ -17,7 +17,6 @@ interface Props {
   active: boolean;
   compact: boolean;
   buffer: string;
-  bufferRequest: number;
   notify(message: string): void;
   onInsert(cp: number): void;
   onInsertText(text: string): void;
@@ -31,7 +30,6 @@ export const FontPanel = memo(function FontPanel({
   active,
   compact,
   buffer,
-  bufferRequest,
   onInsert,
   onInsertText,
   onLocate,
@@ -42,7 +40,6 @@ export const FontPanel = memo(function FontPanel({
   const tabs = useRef<HTMLDivElement>(null);
   const [section, setSection] = useState<Section>('characters');
   const [sample, setSample] = useState('office العربية 日本語');
-  const loadedBufferRequest = useRef(0);
   const { selection, pending, inspect, selectFace, clear } = useFontInspection(notify);
   const [localFonts, setLocalFonts] = useState<LocalFont[]>([]);
   const [localName, setLocalName] = useState('');
@@ -54,13 +51,6 @@ export const FontPanel = memo(function FontPanel({
   async function openFont(read: () => Promise<Blob>, label: string, postscriptName?: string) {
     if (await inspect(read, label, postscriptName)) source.current?.hidePopover();
   }
-  useEffect(() => {
-    if (bufferRequest && loadedBufferRequest.current !== bufferRequest) {
-      loadedBufferRequest.current = bufferRequest;
-      setSample(buffer);
-      setSection('sample');
-    }
-  }, [bufferRequest, buffer]);
   function moveTab(event: KeyboardEvent<HTMLButtonElement>, current: number) {
     const next =
       event.key === 'ArrowRight'

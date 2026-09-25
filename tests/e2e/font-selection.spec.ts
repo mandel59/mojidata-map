@@ -1,3 +1,4 @@
+import { fontSample } from './navigation';
 import { expect, test, type Page } from '@playwright/test';
 import { create } from 'fontkit';
 import { readFileSync } from 'node:fs';
@@ -16,9 +17,10 @@ const registered = (page: Page) =>
 async function openSample(page: Page, file = baseFile) {
   await page.goto('/');
   await page.getByLabel('編集テキスト').fill('A');
-  await page.getByRole('button', { name: 'カバレッジ', exact: true }).click();
+  await fontSample(page);
   await page.locator('input[type=file]').setInputFiles(file);
   await expect(heading(page)).toHaveText(names[0].name);
+  await page.getByRole('button', { name: '編集バッファから読み込む', exact: true }).click();
 }
 async function widthOfA(page: Page) {
   return preview(page).evaluate((el) => {

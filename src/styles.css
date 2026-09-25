@@ -1848,3 +1848,31 @@ td button {
   width: 100%;
   min-width: 0;
 }
+
+.buffer-font-coverage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.buffer-font-coverage textarea {
+  width: 100%;
+  resize: vertical;
+}
+.buffer-font-status {
+  flex: 1;
+  min-width: 0;
+}
+.buffer-font-matches {
+  table-layout: fixed;
+  width: 100%;
+}
+.buffer-font-matches th:last-child {
+  width: 28%;
+}
+.buffer-font-matches td {
+  overflow-wrap: anywhere;
+}
+.buffer-font-matches small {
+  display: block;
+  color: var(--muted);
+}
