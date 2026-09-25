@@ -59,12 +59,6 @@ export function useCharacterSearch(searchCharacters: SearchCharacters) {
     },
     [searchCharacters],
   );
-  const showCollection = useCallback((points: number[], title: string) => {
-    latest.current++;
-    const sorted = [...points].sort((a, b) => a - b);
-    setQuery({ aliases: true });
-    setSession({ ...emptySession(), points: sorted, title, selected: sorted[0] ?? null });
-  }, []);
   const select = useCallback(
     (selected: number) => setSession((current) => ({ ...current, selected })),
     [],
@@ -79,8 +73,8 @@ export function useCharacterSearch(searchCharacters: SearchCharacters) {
     [],
   );
   return useMemo(
-    () => ({ query, session, run, showCollection, select, setPage }),
-    [query, session, run, showCollection, select, setPage],
+    () => ({ query, session, run, select, setPage }),
+    [query, session, run, select, setPage],
   );
 }
 export type CharacterSearch = ReturnType<typeof useCharacterSearch>;

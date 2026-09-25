@@ -201,13 +201,6 @@ export default function App({ db }: { db: UnicodeDatabase }) {
     if (next === 'statistics') setStatisticsOpened(true);
     setTab(next);
   }, []);
-  const showResults = useCallback(
-    (points: number[], title: string) => {
-      search.showCollection(points, title);
-      setTab('search');
-    },
-    [search.showCollection],
-  );
   const selectMap = useCallback((cp: number) => {
     setMapSelected(cp);
     setSelected(cp);
@@ -448,7 +441,9 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                   // Retain the loaded font, but only inspect selection while visible.
                   cp={tab === 'fonts' ? selected : 0}
                   notify={notify}
-                  onShow={showResults}
+                  active={tab === 'fonts'}
+                  onInsert={insertCp}
+                  onLocate={locate}
                   onSelect={setSelected}
                 />
               </div>

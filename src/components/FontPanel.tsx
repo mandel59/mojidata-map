@@ -2,15 +2,33 @@ import { memo, useMemo, useRef, useState } from 'react';
 import type { Font } from 'fontkit';
 import { codeLabel, hex, isScalar, parseCodePoint, type UnicodeDatabase } from '../core/unicode';
 import { download, type LocalFont } from '../platform';
+import { CharacterCollection } from './CharacterCollection';
+
+const noComposite: Record<string, string> = {};
+interface CoveragePreview {
+  points: number[];
+  title: string;
+  page: number;
+}
 
 interface Props {
   db: UnicodeDatabase;
   cp: number;
   notify(message: string): void;
-  onShow(points: number[], title: string): void;
+  active: boolean;
+  onInsert(cp: number): void;
+  onLocate(cp: number): void;
   onSelect(cp: number): void;
 }
-export const FontPanel = memo(function FontPanel({ db, cp, notify, onShow, onSelect }: Props) {
+export const FontPanel = memo(function FontPanel({
+  db,
+  cp,
+  notify,
+  active,
+  onInsert,
+  onLocate,
+  onSelect,
+}: Props) {
   const [family, setFamily] = useState('serif');
   const [fonts, setFonts] = useState<Font[]>([]);
   const addedFaces = useRef<FontFace[]>([]);
@@ -21,6 +39,8 @@ export const FontPanel = memo(function FontPanel({ db, cp, notify, onShow, onSel
   const [features, setFeatures] = useState('kern, liga');
   const [busy, setBusy] = useState(false);
   const [glyphCode, setGlyphCode] = useState('0041');
+  const [coverageOpen, setCoverageOpen] = useState(false);
+  const [coveragePreview, setCoveragePreview] = useState<CoveragePreview | null>(null);
   const font = fonts[index];
   async function inspect(blob: Blob, label: string) {
     if (blob.size > 64 * 1024 * 1024) {
@@ -34,6 +54,7 @@ export const FontPanel = memo(function FontPanel({ db, cp, notify, onShow, onSel
       const parsed = create(Buffer.from(bytes));
       const list = 'fonts' in parsed ? parsed.fonts : [parsed];
       if (!list.length) throw new Error('フォントが含まれていません。');
+      setCoveragePreview(null);
       setFonts(list);
       setIndex(0);
       // Keep every word a valid CSS identifier, including the timestamp.
@@ -114,6 +135,11 @@ export const FontPanel = memo(function FontPanel({ db, cp, notify, onShow, onSel
       return { start, end, name, covered };
     }).filter((row) => row.covered);
   }, [db, font]);
+  function showCoverage(points: number[], title: string) {
+    const sorted = [...points].sort((a, b) => a - b);
+    setCoveragePreview({ points: sorted, title, page: 0 });
+    if (sorted.length) onSelect(sorted[0]);
+  }
   function exportSvg() {
     if (svg)
       download(
@@ -168,6 +194,7 @@ export const FontPanel = memo(function FontPanel({ db, cp, notify, onShow, onSel
             onClick={() => {
               addedFaces.current.forEach((face) => document.fonts.delete(face));
               addedFaces.current = [];
+              setCoveragePreview(null);
               setFonts([]);
               if (family.startsWith('Mojidata Imported ')) setFamily('serif');
             }}
@@ -217,7 +244,13 @@ export const FontPanel = memo(function FontPanel({ db, cp, notify, onShow, onSel
           {fonts.length > 1 && (
             <label>
               コレクションの解析対象
-              <select value={index} onChange={(event) => setIndex(Number(event.target.value))}>
+              <select
+                value={index}
+                onChange={(event) => {
+                  setCoveragePreview(null);
+                  setIndex(Number(event.target.value));
+                }}
+              >
                 {fonts.map((face, i) => (
                   <option value={i} key={i}>
                     {face.fullName}
@@ -369,11 +402,46 @@ export const FontPanel = memo(function FontPanel({ db, cp, notify, onShow, onSel
               </>
             )}
           </details>
-          <details>
+          <details onToggle={(event) => setCoverageOpen(event.currentTarget.open)}>
             <summary>ブロック別の収録範囲 ({coverage.length})</summary>
-            <button onClick={() => onShow(font.characterSet, `${font.fullName} の収録文字`)}>
-              収録文字をすべて表示
-            </button>
+            <div className="button-row">
+              <button
+                onClick={() => showCoverage(font.characterSet, `${font.fullName} の収録文字`)}
+              >
+                収録文字をすべて表示
+              </button>
+              {coveragePreview && (
+                <button onClick={() => setCoveragePreview(null)}>プレビューを閉じる</button>
+              )}
+            </div>
+            {active && coverageOpen && coveragePreview && (
+              <div
+                className="font-coverage-preview"
+                role="region"
+                aria-label="収録文字のプレビュー"
+              >
+                <CharacterCollection
+                  db={db}
+                  points={coveragePreview.points}
+                  page={coveragePreview.page}
+                  onPage={(page) => {
+                    setCoveragePreview({ ...coveragePreview, page });
+                    const selected = coveragePreview.points[page * 128];
+                    if (selected !== undefined) onSelect(selected);
+                  }}
+                  selected={cp}
+                  onSelect={onSelect}
+                  onInsert={onInsert}
+                  onLocate={onLocate}
+                  title={coveragePreview.title}
+                  emptyMessage="収録文字がありません。"
+                  columns={16}
+                  font={family}
+                  colorBy="none"
+                  composite={noComposite}
+                />
+              </div>
+            )}
             <div className="table-scroll">
               <table>
                 <thead>
@@ -391,9 +459,9 @@ export const FontPanel = memo(function FontPanel({ db, cp, notify, onShow, onSel
                       <td>
                         <button
                           onClick={() =>
-                            onShow(
+                            showCoverage(
                               font.characterSet.filter((cp) => cp >= row.start && cp <= row.end),
-                              row.name,
+                              `${font.fullName} — ${row.name} の収録文字`,
                             )
                           }
                         >

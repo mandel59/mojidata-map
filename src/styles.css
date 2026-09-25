@@ -853,6 +853,16 @@ details[open] > summary {
   background: var(--sidebar);
   overflow-wrap: anywhere;
 }
+.font-coverage-preview {
+  display: flex;
+  height: min(520px, 65vh);
+  min-height: 220px;
+  margin: 12px 0;
+  border: 1px solid var(--border);
+}
+.font-coverage-preview > .character-collection {
+  flex: 1;
+}
 .table-scroll {
   overflow: auto;
   max-height: 500px;
