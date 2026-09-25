@@ -1440,10 +1440,10 @@ td button {
   border-top: 1px solid var(--border);
 }
 .search-results-layout > .condition-editor:not([hidden]) {
-  flex: 0 0 330px;
-  width: 330px;
+  flex: 0 0 366px;
+  width: 366px;
   height: auto;
-  grid-template-columns: 104px minmax(0, 1fr);
+  grid-template-columns: 140px minmax(0, 1fr);
   border: 0;
   border-right: 1px solid var(--border);
   min-height: 0;

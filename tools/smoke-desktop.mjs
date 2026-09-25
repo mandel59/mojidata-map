@@ -88,9 +88,18 @@ try {
     shell.openExternal = globalThis.originalOpenExternal;
   });
   await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: '文字検索', exact: true }).click();
+  await page.getByRole('tab', { name: '西夏文字', exact: true }).click();
+  await page.getByLabel('西夏文字の出典番号', { exact: true }).fill('L2008-0008');
+  await page.getByRole('button', { name: '西夏文字の出典番号の条件を追加', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'U+17000 TANGUT IDEOGRAPH-17000', exact: true }),
+  ).toBeVisible();
+  await page.getByText('東アジア文字データ (UAX #60)', { exact: true }).click();
+  await expect(page.locator('.property-list')).toContainText(['kTGT_MergedSrc']);
   expect(errors).toEqual([]);
   console.log(
-    'Desktop smoke passed: custom protocol, worker, buffer, clipboard, isolation, always-on-top, About, credits, external-link validation, local font fallback.',
+    'Desktop smoke passed: custom protocol, worker, buffer, clipboard, isolation, always-on-top, About, credits, external-link validation, local font fallback, UAX #60 offline search.',
   );
 } finally {
   if (app) await app.close();

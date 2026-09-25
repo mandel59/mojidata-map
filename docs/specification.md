@@ -52,6 +52,10 @@
 - 既存 UI の完全コピーはせず、日本語 UI で「探す → 確認 → バッファへ追加 → コピー」を一画面で扱う。
 - 実装状況と未対応部分は `docs/compatibility.md` で管理する。
 
+## 検索条件の追加
+
+Unihan と UAX #60 の優先項目・根拠・照合仕様は[選定記録](investigations/property-search-priorities.md)を参照。UAX #60 の資料も同じ固定済み UCD アーカイブから生成する。
+
 ## 一次資料
 
 - [BabelMap 公式概要](https://www.babelstone.co.uk/Software/BabelMap.html)

@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { UnicodeDatabase } from '../../core/unicode';
 import { isReadingProperty } from '../../core/hanReadings';
+import { isPropertyField } from '../../core/propertySearch';
 import type { CharacterSearch } from '../../useCharacterSearch';
 import { CharacterConditions } from './CharacterConditions';
 import { CharacterCollection } from '../CharacterCollection';
@@ -94,6 +95,10 @@ export const SearchWorkspace = memo(function SearchWorkspace({
                 next.readings = { ...next.readings };
                 delete next.readings[value];
                 if (!Object.keys(next.readings).length) delete next.readings;
+              } else if (key === 'properties' && value !== undefined && isPropertyField(value)) {
+                next.properties = { ...next.properties };
+                delete next.properties[value];
+                if (!Object.keys(next.properties).length) delete next.properties;
               } else delete next[key];
               if (key === 'radical') delete next.radicalForm;
               search.run(next);

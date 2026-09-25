@@ -7,6 +7,10 @@ import { encodeText } from '../core/encoding';
 import { loadData, peekData, type Variations } from '../data';
 import { copyText, download } from '../platform';
 
+interface IdeographicManifest {
+  unihanShards: string[];
+  eastAsianShards: string[];
+}
 interface Props {
   compact: boolean;
   db: UnicodeDatabase;
@@ -40,12 +44,18 @@ export const CharacterDetails = memo(function CharacterDetails({
   const char = scalar ? String.fromCodePoint(cp) : '';
   const shard = (cp >>> 12).toString(16).padStart(3, '0');
   const variations = peekData<Variations>('variations');
-  const manifest = peekData<{ unihanShards: string[] }>('manifest');
+  const manifest = peekData<IdeographicManifest>('manifest');
   const hanData = peekData<Record<string, Record<string, string>>>(`unihan/${shard}`);
   const han = hanData?.[hex(cp)] ?? {};
+  const eastData = peekData<Record<string, Record<string, string>>>(`east-asian/${shard}`);
+  const eastAsian = eastData?.[hex(cp)] ?? {};
   const relatedHan = hanVariants(cp, han);
   const variants = variations?.[hex(cp)] ?? [];
-  const missing = !variations || !manifest || (manifest.unihanShards.includes(shard) && !hanData);
+  const missing =
+    !variations ||
+    !manifest ||
+    (manifest.unihanShards.includes(shard) && !hanData) ||
+    (manifest.eastAsianShards.includes(shard) && !eastData);
   const error = loaded.cp === cp ? loaded.error : '';
   useEffect(() => {
     if (!missing) return;
@@ -54,8 +64,11 @@ export const CharacterDetails = memo(function CharacterDetails({
     // from the cache on render so a late response can never show a previous one.
     void Promise.allSettled([
       loadData<Variations>('variations'),
-      loadData<{ unihanShards: string[] }>('manifest').then(async (data) => {
-        if (data.unihanShards.includes(shard)) await loadData(`unihan/${shard}`);
+      loadData<IdeographicManifest>('manifest').then(async (data) => {
+        await Promise.all([
+          data.unihanShards.includes(shard) ? loadData(`unihan/${shard}`) : undefined,
+          data.eastAsianShards.includes(shard) ? loadData(`east-asian/${shard}`) : undefined,
+        ]);
       }),
     ]).then((results) => {
       if (!current) return;
@@ -193,20 +206,28 @@ export const CharacterDetails = memo(function CharacterDetails({
           ))}
         </details>
       )}
-      {Object.keys(han).length > 0 && (
-        <details>
-          <summary>Unihan データ</summary>
-          <dl className="property-list">
-            {Object.entries(han)
-              .sort(([a], [b]) => a.localeCompare(b))
-              .map(([key, value]) => (
-                <div key={key}>
-                  <dt>{key}</dt>
-                  <dd>{value}</dd>
-                </div>
-              ))}
-          </dl>
-        </details>
+      {(
+        [
+          ['Unihan データ', han],
+          ['東アジア文字データ (UAX #60)', eastAsian],
+        ] as const
+      ).map(
+        ([title, data]) =>
+          Object.keys(data).length > 0 && (
+            <details key={title}>
+              <summary>{title}</summary>
+              <dl className="property-list">
+                {Object.entries(data)
+                  .sort(([a], [b]) => a.localeCompare(b))
+                  .map(([key, value]) => (
+                    <div key={key}>
+                      <dt>{key}</dt>
+                      <dd>{value}</dd>
+                    </div>
+                  ))}
+              </dl>
+            </details>
+          ),
       )}
       {db.data.notes[hex(cp)] && (
         <details>
@@ -235,14 +256,18 @@ export const CharacterDetails = memo(function CharacterDetails({
         </p>
       )}
       <div className="button-row">
-        <button onClick={() => void copy(JSON.stringify({ ...properties, Unihan: han }, null, 2))}>
+        <button
+          onClick={() =>
+            void copy(JSON.stringify({ ...properties, Unihan: han, EastAsian: eastAsian }, null, 2))
+          }
+        >
           情報をコピー
         </button>
         <button
           onClick={() =>
             download(
               `${hex(cp)}.json`,
-              JSON.stringify({ ...properties, Unihan: han }, null, 2),
+              JSON.stringify({ ...properties, Unihan: han, EastAsian: eastAsian }, null, 2),
               'application/json',
             )
           }

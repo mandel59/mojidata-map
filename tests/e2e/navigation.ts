@@ -14,7 +14,7 @@ export async function searchMethod(
     const expand = page.getByRole('button', { name: '条件を追加', exact: true });
     if (await expand.isVisible()) await expand.click();
     await page
-      .getByRole('tab', { name: method === 'han' ? 'IRG出典' : '読み・意味', exact: true })
+      .getByRole('tab', { name: method === 'han' ? '部首・画数' : '中国語・意味', exact: true })
       .click();
   }
 }

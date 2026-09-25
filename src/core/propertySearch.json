@@ -1,0 +1,345 @@
+{
+  "kIRG_GSource": {
+    "label": "中国・シンガポールの出典",
+    "source": "unihan",
+    "property": "kIRG_GSource",
+    "match": "prefix",
+    "placeholder": "例: G0-4B2E"
+  },
+  "kIRG_HSource": {
+    "label": "香港の出典",
+    "source": "unihan",
+    "property": "kIRG_HSource",
+    "match": "prefix",
+    "placeholder": "例: HB1-A4F4"
+  },
+  "kIRG_JSource": {
+    "label": "日本の出典",
+    "source": "unihan",
+    "property": "kIRG_JSource",
+    "match": "prefix",
+    "placeholder": "例: J0-3F65"
+  },
+  "kIRG_KPSource": {
+    "label": "北朝鮮の出典",
+    "source": "unihan",
+    "property": "kIRG_KPSource",
+    "match": "prefix",
+    "placeholder": "例: KP0-E3EE"
+  },
+  "kIRG_KSource": {
+    "label": "韓国の出典",
+    "source": "unihan",
+    "property": "kIRG_KSource",
+    "match": "prefix",
+    "placeholder": "例: K0-6229"
+  },
+  "kIRG_MSource": {
+    "label": "マカオの出典",
+    "source": "unihan",
+    "property": "kIRG_MSource",
+    "match": "prefix",
+    "placeholder": "例: MA-"
+  },
+  "kIRG_SSource": {
+    "label": "SAT 大蔵経の出典",
+    "source": "unihan",
+    "property": "kIRG_SSource",
+    "match": "prefix",
+    "placeholder": "例: SAT-"
+  },
+  "kIRG_TSource": {
+    "label": "台湾 (TCA)の出典",
+    "source": "unihan",
+    "property": "kIRG_TSource",
+    "match": "prefix",
+    "placeholder": "例: T1-4555"
+  },
+  "kIRG_UKSource": {
+    "label": "英国の出典",
+    "source": "unihan",
+    "property": "kIRG_UKSource",
+    "match": "prefix",
+    "placeholder": "例: UK-"
+  },
+  "kIRG_USource": {
+    "label": "Unicode (UTC)の出典",
+    "source": "unihan",
+    "property": "kIRG_USource",
+    "match": "prefix",
+    "placeholder": "例: UTC-"
+  },
+  "kIRG_VSource": {
+    "label": "ベトナムの出典",
+    "source": "unihan",
+    "property": "kIRG_VSource",
+    "match": "prefix",
+    "placeholder": "例: V1-5B5A"
+  },
+  "kMorohashi": {
+    "label": "大漢和辞典",
+    "source": "unihan",
+    "property": "kMorohashi",
+    "match": "prefix",
+    "placeholder": "例: 17083"
+  },
+  "kKangXi": {
+    "label": "康熙字典",
+    "source": "unihan",
+    "property": "kKangXi",
+    "match": "prefix",
+    "placeholder": "例: 0603.010"
+  },
+  "kHanYu": {
+    "label": "漢語大字典",
+    "source": "unihan",
+    "property": "kHanYu",
+    "match": "prefix",
+    "placeholder": "例: 31545.010"
+  },
+  "kCangjie": {
+    "label": "倉頡コード",
+    "source": "unihan",
+    "property": "kCangjie",
+    "match": "prefix",
+    "placeholder": "例: E"
+  },
+  "kFourCornerCode": {
+    "label": "四角号碼",
+    "source": "unihan",
+    "property": "kFourCornerCode",
+    "match": "prefix",
+    "placeholder": "例: 1223.0"
+  },
+  "kSimplifiedVariant": {
+    "label": "簡体字の参照先",
+    "source": "unihan",
+    "property": "kSimplifiedVariant",
+    "match": "codepoint",
+    "placeholder": "例: 国 / U+56FD"
+  },
+  "kTraditionalVariant": {
+    "label": "繁体字の参照先",
+    "source": "unihan",
+    "property": "kTraditionalVariant",
+    "match": "codepoint",
+    "placeholder": "例: 国 / U+56FD"
+  },
+  "kSemanticVariant": {
+    "label": "意味上の異体字の参照先",
+    "source": "unihan",
+    "property": "kSemanticVariant",
+    "match": "codepoint",
+    "placeholder": "例: 国 / U+56FD"
+  },
+  "kSpecializedSemanticVariant": {
+    "label": "特殊な意味の異体字の参照先",
+    "source": "unihan",
+    "property": "kSpecializedSemanticVariant",
+    "match": "codepoint",
+    "placeholder": "例: 国 / U+56FD"
+  },
+  "kZVariant": {
+    "label": "字形異体字の参照先",
+    "source": "unihan",
+    "property": "kZVariant",
+    "match": "codepoint",
+    "placeholder": "例: 国 / U+56FD"
+  },
+  "kCompatibilityVariant": {
+    "label": "互換漢字の統合先",
+    "source": "unihan",
+    "property": "kCompatibilityVariant",
+    "match": "codepoint",
+    "placeholder": "例: 国 / U+56FD"
+  },
+  "kJoyoKanji": {
+    "label": "常用漢字の登録",
+    "source": "unihan",
+    "property": "kJoyoKanji",
+    "match": "prefix",
+    "placeholder": "例: 2010"
+  },
+  "kJinmeiyoKanji": {
+    "label": "人名用漢字の登録",
+    "source": "unihan",
+    "property": "kJinmeiyoKanji",
+    "match": "prefix",
+    "placeholder": "例: 2010"
+  },
+  "kPrimaryNumeric": {
+    "label": "漢字の数値（一般）",
+    "source": "unihan",
+    "property": "kPrimaryNumeric",
+    "match": "number",
+    "placeholder": "例: 10"
+  },
+  "kAccountingNumeric": {
+    "label": "漢字の数値（大字）",
+    "source": "unihan",
+    "property": "kAccountingNumeric",
+    "match": "number",
+    "placeholder": "例: 10"
+  },
+  "kOtherNumeric": {
+    "label": "漢字の数値（その他）",
+    "source": "unihan",
+    "property": "kOtherNumeric",
+    "match": "number",
+    "placeholder": "例: 10"
+  },
+  "kTayNumeric": {
+    "label": "タイー語の数値",
+    "source": "unihan",
+    "property": "kTayNumeric",
+    "match": "number",
+    "placeholder": "例: 10"
+  },
+  "kVietnameseNumeric": {
+    "label": "ベトナム語の数値",
+    "source": "unihan",
+    "property": "kVietnameseNumeric",
+    "match": "number",
+    "placeholder": "例: 10"
+  },
+  "kZhuangNumeric": {
+    "label": "チワン語の数値",
+    "source": "unihan",
+    "property": "kZhuangNumeric",
+    "match": "number",
+    "placeholder": "例: 10"
+  },
+  "tangutComponent": {
+    "label": "西夏文字の部品番号",
+    "source": "eastAsian",
+    "property": "kTGT_RSUnicode",
+    "match": "radical",
+    "placeholder": "例: 1"
+  },
+  "tangutTotalStrokes": {
+    "label": "西夏文字の総画数",
+    "source": "eastAsian",
+    "property": "kTGT_RSUnicode",
+    "match": "strokes",
+    "placeholder": "例: 6"
+  },
+  "kTGT_MergedSrc": {
+    "label": "西夏文字の出典番号",
+    "source": "eastAsian",
+    "property": "kTGT_MergedSrc",
+    "match": "prefix",
+    "placeholder": "例: L2008-0008"
+  },
+  "kTGT_Numeric": {
+    "label": "西夏文字の数値",
+    "source": "eastAsian",
+    "property": "kTGT_Numeric",
+    "match": "number",
+    "placeholder": "例: 2 / 0.5"
+  },
+  "jurchenRadical": {
+    "label": "女真文字の部首番号",
+    "source": "eastAsian",
+    "property": "kJURC_RSUnicode",
+    "match": "radical",
+    "placeholder": "例: 1"
+  },
+  "jurchenTotalStrokes": {
+    "label": "女真文字の総画数",
+    "source": "eastAsian",
+    "property": "kJURC_RSUnicode",
+    "match": "strokes",
+    "placeholder": "例: 3"
+  },
+  "kJURC_Src": {
+    "label": "女真文字の出典番号",
+    "source": "eastAsian",
+    "property": "kJURC_Src",
+    "match": "prefix",
+    "placeholder": "例: NC:002.02"
+  },
+  "kJURC_NCReading": {
+    "label": "女真文字の読み",
+    "source": "eastAsian",
+    "property": "kJURC_NCReading",
+    "match": "text",
+    "placeholder": "例: nie"
+  },
+  "kJURC_Numeric": {
+    "label": "女真文字の数値",
+    "source": "eastAsian",
+    "property": "kJURC_Numeric",
+    "match": "number",
+    "placeholder": "例: 10000"
+  },
+  "kNSHU_DubenSrc": {
+    "label": "女書の読本番号",
+    "source": "eastAsian",
+    "property": "kNSHU_DubenSrc",
+    "match": "prefix",
+    "placeholder": "例: 36.01"
+  },
+  "kNSHU_Reading": {
+    "label": "女書の読み",
+    "source": "eastAsian",
+    "property": "kNSHU_Reading",
+    "match": "text",
+    "placeholder": "例: na33"
+  },
+  "sealRadical": {
+    "label": "小篆の部首",
+    "source": "eastAsian",
+    "property": "kSEAL_Rad",
+    "match": "seal-radical",
+    "placeholder": "例: 1 / U+3D000"
+  },
+  "kSEAL_MCJK": {
+    "label": "小篆に対応する漢字",
+    "source": "eastAsian",
+    "property": "kSEAL_MCJK",
+    "match": "codepoint",
+    "placeholder": "例: 一 / U+4E00"
+  },
+  "kSEAL_THXSrc": {
+    "label": "藤花榭本の番号",
+    "source": "eastAsian",
+    "property": "kSEAL_THXSrc",
+    "match": "prefix",
+    "placeholder": "例: TH-00001"
+  },
+  "kSEAL_CCZSrc": {
+    "label": "陳昌治本の番号",
+    "source": "eastAsian",
+    "property": "kSEAL_CCZSrc",
+    "match": "prefix",
+    "placeholder": "例: C-00001"
+  },
+  "kSEAL_DYCSrc": {
+    "label": "段玉裁本の番号",
+    "source": "eastAsian",
+    "property": "kSEAL_DYCSrc",
+    "match": "prefix",
+    "placeholder": "例: D-00001"
+  },
+  "kSEAL_QJZSrc": {
+    "label": "祁寯藻本の番号",
+    "source": "eastAsian",
+    "property": "kSEAL_QJZSrc",
+    "match": "prefix",
+    "placeholder": "例: K-00001"
+  },
+  "kJapaneseNewVariant": {
+    "label": "日本の新字体の参照先",
+    "source": "unihan",
+    "property": "kJapaneseNewVariant",
+    "match": "codepoint",
+    "placeholder": "例: 国 / U+56FD"
+  },
+  "kJapaneseOldVariant": {
+    "label": "日本の旧字体の参照先",
+    "source": "unihan",
+    "property": "kJapaneseOldVariant",
+    "match": "codepoint",
+    "placeholder": "例: 国 / U+56FD"
+  }
+}

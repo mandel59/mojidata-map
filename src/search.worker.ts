@@ -1,13 +1,28 @@
 import { loadData, loadDatabase } from './data';
 import { searchCharacters, searchHan, type HanIndex } from './core/unicode';
 import { hasHanConditions, type CharacterQuery } from './core/searchConditions';
+import {
+  conditionsForSource,
+  searchPropertyIndex,
+  type PropertyIndex,
+} from './core/propertySearch';
 const database = loadDatabase();
 self.onmessage = async (event: MessageEvent<{ id: number; query: CharacterQuery }>) => {
   const { id, query } = event.data;
   try {
-    const candidates = hasHanConditions(query)
-      ? searchHan(await loadData<HanIndex>('han-index'), query)
+    const eastConditions = conditionsForSource(query.properties, 'eastAsian');
+    const [han, east] = await Promise.all([
+      hasHanConditions(query) ? loadData<HanIndex>('han-index') : undefined,
+      Object.keys(eastConditions).length ? loadData<PropertyIndex>('east-asian-index') : undefined,
+    ]);
+    let candidates = han
+      ? searchPropertyIndex(
+          han,
+          conditionsForSource(query.properties, 'unihan'),
+          searchHan(han, query),
+        )
       : undefined;
+    if (east) candidates = searchPropertyIndex(east, eastConditions, candidates);
     const results = searchCharacters(await database, query, candidates);
     self.postMessage({ id, results });
   } catch (error) {

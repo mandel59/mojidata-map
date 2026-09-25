@@ -148,6 +148,9 @@ def build(update_lock=False):
     search_fields = ["kRSUnicode", "kTotalStrokes", "kMandarin", "kCantonese", "kZhuang", "kDefinition", "kAlternateTotalStrokes"]
     reading_fields = json.loads((ROOT / "src/core/unihanReadings.json").read_text(encoding="utf-8"))
     search_fields.extend(key for key in reading_fields if key not in search_fields)
+    search_properties = json.loads((ROOT / "src/core/propertySearch.json").read_text(encoding="utf-8"))
+    search_fields.extend(dict.fromkeys(item["property"] for item in search_properties.values()
+                                      if item["source"] == "unihan" and item["property"] not in search_fields))
     total_strokes = set()
     for values in unihan.values():
         total_strokes.update(int(value) for value in values.get("kTotalStrokes", "").split())
@@ -157,6 +160,27 @@ def build(update_lock=False):
     shards = defaultdict(dict)
     for cp, values in unihan.items():
         shards[f"{int(cp, 16) >> 12:03x}"][cp] = values
+    # UAX #60 uses Unihan's tagged tab-separated format, not UCD semicolons.
+    # Preserve the complete values, including multiple source references.
+    east_asian = defaultdict(dict)
+    for name in ["TangutSources.txt", "NushuSources.txt", "JurchenSources.txt", "SealSources.txt"]:
+        text = read(name)
+        if not text.startswith(f"# {name[:-4]}-{VERSION}.txt"):
+            raise ValueError(f"East Asian data version mismatch: {name}")
+        for line in text.splitlines():
+            if line.startswith("U+"):
+                cp, prop, value = line.split("\t", 2)
+                east_asian[cp[2:]][prop] = value
+    east_fields = sorted({prop for values in east_asian.values() for prop in values})
+    for item in search_properties.values():
+        source = unihan if item["source"] == "unihan" else east_asian
+        if not any(item["property"] in values for values in source.values()):
+            raise ValueError(f"Search property has no source data: {item['property']}")
+    east_index = [[int(cp, 16), *[values.get(key, "") for key in east_fields]] for cp, values in east_asian.items()]
+    east_index.sort(key=lambda row: row[0])
+    east_shards = defaultdict(dict)
+    for cp, values in east_asian.items():
+        east_shards[f"{int(cp, 16) >> 12:03x}"][cp] = values
     emoji, group, subgroup = [], "", ""
     for line in blobs["emoji-test.txt"].decode("utf-8").splitlines():
         if line.startswith("# group: "):
@@ -180,14 +204,19 @@ def build(update_lock=False):
 
     write("unicode.json", core)
     write("han-index.json", {"fields": search_fields, "rows": han_index})
+    write("east-asian-index.json", {"fields": east_fields, "rows": east_index})
     write("emoji.json", emoji)
     write("variations.json", dict(variations))
     for shard, values in sorted(shards.items()):
         write(f"unihan/{shard}.json", values)
+    for shard, values in sorted(east_shards.items()):
+        write(f"east-asian/{shard}.json", values)
     (OUTPUT / "LICENSE-UNICODE.txt").write_bytes(blobs["license.txt"])
     manifest = {"unicodeVersion": VERSION, "emojiVersion": emoji_version, "sources": sources, "counts": {
         "records": len(records), "nameRanges": len(names), "blocks": len(props["Block"]),
-        "unihanCharacters": len(unihan), "emojiSequences": len(emoji)}, "unihanShards": sorted(shards)}
+        "unihanCharacters": len(unihan), "eastAsianCharacters": len(east_asian),
+        "eastAsianProperties": len(east_fields), "emojiSequences": len(emoji)},
+        "unihanShards": sorted(shards), "eastAsianShards": sorted(east_shards)}
     write("manifest.json", manifest)
     LOCK.write_text(json.dumps({"version": VERSION, "sources": sources}, indent=2) + "\n")
     print(json.dumps(manifest["counts"], indent=2))

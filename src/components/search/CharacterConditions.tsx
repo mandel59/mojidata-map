@@ -1,75 +1,10 @@
 import { memo, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { UnicodeDatabase } from '../../core/unicode';
-import {
-  isReadingProperty,
-  readingDefinitions,
-  readingLabels,
-  readingProperties,
-  type ReadingProperty,
-} from '../../core/hanReadings';
+import { isReadingProperty, readingDefinitions } from '../../core/hanReadings';
 import type { CharacterQuery } from '../../core/searchConditions';
 import { ConditionChips } from './ConditionChips';
-
-type Field =
-  | 'category'
-  | 'script'
-  | 'block'
-  | 'plane'
-  | 'age'
-  | 'binary'
-  | 'bidi'
-  | 'combining'
-  | 'aliases'
-  | 'wholeWord'
-  | 'radical'
-  | 'strokes'
-  | 'totalStrokes'
-  | ReadingProperty;
-const labels: Record<Field | 'text', string> = {
-  text: '文字・名前',
-  radical: '康熙部首',
-  strokes: '内画数',
-  totalStrokes: '総画数',
-  ...readingLabels,
-  category: '一般カテゴリ',
-  script: 'スクリプト',
-  block: 'ブロック',
-  plane: '面',
-  age: '追加バージョン',
-  binary: '二値属性',
-  bidi: 'Bidi クラス',
-  combining: '結合クラス',
-  aliases: '別名の検索',
-  wholeWord: '名前の一致方法',
-};
-type ConditionCategory = { id: string; label: string; fields: Field[] };
-const categoryGroups: { id: string; label: string; categories: ConditionCategory[] }[] = [
-  {
-    id: 'unicode',
-    label: '基本条件',
-    categories: [
-      { id: 'classification', label: '文字分類', fields: ['category', 'script'] },
-      { id: 'range', label: 'Unicode の範囲', fields: ['block', 'plane', 'age'] },
-      { id: 'properties', label: '文字の性質', fields: ['binary', 'bidi', 'combining'] },
-      { id: 'matching', label: '名前の照合', fields: ['aliases', 'wholeWord'] },
-    ],
-  },
-  {
-    id: 'unihan',
-    label: '漢字 (Unihan)',
-    categories: [
-      // UAX #38 classifies kRSUnicode and kTotalStrokes as IRG Sources.
-      // Total strokes also include kAlternateTotalStrokes (Dictionary-like Data).
-      {
-        id: 'unihan-irg-sources',
-        label: 'IRG出典',
-        fields: ['radical', 'strokes', 'totalStrokes'],
-      },
-      { id: 'unihan-readings', label: '読み・意味', fields: readingProperties },
-    ],
-  },
-];
-const categories = categoryGroups.flatMap((group) => group.categories);
+import { isPropertyField, propertyDefinitions, propertyHints } from '../../core/propertySearch';
+import { categories, categoryGroups, labels, type Field } from './conditionDefinitions';
 
 const radicalForms = {
   any: 'すべての形',
@@ -99,6 +34,7 @@ export const CharacterConditions = memo(function CharacterConditions({
   const [expanded, setExpanded] = useState(() => !matchMedia('(max-width: 600px)').matches);
   const [draft, setDraft] = useState<Partial<Record<Field, string>>>(() => ({
     ...query.readings,
+    ...query.properties,
     ...(query.radical ? { radical: query.radical } : {}),
   }));
   const [radicalForm, setRadicalForm] = useState<CharacterQuery['radicalForm']>(query.radicalForm);
@@ -153,6 +89,17 @@ export const CharacterConditions = memo(function CharacterConditions({
       const value = query.readings?.[key];
       return value ? [{ id: `readings:${key}`, label: `${labels[key]}: ${value}` }] : [];
     }
+    if (isPropertyField(key)) {
+      const value = query.properties?.[key];
+      return value
+        ? [
+            {
+              id: `properties:${key}`,
+              label: `${labels[key]}: ${value === '*' ? '登録あり' : value}`,
+            },
+          ]
+        : [];
+    }
     const value = query[key];
     if (key === 'aliases' ? value !== false : !value) return [];
     const display = key === 'radical' ? `${value}${radicalSuffix}` : valueLabel(key, String(value));
@@ -194,7 +141,9 @@ export const CharacterConditions = memo(function CharacterConditions({
             ? onRemove('binary', key.slice('binary:'.length))
             : key.startsWith('readings:')
               ? onRemove('readings', key.slice('readings:'.length))
-              : onRemove(key as keyof CharacterQuery)
+              : key.startsWith('properties:')
+                ? onRemove('properties', key.slice('properties:'.length))
+                : onRemove(key as keyof CharacterQuery)
         }
         onClear={onClear}
       />
@@ -246,7 +195,11 @@ export const CharacterConditions = memo(function CharacterConditions({
               {item.id === category &&
                 item.fields.map((key) => {
                   const value = draft[key] ?? '';
-                  const current = isReadingProperty(key) ? query.readings?.[key] : query[key];
+                  const current = isReadingProperty(key)
+                    ? query.readings?.[key]
+                    : isPropertyField(key)
+                      ? query.properties?.[key]
+                      : query[key];
                   return (
                     <form
                       className="condition-field"
@@ -257,6 +210,11 @@ export const CharacterConditions = memo(function CharacterConditions({
                         if (isReadingProperty(key)) {
                           if (!value.trim()) return;
                           onApply({ readings: { ...query.readings, [key]: value.trim() } });
+                          return;
+                        }
+                        if (isPropertyField(key)) {
+                          if (!value.trim()) return;
+                          onApply({ properties: { ...query.properties, [key]: value.trim() } });
                           return;
                         }
                         if (key === 'binary') {
@@ -279,11 +237,16 @@ export const CharacterConditions = memo(function CharacterConditions({
                       }}
                     >
                       <label htmlFor={`${id}-${key}`}>{labels[key]}</label>
-                      {isReadingProperty(key) ? (
+                      {isReadingProperty(key) || isPropertyField(key) ? (
                         <input
                           id={`${id}-${key}`}
-                          placeholder={readingDefinitions[key].placeholder}
-                          title={key}
+                          placeholder={
+                            isPropertyField(key)
+                              ? propertyDefinitions[key].placeholder
+                              : readingDefinitions[key].placeholder
+                          }
+                          title={isPropertyField(key) ? propertyDefinitions[key].property : key}
+                          aria-describedby={isPropertyField(key) ? `${id}-${key}-help` : undefined}
                           value={value}
                           onChange={(event) => setDraft({ ...draft, [key]: event.target.value })}
                         />
@@ -365,6 +328,11 @@ export const CharacterConditions = memo(function CharacterConditions({
                           ? '更新'
                           : '追加'}
                       </button>
+                      {isPropertyField(key) && (
+                        <p id={`${id}-${key}-help`} className="condition-hint muted">
+                          {propertyHints[propertyDefinitions[key].match]} * で登録あり。
+                        </p>
+                      )}
                       {key === 'totalStrokes' && (
                         <p id={`${id}-total-strokes-help`} className="condition-hint muted">
                           別の数え方を含む、登録済みの総画数のいずれかに一致します。
