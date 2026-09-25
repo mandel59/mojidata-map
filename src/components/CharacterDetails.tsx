@@ -4,12 +4,13 @@ import { UtilityDialog } from './UtilityDialog';
 import { codeLabel, hex, isScalar, type UnicodeDatabase } from '../core/unicode';
 import { hanVariants, hanVariantLabels } from '../core/hanVariants';
 import { encodeText } from '../core/encoding';
-import { loadData, peekData, type Variations } from '../data';
+import { loadData, peekData, type Variations, type IdeographicVariations } from '../data';
 import { copyText, download } from '../platform';
 
 interface IdeographicManifest {
   unihanShards: string[];
   eastAsianShards: string[];
+  ivsShards: string[];
 }
 interface Props {
   compact: boolean;
@@ -39,6 +40,7 @@ export const CharacterDetails = memo(function CharacterDetails({
     if (!compact) setOpen(false);
   }, [compact]);
   const [loaded, setLoaded] = useState({ cp, error: '' });
+  const [retry, setRetry] = useState(0);
   const properties = useMemo(() => db.details(cp), [db, cp]);
   const scalar = isScalar(cp);
   const char = scalar ? String.fromCodePoint(cp) : '';
@@ -51,12 +53,15 @@ export const CharacterDetails = memo(function CharacterDetails({
   const eastAsian = eastData?.[hex(cp)] ?? {};
   const relatedHan = hanVariants(cp, han);
   const variants = variations?.[hex(cp)] ?? [];
+  const ivsData = peekData<IdeographicVariations>(`ivs/${shard}`);
+  const ivs = ivsData?.[hex(cp)] ?? [];
   const missing =
     !variations ||
     !manifest ||
     (manifest.unihanShards.includes(shard) && !hanData) ||
-    (manifest.eastAsianShards.includes(shard) && !eastData);
-  const error = loaded.cp === cp ? loaded.error : '';
+    (manifest.eastAsianShards.includes(shard) && !eastData) ||
+    (manifest.ivsShards.includes(shard) && !ivsData);
+  const error = missing && loaded.cp === cp ? loaded.error : '';
   useEffect(() => {
     if (!missing) return;
     let current = true;
@@ -65,10 +70,13 @@ export const CharacterDetails = memo(function CharacterDetails({
     void Promise.allSettled([
       loadData<Variations>('variations'),
       loadData<IdeographicManifest>('manifest').then(async (data) => {
-        await Promise.all([
+        const results = await Promise.allSettled([
           data.unihanShards.includes(shard) ? loadData(`unihan/${shard}`) : undefined,
           data.eastAsianShards.includes(shard) ? loadData(`east-asian/${shard}`) : undefined,
+          data.ivsShards.includes(shard) ? loadData(`ivs/${shard}`) : undefined,
         ]);
+        const failure = results.find((result) => result.status === 'rejected');
+        if (failure?.status === 'rejected') throw failure.reason;
       }),
     ]).then((results) => {
       if (!current) return;
@@ -78,7 +86,7 @@ export const CharacterDetails = memo(function CharacterDetails({
     return () => {
       current = false;
     };
-  }, [cp, shard, missing]);
+  }, [cp, shard, missing, retry]);
   const copy = async (text: string) => {
     try {
       await copyText(text);
@@ -178,6 +186,30 @@ export const CharacterDetails = memo(function CharacterDetails({
           ))}
         </details>
       )}
+      {ivs.length > 0 && (
+        <details>
+          <summary>漢字異体字列（IVS） ({ivs.length})</summary>
+          {ivs.map(([selector, registrations]) => (
+            <button
+              className="variant"
+              key={selector}
+              aria-label={`IVS ${codeLabel(cp)} ${codeLabel(selector)} をバッファに追加`}
+              onClick={() => onInsert(String.fromCodePoint(cp, selector))}
+            >
+              <span style={fontStyle(font)}>{String.fromCodePoint(cp, selector)}</span>
+              <small>
+                {codeLabel(cp)} {codeLabel(selector)}
+                {registrations.map(([collection, identifier]) => (
+                  <span key={`${collection}-${identifier}`}>
+                    <br />
+                    {collection}: {identifier}
+                  </span>
+                ))}
+              </small>
+            </button>
+          ))}
+        </details>
+      )}
       {relatedHan.length > 0 && (
         <details>
           <summary>漢字の異体字・関連字 ({relatedHan.length})</summary>
@@ -252,7 +284,15 @@ export const CharacterDetails = memo(function CharacterDetails({
       </details>
       {error && (
         <p role="alert" className="error">
-          {error}
+          {error}{' '}
+          <button
+            onClick={() => {
+              setLoaded({ cp, error: '' });
+              setRetry((value) => value + 1);
+            }}
+          >
+            再読み込み
+          </button>
         </p>
       )}
       <div className="button-row">

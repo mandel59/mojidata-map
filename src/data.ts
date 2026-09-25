@@ -40,3 +40,8 @@ export interface Emoji {
   subgroup: string;
 }
 export type Variations = Record<string, [number[], string][]>;
+
+export type IdeographicVariations = Record<
+  string,
+  [selector: number, registrations: [collection: string, identifier: string][]][]
+>;

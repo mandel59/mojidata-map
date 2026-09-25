@@ -217,8 +217,18 @@ def build(update_lock=False):
     # Keep standardized sequences separate from emoji presentation sequences.
     svs = sorted({tuple(int(cp, 16) for cp in row[0].split())
                   for row in fields(read("StandardizedVariants.txt"))})
-    ivs = sorted({tuple(int(cp, 16) for cp in row[0].split()) for row in fields(ivd_text)})
+    ivs_registrations = defaultdict(set)
+    for row in fields(ivd_text):
+        sequence = tuple(int(cp, 16) for cp in row[0].split())
+        ivs_registrations[sequence].add((row[1], row[2]))
+    ivs = sorted(ivs_registrations)
     write("font-variation-sequences.json", {"svs": svs, "ivs": ivs, "ivdVersion": IVD_VERSION})
+    ivs_shards = defaultdict(lambda: defaultdict(list))
+    for base, selector in ivs:
+        ivs_shards[f"{base >> 12:03x}"][f"{base:04X}"].append(
+            [selector, sorted(ivs_registrations[(base, selector)])])
+    for shard, values in sorted(ivs_shards.items()):
+        write(f"ivs/{shard}.json", dict(values))
     for shard, values in sorted(shards.items()):
         write(f"unihan/{shard}.json", values)
     for shard, values in sorted(east_shards.items()):
@@ -228,7 +238,7 @@ def build(update_lock=False):
         "records": len(records), "nameRanges": len(names), "blocks": len(props["Block"]),
         "unihanCharacters": len(unihan), "eastAsianCharacters": len(east_asian),
         "eastAsianProperties": len(east_fields), "emojiSequences": len(emoji)},
-        "unihanShards": sorted(shards), "eastAsianShards": sorted(east_shards)}
+        "unihanShards": sorted(shards), "eastAsianShards": sorted(east_shards), "ivsShards": sorted(ivs_shards)}
     write("manifest.json", manifest)
     LOCK.write_text(json.dumps({"version": VERSION, "sources": sources}, indent=2) + "\n")
     print(json.dumps(manifest["counts"], indent=2))
