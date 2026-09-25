@@ -42,3 +42,13 @@ feature liga { sub f i by f_i; } liga;
 feature salt { sub A from [A.alt]; } salt;
 ''')
 builder.save(Path(__file__).resolve().parent.parent / 'tests/fixtures/GlyphVariants.ttf')
+
+
+# A second fixture keeps the original GIDs and adds real standardized sequences.
+# 4E38 FE01 is deliberately unregistered, sharing the glyph with 4E38 FE00.
+builder.setupCharacterMap({0x20: 'space', 0x41: 'A', 0x391: 'A', 0x66: 'f', 0x69: 'i',
+                           0x30: 'f', 0x4E38: 'A', 0x1D49C: 'i'})
+uvs.uvsDict[0xFE00] += [(0x30, 'f.vs'), (0x4E38, 'A.vs'), (0x1D49C, None)]
+uvs.uvsDict[0xFE01] = [(0x4E38, 'A.vs'), (0x1D49C, 'A.alt')]
+builder.font['cmap'].tables.append(uvs)
+builder.save(Path(__file__).resolve().parent.parent / 'tests/fixtures/StandardizedVariants.ttf')

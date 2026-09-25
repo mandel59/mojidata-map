@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Font } from 'fontkit';
 import { codeLabel, hex, isScalar, type UnicodeDatabase } from '../../core/unicode';
 import type { GlyphReference } from '../../core/fontGlyphIndex';
+import { loadData, peekData, type Variations } from '../../data';
 import { glyphDrawing, glyphFrame, glyphSvg } from '../../core/glyphDrawing';
 import { copyText, download } from '../../platform';
 import { UtilityDialog } from '../UtilityDialog';
@@ -44,6 +45,33 @@ export function FontGlyphDetails({
     : id !== null && reference
       ? String.fromCodePoint(...reference.points)
       : '';
+  const isVariation = id !== null && reference?.kind === 'variation';
+  const variations = peekData<Variations>('variations');
+  const [variationStatus, setVariationStatus] = useState({ text: '', error: '' });
+  const variationError =
+    isVariation && !variations && variationStatus.text === text ? variationStatus.error : '';
+  const sequenceName = isVariation
+    ? variations?.[hex(reference.points[0])]?.find(
+        ([points]) =>
+          points.length === reference.points.length &&
+          points.every((cp, i) => cp === reference.points[i]),
+      )?.[1]
+    : undefined;
+  useEffect(() => {
+    if (!isVariation || variations) return;
+    let current = true;
+    void loadData<Variations>('variations').then(
+      () => {
+        if (current) setVariationStatus({ text, error: '' });
+      },
+      (error) => {
+        if (current) setVariationStatus({ text, error: String(error) });
+      },
+    );
+    return () => {
+      current = false;
+    };
+  }, [isVariation, text, variations]);
   const filename = id === null ? hex(cp!) : `glyph-${id}`;
   const info = useMemo(() => {
     try {
@@ -199,6 +227,7 @@ export function FontGlyphDetails({
             </p>
           )}
           {referenceError && <p className="note coverage-missing">{referenceError}</p>}
+          {variationError && <p className="note coverage-missing">{variationError}</p>}
         </div>
       )}
       <div className="button-row">
@@ -233,6 +262,7 @@ export function FontGlyphDetails({
       </p>
       <dl className="property-list">
         {[
+          ...(sequenceName ? [['シーケンス名', sequenceName]] : []),
           ['グリフ名', info?.name ?? '—'],
           ['横送り幅', info?.advance ?? '—'],
           ['輪郭の範囲', info?.bounds ?? '—'],

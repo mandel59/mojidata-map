@@ -33,7 +33,7 @@
 
 `core/sampleLayout` は入力を先頭1,000コードポイントまでに制限し、fontkitのグリフIDキャッシュに入力コードポイントが混ざらないよう、同期配置中だけグリフを出現ごとのラッパーにする。例外でも元のメソッドを復元する。機能タグはコピーを渡し、fontkitが既定タグを書き加えてもCSSの指定を変更しない。`core/glyphDrawing` がGlyph IDから輪郭・カラーレイヤーを取得し、`LayoutGlyph` の配置表と `FontGlyphDetails` の詳細・SVG出力で共通利用する。`glyphFrame` はアセンダー・ディセンダーとフォント全体のbboxを含む共通座標枠を作る。グリフのbboxごとに拡大・上下移動せず、横方向は横送り幅を中央に置く。例外的な張り出しは固定枠内へ位置を制限する。詳細・サンプル表・SVG・PNGのベースラインを揃える。文字表示のPNGは同じ縮尺と原点を使い、Canvasの `alphabetic` ベースラインで描く。Glyph ID表示のPNGはSVG輪郭をCanvasへ描き、再シェーピングを避ける。CSSで入力文字を描き直さないため、代替フォントや別の置換グリフを表に混入させない。
 
-`core/fontGlyphIndex` は解析済みフェイスごとにWeakMapで、通常cmapのGlyph ID→コードポイントとformat 14の非デフォルトVS対応を保持する。`Glyph.codePoints` は過去の検索・配置処理に依存するため逆引きに使わない。[cmap format 14の仕様](https://learn.microsoft.com/en-us/typography/opentype/spec/cmap#format-14-unicode-variation-sequences)に従い、デフォルトVSは選択グリフの通常cmapから解決する。巨大な範囲を全グリフ分展開しない。format 14の解析失敗は対応情報の警告にとどめ、全グリフ表示を継続する。GSUB規則やグリフ名から入力文字列を推測しない。
+`core/fontGlyphIndex` は解析済みフェイスごとにWeakMapで、通常cmapのGlyph ID→コードポイントとformat 14の非デフォルトVS対応を保持する。`Glyph.codePoints` は過去の検索・配置処理に依存するため逆引きに使わない。[cmap format 14の仕様](https://learn.microsoft.com/en-us/typography/opentype/spec/cmap#format-14-unicode-variation-sequences)に従い、デフォルトVSは選択グリフの通常cmapから解決する。巨大な範囲を全グリフ分展開しない。format 14の解析失敗は対応情報の警告にとどめ、全グリフ表示を継続する。GSUB規則やグリフ名から入力文字列を推測しない。`FontGlyphDetails`は選択したVS列を共通キャッシュの`variations`データと完全一致で照合し、シーケンス名を表示する。未ロードなら非同期取得し、選択変更後の古い完了通知を破棄する。キャッシュ済みの場合は同期で表示し、未登録列に基底文字や別のVSの名前を流用しない。
 
 `GlyphCollection` は0〜numGlyphs−1を128件ずつ列挙し、表示ページの輪郭だけを`LayoutGlyph`で描く。通常cmap割当なしの絞り込みは、VS対応の有無やGSUBからの参照に関係なく行う。`CharacterGridSurface`・`useGridNavigation`・`usePageKeys`を文字一覧と共有する。グリフ選択・ページ・対応文字列の選択は`FontCharacters`が持ち、文字検索等の共有コードポイントをGlyph IDで上書きしない。詳細ボタンと一覧のEnterは同じ対応文字列を挿入する。フォント再読込・TTCフェイス切替は既存の選択revisionによる再マウントでリセットする。
 
