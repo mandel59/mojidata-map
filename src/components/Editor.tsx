@@ -13,6 +13,7 @@ import { copyText, download } from '../platform';
 
 export interface EditorHandle {
   insert(text: string): void;
+  selectCharacter(cp: number): void;
 }
 interface Props {
   db: UnicodeDatabase;
@@ -20,6 +21,7 @@ interface Props {
   onChange(text: string): void;
   font: string;
   onLocate(cp: number): void;
+  onInspectFont(): void;
   notify(message: string): void;
   handle: RefObject<EditorHandle | null>;
 }
@@ -29,6 +31,7 @@ export const Editor = memo(function Editor({
   onChange,
   font,
   onLocate,
+  onInspectFont,
   notify,
   handle,
 }: Props) {
@@ -49,6 +52,18 @@ export const Editor = memo(function Editor({
     onChange(value);
   }
   handle.current = {
+    selectCharacter(cp) {
+      const character = String.fromCodePoint(cp);
+      let offset = 0;
+      for (const current of text) {
+        if (current === character) {
+          textarea.current?.focus();
+          textarea.current?.setSelectionRange(offset, offset + current.length);
+          return;
+        }
+        offset += current.length;
+      }
+    },
     insert(value) {
       const start = textarea.current?.selectionStart ?? text.length;
       const end = textarea.current?.selectionEnd ?? start;
@@ -87,6 +102,9 @@ export const Editor = memo(function Editor({
         <span className="muted">
           {stats.graphemes} 書記素 · {stats.codePoints} コードポイント · {stats.utf8} bytes
         </span>
+        <button disabled={!text} onClick={onInspectFont}>
+          カバレッジ
+        </button>
         <button popoverTarget="editor-options">変換・保存</button>
       </div>
       <div className="editor-input-row">

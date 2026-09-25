@@ -46,12 +46,13 @@ test('keeps file import, local font selection and removal inside the font tab', 
   await page.goto('/?cp=0041');
   await page.getByRole('button', { name: 'フォント', exact: true }).click();
   await expect(
-    page.locator('.tool-scroll:visible').getByText('ブロックごとのフォント設定'),
+    page.locator('.font-workspace:visible').getByText('ブロックごとのフォント設定'),
   ).toHaveCount(0);
   await page.locator('input[type=file]').setInputFiles(fontFile);
   const preview = page.locator('.font-preview');
   await expect(preview).toHaveCSS('font-family', /Mojidata Imported/);
   await expect(page.getByLabel('編集テキスト')).toHaveCSS('font-family', 'monospace');
+  await page.getByRole('button', { name: 'フォントを選ぶ', exact: true }).click();
   await page.getByRole('button', { name: '端末のフォントを取得', exact: true }).click();
   await page.getByLabel('端末のフォント', { exact: true }).selectOption({ label: 'Test Sans' });
   await expect(preview).toHaveCSS('font-family', 'sans-serif');
@@ -59,6 +60,7 @@ test('keeps file import, local font selection and removal inside the font tab', 
   await page.getByRole('button', { name: '選択フォントを解析', exact: true }).click();
   await expect(preview).toHaveCSS('font-family', /Mojidata Imported/);
   const importedFamily = await preview.evaluate((el) => getComputedStyle(el).fontFamily);
+  await page.getByRole('tab', { name: '字形', exact: true }).click();
   const png = page.waitForEvent('download');
   await page.getByRole('button', { name: 'PNG を保存', exact: true }).click();
   expect((await png).suggestedFilename()).toBe('0041-preview.png');
@@ -86,6 +88,7 @@ test('keeps file import, local font selection and removal inside the font tab', 
   await expect(page.getByLabel('編集テキスト')).toHaveCSS('font-family', 'fantasy');
   await page.getByRole('button', { name: 'フォント', exact: true }).click();
   await expect(preview).toHaveCSS('font-family', importedFamily);
+  await page.getByRole('button', { name: 'フォントを選ぶ', exact: true }).click();
   await page.getByRole('button', { name: '追加フォントを解除', exact: true }).click();
   await expect(preview).toHaveCount(0);
   await expect(page.getByLabel('編集テキスト')).toHaveCSS('font-family', 'fantasy');

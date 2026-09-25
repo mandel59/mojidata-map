@@ -77,6 +77,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
   const [about, setAbout] = useState<AboutSection | null>(null);
   useEffect(() => window.mojidata?.onOpenAbout(setAbout), []);
   const [fontOpened, setFontOpened] = useState(false);
+  const [bufferCoverageRequest, setBufferCoverageRequest] = useState(0);
   const editor = useRef<EditorHandle | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sequenceProperties = useMemo<[string, string][]>(
@@ -188,6 +189,12 @@ export default function App({ db }: { db: UnicodeDatabase }) {
   const insert = useCallback((text: string) => {
     editor.current?.insert(text);
   }, []);
+  const inspectBuffer = useCallback(() => {
+    setFontOpened(true);
+    setTab('fonts');
+    setBufferCoverageRequest((request) => request + 1);
+  }, []);
+  const locateBuffer = useCallback((cp: number) => editor.current?.selectCharacter(cp), []);
   const insertCp = useCallback(
     (cp: number) => {
       if (isScalar(cp)) insert(String.fromCodePoint(cp));
@@ -435,18 +442,19 @@ export default function App({ db }: { db: UnicodeDatabase }) {
             }
           >
             {fontOpened && (
-              <div className="tool-scroll" hidden={tab !== 'fonts'}>
-                <FontPanel
-                  db={db}
-                  // Retain the loaded font, but only inspect selection while visible.
-                  cp={tab === 'fonts' ? selected : 0}
-                  notify={notify}
-                  active={tab === 'fonts'}
-                  onInsert={insertCp}
-                  onLocate={locate}
-                  onSelect={setSelected}
-                />
-              </div>
+              <FontPanel
+                db={db}
+                // Retain the loaded font, but only inspect selection while visible.
+                cp={tab === 'fonts' ? selected : 0}
+                notify={notify}
+                active={tab === 'fonts'}
+                buffer={prefs.buffer}
+                bufferRequest={bufferCoverageRequest}
+                onBufferLocate={locateBuffer}
+                onInsert={insertCp}
+                onLocate={locate}
+                onSelect={setSelected}
+              />
             )}
             {sequencesOpened && (
               <EmojiPanel
@@ -588,6 +596,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
         onLocate={locate}
         notify={notify}
         handle={editor}
+        onInspectFont={inspectBuffer}
       />
       {about && (
         <AboutDialog db={db} section={about} onSection={setAbout} onClose={() => setAbout(null)} />

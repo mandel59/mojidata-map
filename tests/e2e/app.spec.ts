@@ -125,6 +125,7 @@ test('inspects a real font, exports outlines, and keeps the font across tabs', a
   await page.getByRole('button', { name: 'フォント', exact: true }).click();
   await page.locator('input[type=file]').setInputFiles('tests/fixtures/LiberationSans-Regular.ttf');
   await expect(page.getByRole('heading', { name: 'Liberation Sans', exact: true })).toBeVisible();
+  await page.getByRole('tab', { name: '字形', exact: true }).click();
   await page.getByLabel('グリフのコードポイント').fill('0041');
   await page.getByRole('button', { name: 'グリフを表示', exact: true }).click();
   await expect(page.getByText('このフォントに収録', { exact: false })).toBeVisible();

@@ -1,47 +1,83 @@
-import { memo, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import type { Font } from 'fontkit';
-import { codeLabel, hex, isScalar, parseCodePoint, type UnicodeDatabase } from '../core/unicode';
-import { download, type LocalFont } from '../platform';
-import { CharacterCollection } from './CharacterCollection';
+import type { UnicodeDatabase } from '../core/unicode';
+import type { LocalFont } from '../platform';
+import { FontCharacters } from './fonts/FontCharacters';
+import { FontBuffer } from './fonts/FontBuffer';
+import { FontGlyph } from './fonts/FontGlyph';
+import { FontLayout } from './fonts/FontLayout';
 
-const noComposite: Record<string, string> = {};
-interface CoveragePreview {
-  points: number[];
-  title: string;
-  page: number;
-}
-
+const sections = [
+  ['characters', '収録文字'],
+  ['buffer', 'バッファ'],
+  ['glyph', '字形'],
+  ['layout', 'OpenType'],
+  ['info', '情報'],
+] as const;
+type Section = (typeof sections)[number][0];
 interface Props {
   db: UnicodeDatabase;
   cp: number;
-  notify(message: string): void;
   active: boolean;
+  buffer: string;
+  bufferRequest: number;
+  notify(message: string): void;
   onInsert(cp: number): void;
   onLocate(cp: number): void;
   onSelect(cp: number): void;
+  onBufferLocate(cp: number): void;
 }
 export const FontPanel = memo(function FontPanel({
   db,
   cp,
   notify,
   active,
+  buffer,
+  bufferRequest,
   onInsert,
   onLocate,
   onSelect,
+  onBufferLocate,
 }: Props) {
+  const id = useId();
+  const source = useRef<HTMLDivElement>(null);
+  const tabs = useRef<HTMLDivElement>(null);
+  const [section, setSection] = useState<Section>('characters');
   const [family, setFamily] = useState('serif');
   const [fonts, setFonts] = useState<Font[]>([]);
   const addedFaces = useRef<FontFace[]>([]);
   const [index, setIndex] = useState(0);
+  const [revision, setRevision] = useState(0);
   const [localFonts, setLocalFonts] = useState<LocalFont[]>([]);
   const [localIndex, setLocalIndex] = useState('');
-  const [sample, setSample] = useState('office العربية 日本語');
-  const [features, setFeatures] = useState('kern, liga');
   const [busy, setBusy] = useState(false);
-  const [glyphCode, setGlyphCode] = useState('0041');
-  const [coverageOpen, setCoverageOpen] = useState(false);
-  const [coveragePreview, setCoveragePreview] = useState<CoveragePreview | null>(null);
   const font = fonts[index];
+  useEffect(() => {
+    if (bufferRequest) setSection('buffer');
+  }, [bufferRequest]);
+  function moveTab(event: KeyboardEvent<HTMLButtonElement>, current: number) {
+    const next =
+      event.key === 'ArrowRight'
+        ? (current + 1) % sections.length
+        : event.key === 'ArrowLeft'
+          ? (current + sections.length - 1) % sections.length
+          : event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? sections.length - 1
+              : null;
+    if (
+      next === null ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey ||
+      event.nativeEvent.isComposing
+    )
+      return;
+    event.preventDefault();
+    setSection(sections[next][0]);
+    tabs.current?.querySelectorAll<HTMLButtonElement>('[role=tab]')[next]?.focus();
+  }
   async function inspect(blob: Blob, label: string) {
     if (blob.size > 64 * 1024 * 1024) {
       notify('64 MB 以下のフォントを選んでください。');
@@ -54,7 +90,7 @@ export const FontPanel = memo(function FontPanel({
       const parsed = create(Buffer.from(bytes));
       const list = 'fonts' in parsed ? parsed.fonts : [parsed];
       if (!list.length) throw new Error('フォントが含まれていません。');
-      setCoveragePreview(null);
+      setRevision((value) => value + 1);
       setFonts(list);
       setIndex(0);
       // Keep every word a valid CSS identifier, including the timestamp.
@@ -70,6 +106,7 @@ export const FontPanel = memo(function FontPanel({
           '解析は完了しました。ブラウザで表示できない形式のため、プレビューのフォントは変更していません。',
         );
       }
+      source.current?.hidePopover();
     } catch (error) {
       notify(`フォントを解析できません: ${String(error)}`);
     } finally {
@@ -89,92 +126,23 @@ export const FontPanel = memo(function FontPanel({
       notify(String(error));
     }
   }
-  const glyph = useMemo(() => {
-    try {
-      return font && isScalar(cp) ? font.glyphForCodePoint(cp) : null;
-    } catch {
-      return null;
-    }
-  }, [font, cp]);
-  const svg = useMemo(() => {
-    if (!glyph) return null;
-    try {
-      const box = glyph.bbox;
-      const padding = font.unitsPerEm * 0.08;
-      const width = Math.max(box.maxX - box.minX, font.unitsPerEm / 2) + padding * 2;
-      const height = Math.max(box.maxY - box.minY, font.unitsPerEm) + padding * 2;
-      return {
-        path: glyph.path.toSVG(),
-        viewBox: `${box.minX - padding} ${-box.maxY - padding} ${width} ${height}`,
-      };
-    } catch {
-      return null;
-    }
-  }, [font, glyph]);
-  const layout = useMemo(() => {
-    if (!font) return null;
-    try {
-      const tags = Object.fromEntries(
-        features
-          .split(/[\s,]+/)
-          .filter(Boolean)
-          .map((tag) => [tag.replace(/^-/, ''), !tag.startsWith('-')]),
-      );
-      const run = font.layout(sample.slice(0, 1000), tags);
-      return { run, error: '' };
-    } catch (error) {
-      return { run: null, error: String(error) };
-    }
-  }, [font, sample, features]);
-  const coverage = useMemo(() => {
-    if (!font) return [];
-    const points = new Set(font.characterSet);
-    return db.data.properties.Block.map(([start, end, name]) => {
-      let covered = 0;
-      for (let cp = start; cp <= end; cp++) if (points.has(cp)) covered++;
-      return { start, end, name, covered };
-    }).filter((row) => row.covered);
-  }, [db, font]);
-  function showCoverage(points: number[], title: string) {
-    const sorted = [...points].sort((a, b) => a - b);
-    setCoveragePreview({ points: sorted, title, page: 0 });
-    if (sorted.length) onSelect(sorted[0]);
-  }
-  function exportSvg() {
-    if (svg)
-      download(
-        `${hex(cp)}-glyph.svg`,
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${svg.viewBox}"><path transform="scale(1,-1)" d="${svg.path}"/></svg>`,
-        'image/svg+xml',
-      );
-  }
-  async function exportPng() {
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = canvas.height = 512;
-      const ctx = canvas.getContext('2d')!;
-      await document.fonts.load(`360px "${family.replace(/["\\]/g, '')}"`);
-      ctx.font = `360px "${family.replace(/["\\]/g, '')}"`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(String.fromCodePoint(cp), 256, 256);
-      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve));
-      if (blob) download(`${hex(cp)}-preview.png`, blob, 'image/png');
-    } catch (error) {
-      notify(String(error));
-    }
-  }
   return (
-    <section className="tool-panel">
-      <div className="tool-title">
-        <span className="eyebrow">TYPE LAB</span>
-        <h2>フォントを調べる</h2>
-        <p>
-          文字の収録範囲、グリフの輪郭、OpenType
-          の置換結果を確認します。このタブで選んだフォントはプレビューとPNG出力に使用します。
-        </p>
-      </div>
-      <div className="button-row">
+    <section className="font-workspace" hidden={!active} aria-label="フォントを調べる">
+      <header className="font-workspace-heading">
+        <div>
+          <span className="muted">解析対象のフォント</span>
+          <h2 title={font?.fullName}>{font?.fullName || 'フォントを選んでください'}</h2>
+        </div>
+        <button popoverTarget={`${id}-source`}>フォントを選ぶ</button>
+      </header>
+      <div
+        id={`${id}-source`}
+        popover="auto"
+        className="utility-popover font-source"
+        aria-label="解析対象の選択"
+        ref={source}
+      >
+        <h2>解析対象の選択</h2>
         <label className="file-button">
           フォントファイルを開く
           <input
@@ -188,294 +156,159 @@ export const FontPanel = memo(function FontPanel({
             }}
           />
         </label>
-        <button onClick={() => void enumerate()}>端末のフォントを取得</button>
-        {fonts.length > 0 && (
+        <button disabled={busy} onClick={() => void enumerate()}>
+          端末のフォントを取得
+        </button>
+        {localFonts.length > 0 && (
+          <>
+            <select
+              aria-label="端末のフォント"
+              value={localIndex}
+              disabled={busy}
+              onChange={(event) => {
+                setLocalIndex(event.target.value);
+                if (event.target.value) setFamily(localFonts[Number(event.target.value)].family);
+              }}
+            >
+              <option value="">フォントを選択…</option>
+              {localFonts.map((font, i) => (
+                <option key={`${font.postscriptName}-${i}`} value={i}>
+                  {font.fullName}
+                </option>
+              ))}
+            </select>
+            <button
+              disabled={!localIndex || busy}
+              onClick={() => {
+                const chosen = localFonts[Number(localIndex)];
+                void chosen
+                  .blob()
+                  .then((blob) => inspect(blob, chosen.fullName))
+                  .catch((error) => notify(String(error)));
+              }}
+            >
+              選択フォントを解析
+            </button>
+          </>
+        )}
+        {font && (
           <button
+            disabled={busy}
             onClick={() => {
               addedFaces.current.forEach((face) => document.fonts.delete(face));
               addedFaces.current = [];
-              setCoveragePreview(null);
               setFonts([]);
               if (family.startsWith('Mojidata Imported ')) setFamily('serif');
+              source.current?.hidePopover();
             }}
           >
             追加フォントを解除
           </button>
         )}
         {busy && <span role="status">フォントを解析中…</span>}
+        <p className="note muted">
+          読み込んだファイルは外部へ送信しません。このタブで選んだフォントは、共通の表示フォント設定を変更しません。
+        </p>
       </div>
-      {localFonts.length > 0 && (
-        <div className="button-row">
-          <select
-            aria-label="端末のフォント"
-            value={localIndex}
-            onChange={(event) => {
-              setLocalIndex(event.target.value);
-              if (event.target.value) setFamily(localFonts[Number(event.target.value)].family);
-            }}
-          >
-            <option value="">フォントを選択…</option>
-            {localFonts.map((font, i) => (
-              <option key={`${font.postscriptName}-${i}`} value={i}>
-                {font.fullName}
-              </option>
-            ))}
-          </select>
-          <button
-            disabled={!localIndex}
-            onClick={() => {
-              const chosen = localFonts[Number(localIndex)];
-              void chosen
-                .blob()
-                .then((blob) => inspect(blob, chosen.fullName))
-                .catch((error) => notify(String(error)));
-            }}
-          >
-            選択フォントを解析
-          </button>
+      {fonts.length > 1 && (
+        <div className="font-view-toolbar">
+          <label>
+            コレクションの解析対象
+            <select value={index} onChange={(event) => setIndex(Number(event.target.value))}>
+              {fonts.map((face, i) => (
+                <option value={i} key={i}>
+                  {face.fullName}
+                </option>
+              ))}
+            </select>
+          </label>
+          <small className="muted">プレビュー・PNGは先頭のフェイスで表示します。</small>
         </div>
       )}
-      <p className="muted">
-        プレビュー・PNG は OS のフォールバックを含みます。cmap の収録判定・SVG
-        は解析したフォントそのものに基づきます。読み込んだファイルは外部へ送信しません。
-      </p>
-      {font && (
-        <>
-          {fonts.length > 1 && (
-            <label>
-              コレクションの解析対象
-              <select
-                value={index}
-                onChange={(event) => {
-                  setCoveragePreview(null);
-                  setIndex(Number(event.target.value));
-                }}
-              >
-                {fonts.map((face, i) => (
-                  <option value={i} key={i}>
-                    {face.fullName}
-                  </option>
-                ))}
-              </select>
-              <small>プレビュー・PNGは先頭のフェイスで表示します。</small>
-            </label>
-          )}
-          <form
-            className="button-row"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const value = parseCodePoint(glyphCode);
-              if (value === null) notify('コードポイントを確認してください。');
-              else onSelect(value);
-            }}
+      <div className="font-tabs" role="tablist" aria-label="フォントの表示内容" ref={tabs}>
+        {sections.map(([key, label], position) => (
+          <button
+            key={key}
+            role="tab"
+            id={`${id}-${key}-tab`}
+            aria-controls={`${id}-${key}-panel`}
+            aria-selected={section === key}
+            tabIndex={section === key ? 0 : -1}
+            onClick={() => setSection(key)}
+            onKeyDown={(event) => moveTab(event, position)}
           >
-            <label>
-              グリフのコードポイント
-              <input
-                aria-label="グリフのコードポイント"
-                value={glyphCode}
-                onChange={(event) => setGlyphCode(event.target.value)}
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="font-panels" key={`${revision}-${index}`}>
+        {sections.map(([key]) => (
+          <div
+            key={key}
+            role="tabpanel"
+            id={`${id}-${key}-panel`}
+            aria-labelledby={`${id}-${key}-tab`}
+            hidden={section !== key}
+            className="font-tab-panel"
+          >
+            {!font ? (
+              <div className="empty-state">
+                <h3>{key === 'buffer' ? 'バッファの収録状況を調べる' : 'フォントを読み込む'}</h3>
+                <p>
+                  上の「フォントを選ぶ」から、ファイルを開くか端末のフォントを選択してください。
+                </p>
+              </div>
+            ) : key === 'characters' ? (
+              <FontCharacters
+                font={font}
+                family={family}
+                db={db}
+                active={active && section === key}
+                cp={cp}
+                onSelect={onSelect}
+                onInsert={onInsert}
+                onLocate={onLocate}
+                onGlyph={() => setSection('glyph')}
               />
-            </label>
-            <button>グリフを表示</button>
-          </form>
-          <div className="font-summary">
-            <div>
-              <h3>{font.fullName}</h3>
-              <dl className="property-list">
-                {Object.entries({
-                  Family: font.familyName,
-                  Style: font.subfamilyName,
-                  Version: font.version,
-                  'PostScript name': font.postscriptName,
-                  Glyphs: font.numGlyphs,
-                  'Unicode coverage': font.characterSet.length,
-                  'Units per em': font.unitsPerEm,
-                  Copyright: font.copyright,
-                }).map(([key, value]) => (
-                  <div key={key}>
-                    <dt>{key}</dt>
-                    <dd>{value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-            <div className="glyph-outline">
-              {svg && (
-                <svg viewBox={svg.viewBox} aria-label="フォントのグリフ輪郭">
-                  <path transform="scale(1,-1)" d={svg.path} fill="currentColor" />
-                </svg>
-              )}
-              <p>
-                {codeLabel(cp)} · Glyph ID {glyph?.id ?? '—'}
-                <br />
-                {font.hasGlyphForCodePoint(cp)
-                  ? 'このフォントに収録'
-                  : 'このフォントには未収録 (.notdef)'}
-              </p>
-              <div className="button-row">
-                <button disabled={!svg} onClick={exportSvg}>
-                  SVG を保存
-                </button>
-                <button disabled={!isScalar(cp)} onClick={() => void exportPng()}>
-                  PNG を保存
-                </button>
-              </div>
-            </div>
-          </div>
-          <details open>
-            <summary>OpenType レイアウト</summary>
-            <label>
-              サンプルテキスト
-              <input value={sample} onChange={(event) => setSample(event.target.value)} />
-            </label>
-            <label>
-              機能タグ（無効化は -liga のように指定）
-              <input value={features} onChange={(event) => setFeatures(event.target.value)} />
-            </label>
-            <p className="muted">利用可能: {font.availableFeatures.join(', ') || 'なし'}</p>
-            <div
-              className="font-preview"
-              style={{
-                fontFamily: family,
-                fontFeatureSettings: features
-                  .split(/[\s,]+/)
-                  .filter((tag) => /^-?[a-z0-9]{4}$/i.test(tag))
-                  .map((tag) => `"${tag.replace(/^-/, '')}" ${tag.startsWith('-') ? 0 : 1}`)
-                  .join(', '),
-              }}
-            >
-              {sample}
-            </div>
-            {layout?.error && (
-              <p role="alert" className="error">
-                {layout.error}
-              </p>
-            )}
-            {layout?.run && (
-              <>
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Glyph ID</th>
-                        <th>コードポイント</th>
-                        <th>X advance</th>
-                        <th>Y advance</th>
-                        <th>X offset</th>
-                        <th>Y offset</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {layout.run.glyphs.slice(0, 300).map((g, i) => (
-                        <tr key={i}>
-                          <td>{g.id}</td>
-                          <td>{g.codePoints.map(codeLabel).join(' ')}</td>
-                          {Object.values(layout.run!.positions[i]).map((value, j) => (
-                            <td key={j}>{value}</td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <button
-                  onClick={() =>
-                    download(
-                      'opentype-layout.json',
-                      JSON.stringify(
-                        {
-                          text: sample.slice(0, 1000),
-                          features,
-                          glyphs: layout.run!.glyphs.map((g) => g.id),
-                          positions: layout.run!.positions,
-                        },
-                        null,
-                        2,
-                      ),
-                      'application/json',
-                    )
-                  }
-                >
-                  レイアウト結果を保存
-                </button>
-              </>
-            )}
-          </details>
-          <details onToggle={(event) => setCoverageOpen(event.currentTarget.open)}>
-            <summary>ブロック別の収録範囲 ({coverage.length})</summary>
-            <div className="button-row">
-              <button
-                onClick={() => showCoverage(font.characterSet, `${font.fullName} の収録文字`)}
-              >
-                収録文字をすべて表示
-              </button>
-              {coveragePreview && (
-                <button onClick={() => setCoveragePreview(null)}>プレビューを閉じる</button>
-              )}
-            </div>
-            {active && coverageOpen && coveragePreview && (
-              <div
-                className="font-coverage-preview"
-                role="region"
-                aria-label="収録文字のプレビュー"
-              >
-                <CharacterCollection
-                  db={db}
-                  points={coveragePreview.points}
-                  page={coveragePreview.page}
-                  onPage={(page) => {
-                    setCoveragePreview({ ...coveragePreview, page });
-                    const selected = coveragePreview.points[page * 128];
-                    if (selected !== undefined) onSelect(selected);
-                  }}
-                  selected={cp}
-                  onSelect={onSelect}
-                  onInsert={onInsert}
-                  onLocate={onLocate}
-                  title={coveragePreview.title}
-                  emptyMessage="収録文字がありません。"
-                  columns={16}
-                  font={family}
-                  colorBy="none"
-                  composite={noComposite}
-                />
-              </div>
-            )}
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>ブロック</th>
-                    <th>収録コードポイント数</th>
-                    <th>操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {coverage.map((row) => (
-                    <tr key={row.start}>
-                      <td>{row.name}</td>
-                      <td>{row.covered}</td>
-                      <td>
-                        <button
-                          onClick={() =>
-                            showCoverage(
-                              font.characterSet.filter((cp) => cp >= row.start && cp <= row.end),
-                              `${font.fullName} — ${row.name} の収録文字`,
-                            )
-                          }
-                        >
-                          表示
-                        </button>
-                      </td>
-                    </tr>
+            ) : key === 'buffer' ? (
+              active &&
+              section === key && (
+                <FontBuffer font={font} db={db} text={buffer} onLocate={onBufferLocate} />
+              )
+            ) : key === 'glyph' ? (
+              <FontGlyph font={font} family={family} cp={cp} onSelect={onSelect} notify={notify} />
+            ) : key === 'layout' ? (
+              <FontLayout font={font} family={family} active={active && section === key} />
+            ) : (
+              <div className="font-section-scroll">
+                <h3>フォント情報</h3>
+                <dl className="property-list">
+                  {Object.entries({
+                    Family: font.familyName,
+                    Style: font.subfamilyName,
+                    Version: font.version,
+                    'PostScript name': font.postscriptName,
+                    Glyphs: font.numGlyphs,
+                    'Unicode coverage': font.characterSet.filter((cp) =>
+                      font.hasGlyphForCodePoint(cp),
+                    ).length,
+                    'Units per em': font.unitsPerEm,
+                    Copyright: font.copyright,
+                  }).map(([key, value]) => (
+                    <div key={key}>
+                      <dt>{key}</dt>
+                      <dd>{value}</dd>
+                    </div>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </details>
-        </>
-      )}
+                </dl>
+                <p className="note muted">
+                  収録判定とSVGは解析対象に基づきます。画面のプレビューとPNGはOSのフォールバックを含みます。
+                </p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </section>
   );
 });

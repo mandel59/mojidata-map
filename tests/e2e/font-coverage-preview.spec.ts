@@ -6,7 +6,9 @@ import { searchMethod } from './navigation';
 const fixture = 'tests/fixtures/LiberationSans-Regular.ttf';
 const parsed = create(readFileSync(fixture));
 const font = 'fonts' in parsed ? parsed.fonts[0] : parsed;
-const points = [...font.characterSet].sort((a, b) => a - b);
+const points = font.characterSet
+  .filter((cp) => font.hasGlyphForCodePoint(cp))
+  .sort((a, b) => a - b);
 
 async function fontsTab(page: Page) {
   await page.getByLabel('ツールを選択').waitFor({ state: 'attached' });
@@ -31,16 +33,10 @@ for (const width of [1024, 390]) {
     await page.getByLabel('文字を検索', { exact: true }).fill('GREEK');
     await fontsTab(page);
     await page.locator('input[type=file]').setInputFiles(fixture);
-    await page.getByText(/^ブロック別の収録範囲/).click();
-    const row = page
-      .getByRole('row')
-      .filter({ has: page.getByRole('cell', { name: 'Basic Latin', exact: true }) });
-    await row.getByRole('button', { name: '表示', exact: true }).click();
+    await page.getByLabel('収録範囲', { exact: true }).selectOption('Basic Latin');
     const preview = page.getByRole('region', { name: '収録文字のプレビュー' });
     const cells = preview.locator('.character-cell');
-    await expect(preview.getByRole('heading')).toHaveText(
-      'Liberation Sans — Basic Latin の収録文字',
-    );
+    await expect(preview.getByRole('heading')).toHaveText('Basic Latin');
     await expect(page.getByLabel('ツールを選択')).toHaveValue('fonts');
     const basic = points.filter((cp) => cp < 128);
     await expect(cells).toHaveCount(basic.length);
@@ -67,9 +63,9 @@ for (const width of [1024, 390]) {
     await expect(page.getByText(/^U\+0042 · Glyph ID /)).toBeAttached();
     await b.press('Enter');
     await expect(page.getByLabel('編集テキスト')).toHaveValue('B');
-    await page.getByRole('button', { name: '収録文字をすべて表示', exact: true }).click();
+    await page.getByLabel('収録範囲', { exact: true }).selectOption('');
     await expect(cells).toHaveCount(128);
-    await expect(preview.getByRole('heading')).toHaveText('Liberation Sans の収録文字');
+    await expect(preview.getByRole('heading')).toHaveText('すべての収録文字');
     await cells.nth(10).click();
     await cells.nth(10).press('PageDown');
     await expect(preview.locator('.pagination')).toContainText('2 /');
@@ -97,10 +93,10 @@ for (const width of [1024, 390]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
-    await page.getByText(/^ブロック別の収録範囲/).click();
+    await page.getByRole('tab', { name: '情報', exact: true }).click();
     await expect(preview).toHaveCount(0);
     await page.keyboard.press('PageDown');
-    await page.getByText(/^ブロック別の収録範囲/).click();
+    await page.getByRole('tab', { name: '収録文字', exact: true }).click();
     await expect(preview.locator('.pagination')).toContainText('2 /');
     await cells.first().click();
     await preview.getByRole('button', { name: '文字表で表示', exact: true }).click();
@@ -112,33 +108,26 @@ for (const width of [1024, 390]) {
   });
 }
 
-test('clears coverage preview on close, replacement, collection face change and removal', async ({
-  page,
-}) => {
+test('resets coverage on replacement, collection face change and removal', async ({ page }) => {
   await page.goto('/');
   await fontsTab(page);
   const input = page.locator('input[type=file]');
   await input.setInputFiles(fixture);
-  await page.getByText(/^ブロック別の収録範囲/).click();
-  const showAll = page.getByRole('button', { name: '収録文字をすべて表示', exact: true });
+  await page.getByLabel('収録範囲', { exact: true }).selectOption('Basic Latin');
   const preview = page.getByRole('region', { name: '収録文字のプレビュー' });
-  await showAll.click();
-  await page.getByRole('button', { name: 'プレビューを閉じる', exact: true }).click();
-  await expect(preview).toHaveCount(0);
-  await showAll.click();
   await input.setInputFiles('tests/fixtures/FallbackCollection.ttc');
-  await expect(preview).toHaveCount(0);
-  await showAll.click();
+  await expect(page.getByLabel('収録範囲', { exact: true })).toHaveValue('');
+  await expect(preview.locator('.character-cell')).toHaveCount(2);
   const before = await preview
     .locator('.character-cell')
     .evaluateAll((elements) => elements.map((el) => el.getAttribute('data-cp')));
   await page.getByLabel('コレクションの解析対象').selectOption('1');
-  await expect(preview).toHaveCount(0);
-  await showAll.click();
+  await expect(preview.locator('.character-cell')).toHaveCount(5);
   const after = await preview
     .locator('.character-cell')
     .evaluateAll((elements) => elements.map((el) => el.getAttribute('data-cp')));
   expect(after).not.toEqual(before);
+  await page.getByRole('button', { name: 'フォントを選ぶ', exact: true }).click();
   await page.getByRole('button', { name: '追加フォントを解除', exact: true }).click();
   await expect(preview).toHaveCount(0);
 });
