@@ -83,7 +83,7 @@ export const BlockNavigation = memo(function BlockNavigation({
         {blockOptions}
       </select>
       <button popoverTarget="block-browser" aria-label="ブロック一覧">
-        一覧
+        ブロック一覧
       </button>
       <div
         id="block-browser"
