@@ -24,7 +24,7 @@
     "test:desktop": "node tools/smoke-desktop.mjs",
     "credits:generate": "node tools/build-credits.mjs",
     "prebuild": "node tools/patch-fontkit.mjs && npm run credits:generate",
-    "predev": "npm run credits:generate",
+    "predev": "node tools/patch-fontkit.mjs && npm run credits:generate",
     "postinstall": "node tools/patch-fontkit.mjs"
   },
   "build": {
