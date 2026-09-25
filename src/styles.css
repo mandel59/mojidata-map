@@ -455,6 +455,7 @@ details[open] > summary {
 }
 .character-grid {
   display: grid;
+  isolation: isolate;
   grid-template-columns: repeat(var(--grid-columns), minmax(0, 1fr));
   gap: 1px;
   background: var(--border);
@@ -478,6 +479,10 @@ details[open] > summary {
 .character-cell:hover {
   background: var(--hover);
   z-index: 1;
+}
+/* Keep keyboard focus above adjacent cells, including the hovered cell. */
+.character-cell:focus-visible {
+  z-index: 2;
 }
 .character-cell .cell-glyph {
   font-size: var(--glyph-size);
