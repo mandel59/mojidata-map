@@ -1,7 +1,13 @@
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { codeLabel, type UnicodeDatabase } from '../core/unicode';
 import { download } from '../platform';
-export function Statistics({ db, onLocate }: { db: UnicodeDatabase; onLocate(cp: number): void }) {
+export const Statistics = memo(function Statistics({
+  db,
+  onLocate,
+}: {
+  db: UnicodeDatabase;
+  onLocate(cp: number): void;
+}) {
   const [kind, setKind] = useState('Block');
   const [filter, setFilter] = useState('');
   const rows = useMemo(() => {
@@ -109,4 +115,4 @@ export function Statistics({ db, onLocate }: { db: UnicodeDatabase; onLocate(cp:
       </div>
     </section>
   );
-}
+});

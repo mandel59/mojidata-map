@@ -81,6 +81,8 @@ Linux の GUI がない環境ではデスクトップ検証を `xvfb-run -a node
 
 ページ送りは `node tools/benchmark-pages.mjs` で計測できます。1024×600・CPU 4倍減速で通常表示、漢字、1万文字の編集バッファ、フォント読込後の4条件を比較します。ウォームアップ後20回のページ変更について、クリックから2回目の rAF までの時間、再レンダリング、セル DOM の追加・削除、追加リクエストを記録します。実画面への提示時刻そのものではありません。引数に保存済みのビルドディレクトリを渡すと、同じスクリプトで変更前の版も測れます。
 
+基本操作全体は `node tools/benchmark-operations.mjs [ビルドディレクトリ]` で計測できます。文字移動・Page Up/Down・画面切替・名前/コード/漢字/西夏文字の検索・編集・文字サイズを、1024×600、CPU 4倍減速で測ります。既定はウォームアップ2回＋20回、初回操作は別に1回です。`BENCHMARK_CPU=1` や `BENCHMARK_SAMPLES=10` で変更できます。操作開始から結果反映後の2回目の rAF までと、検索Workerの往復を別に記録します。`trial*Ms` は準備・画面復帰・自動操作も含む試行全体のCDP時間で、アプリ単独の処理時間ではありません。`BENCHMARK_PROFILE=statistics-open-warm` 等を指定すると該当試行のCPUプロファイルを `var/operations-profiles/` に保存します（通常の比較時は指定しません）。[計測結果と残る課題](docs/investigations/basic-operation-performance.md)を参照してください。
+
 ## データの再生成
 
 Unicode **18.0.0 正式版**の UCD、Unihan、Emoji データを `public/data/` に同梱しています。通常のビルド・デスクトップ版の使用時に Unicode サーバーへの接続は不要です。

@@ -152,15 +152,40 @@ export function searchCharacters(
   if (/^(?:U\+|0x|&#|\\[uU])/i.test(text) || /^[0-9a-f]{4,6}$/i.test(text))
     direct = parseCodePoint(text);
   else if ([...text].length === 1) direct = text.codePointAt(0)!;
-  const textMatches = (value: string) =>
-    words.every((word) =>
-      query.wholeWord
-        ? value
-            .toUpperCase()
-            .split(/[\s-]+/)
-            .includes(word)
-        : value.toUpperCase().includes(word),
-    );
+  const textMatches = (value: string) => {
+    const upper = value.toUpperCase();
+    const tokens = query.wholeWord ? upper.split(/[\s-]+/) : null;
+    return words.every((word) => (tokens ? tokens.includes(word) : upper.includes(word)));
+  };
+  // The name table is already an index. Only expand algorithmic names, whose
+  // hexadecimal suffix can itself be searched. Keep the full scan for synthetic
+  // names (unassigned, private use, etc.), which are absent from that table.
+  if (
+    candidates === undefined &&
+    direct === null &&
+    words.length &&
+    !['<unassigned>', '<private-use>', '<surrogate>', '<noncharacter>'].some(textMatches)
+  ) {
+    const named = new Set<number>();
+    for (const [start, end, name] of db.data.names) {
+      if (name.includes('*')) {
+        for (let cp = start; cp <= end; cp++)
+          if (textMatches(name.replace('*', hex(cp)))) named.add(cp);
+      } else if (textMatches(name)) {
+        for (let cp = start; cp <= end; cp++) named.add(cp);
+      }
+    }
+    for (const [code, aliases] of Object.entries(db.data.aliases)) {
+      // Control aliases also supply db.name(), even with alias search disabled.
+      if (
+        aliases.some(
+          ([alias, type]) => (query.aliases !== false || type === 'control') && textMatches(alias),
+        )
+      )
+        named.add(parseInt(code, 16));
+    }
+    candidates = [...named].sort((a, b) => a - b);
+  }
   const result: number[] = [];
   const begin = direct ?? (query.plane ? Number(query.plane) * 0x10000 : 0);
   const end = direct ?? (query.plane ? begin + 0xffff : MAX_CP);

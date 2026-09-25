@@ -62,6 +62,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
   const [plane, setPlane] = useState(initial >>> 16);
   const [pageStart, setPageStart] = useState(initial - (initial % PAGE_SIZE));
   const [sequencesOpened, setSequencesOpened] = useState(false);
+  const [statisticsOpened, setStatisticsOpened] = useState(false);
   const [selectedEmoji, setSelectedEmoji] = useState<Emoji | null>(null);
   const [focusRequest, setFocusRequest] = useState(0);
   const searchCharacters = useSearchWorker();
@@ -197,6 +198,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
   const changeTab = useCallback((next: Tab) => {
     if (next === 'fonts') setFontOpened(true);
     if (next === 'sequences') setSequencesOpened(true);
+    if (next === 'statistics') setStatisticsOpened(true);
     setTab(next);
   }, []);
   const showResults = useCallback(
@@ -462,7 +464,11 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                 />
               </div>
             )}
-            {tab === 'statistics' && <Statistics db={db} onLocate={locate} />}
+            {statisticsOpened && (
+              <div className="tool-scroll" hidden={tab !== 'statistics'}>
+                <Statistics db={db} onLocate={locate} />
+              </div>
+            )}
             <SearchWorkspace
               active={tab === 'search'}
               search={search}
