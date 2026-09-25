@@ -3,6 +3,7 @@ import { isCodePoint } from './core/unicode';
 
 export interface Preferences {
   font: string;
+  localFontFallback: boolean;
   size: number;
   bookmarks: number[];
   buffer: string;
@@ -12,6 +13,7 @@ export interface Preferences {
 }
 const defaults: Preferences = {
   font: 'serif',
+  localFontFallback: false,
   size: 30,
   bookmarks: [],
   buffer: '',
@@ -29,6 +31,7 @@ export function readPreferences(): Preferences {
         typeof saved.font === 'string' && !saved.font.startsWith('Mojidata Imported ')
           ? saved.font.slice(0, 300)
           : defaults.font,
+      localFontFallback: saved.localFontFallback === true,
       size: Number.isFinite(saved.size) ? Math.max(16, Math.min(64, saved.size)) : defaults.size,
       bookmarks: Array.isArray(saved.bookmarks)
         ? [...new Set<number>(saved.bookmarks.filter(isCodePoint))].slice(0, 1000)

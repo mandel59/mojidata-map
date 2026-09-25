@@ -15,6 +15,7 @@ import { CharacterGrid } from './components/CharacterGrid';
 import { CharacterDetails } from './components/CharacterDetails';
 import { Editor, type EditorHandle } from './components/Editor';
 import { usePreferences } from './preferences';
+import { FontFallbackStyle, FallbackFontSettings, useFontFallback } from './useFontFallback';
 import { type AboutSection } from './platform';
 import { UtilityDialog } from './components/UtilityDialog';
 import { useMediaQuery } from './useMediaQuery';
@@ -45,6 +46,11 @@ const planeNames: Record<number, string> = {
 
 export default function App({ db }: { db: UnicodeDatabase }) {
   const { preferences: prefs, update, storageError } = usePreferences();
+  const setFontFallback = useCallback(
+    (value: boolean) => update({ localFontFallback: value }),
+    [update],
+  );
+  const fontFallback = useFontFallback(prefs.localFontFallback, setFontFallback);
   const compact = useMediaQuery('(max-width: 700px)');
   const columns = useMediaQuery('(max-width: 600px)') ? 8 : 16;
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -243,7 +249,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
     menuButton.current?.focus();
     action();
   }
-  return (
+  const content = (
     <div className="app-shell">
       <header className="app-header">
         <h1>
@@ -388,6 +394,11 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                   onChange={(event) => update({ font: event.target.value })}
                 />
               </label>
+              <FallbackFontSettings
+                fallback={fontFallback}
+                enabled={prefs.localFontFallback}
+                onEnabled={setFontFallback}
+              />
               <BlockFontSettings
                 db={db}
                 composite={prefs.composite}
@@ -579,4 +590,5 @@ export default function App({ db }: { db: UnicodeDatabase }) {
       </div>
     </div>
   );
+  return <FontFallbackStyle value={fontFallback.style}>{content}</FontFallbackStyle>;
 }

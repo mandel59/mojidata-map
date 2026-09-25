@@ -1,3 +1,4 @@
+import { useFontStyle } from '../useFontFallback';
 import { memo, useEffect, useRef, type KeyboardEvent } from 'react';
 import { CharacterGridSurface } from './CharacterDisplay';
 import { codeLabel, hex, isCodePoint, type UnicodeDatabase } from '../core/unicode';
@@ -30,6 +31,7 @@ export const CharacterGrid = memo(function CharacterGrid({
   composite,
   onMove,
 }: Props) {
+  const fontStyle = useFontStyle();
   const container = useRef<HTMLDivElement>(null);
   const focusAfterMove = useRef(false);
   useEffect(() => {
@@ -88,7 +90,7 @@ export const CharacterGrid = memo(function CharacterGrid({
             onDoubleClick={() => onInsert(cp)}
             onKeyDown={(event) => handleKey(event, index)}
           >
-            <span className="cell-glyph" style={{ fontFamily }} dir="ltr">
+            <span className="cell-glyph" style={fontStyle(fontFamily)} dir="ltr">
               {db.glyph(cp)}
             </span>
             <span className="cell-code">{hex(cp)}</span>

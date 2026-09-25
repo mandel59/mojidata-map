@@ -1,3 +1,4 @@
+import { useFontStyle } from '../useFontFallback';
 import { memo, useMemo, useEffect, useState } from 'react';
 import { UtilityDialog } from './UtilityDialog';
 import { codeLabel, hex, isScalar, type UnicodeDatabase } from '../core/unicode';
@@ -28,6 +29,7 @@ export const CharacterDetails = memo(function CharacterDetails({
   onLocate,
   notify,
 }: Props) {
+  const fontStyle = useFontStyle();
   const [open, setOpen] = useState(false);
   useEffect(() => {
     if (!compact) setOpen(false);
@@ -102,7 +104,7 @@ export const CharacterDetails = memo(function CharacterDetails({
           {bookmarked ? '★' : '☆'}
         </button>
       </div>
-      <div className="large-glyph" style={{ fontFamily: font }} dir="ltr">
+      <div className="large-glyph" style={fontStyle(font)} dir="ltr">
         {db.glyph(cp)}
       </div>
       <h2 className="character-name">{db.name(cp)}</h2>
@@ -153,7 +155,7 @@ export const CharacterDetails = memo(function CharacterDetails({
               key={cps.join('-')}
               onClick={() => onInsert(String.fromCodePoint(...cps))}
             >
-              <span style={{ fontFamily: font }}>{String.fromCodePoint(...cps)}</span>
+              <span style={fontStyle(font)}>{String.fromCodePoint(...cps)}</span>
               <small>
                 {cps.map(codeLabel).join(' ')}
                 <br />
@@ -179,7 +181,7 @@ export const CharacterDetails = memo(function CharacterDetails({
                 onLocate(target);
               }}
             >
-              <span style={{ fontFamily: font }}>{String.fromCodePoint(target)}</span>
+              <span style={fontStyle(font)}>{String.fromCodePoint(target)}</span>
               <small>
                 {codeLabel(target)}
                 <br />
@@ -259,7 +261,7 @@ export const CharacterDetails = memo(function CharacterDetails({
   return (
     <>
       <aside className="detail-strip" aria-label="選択中の文字">
-        <span className="strip-glyph" style={{ fontFamily: font }} dir="ltr">
+        <span className="strip-glyph" style={fontStyle(font)} dir="ltr">
           {db.glyph(cp)}
         </span>
         <div>

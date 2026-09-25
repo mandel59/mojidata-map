@@ -50,6 +50,14 @@ try {
   if (await page.evaluate(() => typeof window.queryLocalFonts === 'function')) {
     await page.getByRole('button', { name: '端末のフォントを取得', exact: true }).click();
     await expect(page.getByLabel('端末のフォント', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '文字マップ', exact: true }).click();
+    await page.getByRole('button', { name: '表示設定', exact: true }).click();
+    await page.getByRole('button', { name: '補完用フォントを取得', exact: true }).click();
+    await expect(page.getByLabel('端末フォントで欠字を補完', { exact: true })).toBeChecked({
+      timeout: 60_000,
+    });
+    await expect(page.getByLabel('編集テキスト')).toHaveCSS('font-family', /Mojidata Fallback/);
+    await page.keyboard.press('Escape');
   }
   await app.evaluate(({ Menu }) => Menu.getApplicationMenu().getMenuItemById('about-app').click());
   const about = page.getByRole('dialog', { name: 'アプリ情報', exact: true });
@@ -83,7 +91,7 @@ try {
   await page.keyboard.press('Escape');
   expect(errors).toEqual([]);
   console.log(
-    'Desktop smoke passed: custom protocol, worker, buffer, clipboard, isolation, always-on-top, About, credits, external-link validation.',
+    'Desktop smoke passed: custom protocol, worker, buffer, clipboard, isolation, always-on-top, About, credits, external-link validation, local font fallback.',
   );
 } finally {
   if (app) await app.close();

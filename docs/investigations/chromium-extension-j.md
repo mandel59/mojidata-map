@@ -94,7 +94,7 @@ Chromium 公開トラッカーで `323B0` と `"Extension J"` を検索し、い
 
 公開ページの確認結果は `var/chromium-ext-j/*-page.txt`、関連 CL のメタデータは `cl-7558955.json` に保存。issue の投稿やコメントは行っていない。
 
-## 現時点の回避方法
+## 初回調査時の回避方法
 
 2025-09-12 版の Jigmo3 がインストールされている場合、表示設定の「ブロックごとのフォント設定」で **CJK Unified Ideographs Extension J に `Jigmo3` を指定**する。全体のフォントを `Jigmo3, serif` にする方法も確認した。
 
@@ -102,7 +102,7 @@ Chromium 公開トラッカーで `323B0` と `"Extension J"` を検索し、い
 
 [Jigmo の公式配布元](https://kamichikoichi.github.io/jigmo/)は、拡張 J を Jigmo3 が収録することを明記している。[Unicode 17.0 のブロック一覧](https://unicode.org/versions/Unicode17.0.0/core-spec/chapter-18/)では拡張 J は U+323B0–U+3347F。
 
-今回の変更は調査記録のみ。アプリのフォント設定・配信資産・配布 ZIP は変更していない。検証用ファイルは `var/chromium-ext-j/`（バージョン管理外）に保存した。
+初回調査では調査記録のみを変更し、アプリのフォント設定・配信資産・配布 ZIP は変更していない。検証用ファイルは `var/chromium-ext-j/`（バージョン管理外）に保存した。
 
 - `probe.html` / `edge-windows.png`: 比較ページと Windows の画面。
 - `edge-windows.json`: Canvas の比較結果。
@@ -110,3 +110,21 @@ Chromium 公開トラッカーで `323B0` と `"Extension J"` を検索し、い
 - `edge-cache.json`: フォント機能・サイズ・文字数によるキャッシュの対照実験。
 - `windows-font-coverage.json`: インストール済みフォントの実収録確認。
 - `app-chromium.json`: アプリの DOM と対応フォント適用前後の実使用フォント。
+
+
+## アプリ側の修正
+
+2026-09-25、拡張 J に限定しない端末フォント補完を実装した。「表示設定」→「補完用フォントを取得」で有効化する。ブラウザーでは Local Font Access の許可が必要。有効化を保存し、次回起動時は許可が維持されていれば再取得する。
+
+- 端末フォントを列挙し、Worker 内で fontkit により cmap と OpenType の機能タグを解析する。グリフ ID 0 を除外し、U+0000–U+10FFFF のスカラー値を対象にする。
+- Regular 等を先に、PostScript 名順で候補を選ぶ。既に補完可能なコードポイントを除き、`unicode-range` を重複させず一つの合成ファミリーを構築する。フォントの取得・解析は直列、補完範囲を増やすフェイスだけを保持する。
+- 通常のフォントは読み取ったバイト列を FontFace に渡す。TTC 等は収録情報を対象フェイスの PostScript 名で調べ、描画も `local()` で対象フェイスを指定する。先頭フェイスの字形と別フェイスの cmap を取り違えない。
+- 指定フォントとブロック別フォントを先に試し、その後に合成ファミリーを使う。文字表・検索結果・ブックマーク・詳細・編集欄に適用する。文字列そのものを置換・分割せず、フォント解析タブのプレビューには適用しない。
+- 欠字キャッシュの共有を避けるため、解析したフォントに存在しない OpenType 機能タグを選び、フォント指定と補完ファミリーの世代ごとに異なる値を設定する。GSUB/GPOS の全 FeatureList も確認し、特定スクリプト専用のタグとの衝突を避ける。カーニングや合字を無効にする対策は使わない。
+- 権限拒否・中止・再試行に対応。読めないフォントと 64 MB 超のファイルは除外件数を表示する。対応フォントが端末にない文字には字形を用意できない。単一コードポイントの cmap を使うため、異体字列や複雑な書記体系で最適な候補を選ぶ機能とは区別する。
+
+同じ Windows / Edge 153.0.4234.48 で、335 フォントを確認し、44 フォントを補完に使用した。除外は 0。U+323B0 の文字表と詳細は、補完前の Yu Mincho の欠字から Jigmo3 の実グリフへ変わり、無効化・再有効化でも切り替わった。編集欄の字形はスクリーンショットで目視確認した（textarea 自体への `CSS.getPlatformFontsForNode` は空配列を返す）。端末フォントは追加インストールしていない。
+
+検証: ビルド、単体 33 件、E2E 57 件、Linux Electron のデスクトップ smoke が成功。合成テストフォントにより、拡張 J 以外のスクリプト、補助私用面、重複収録、コレクションの非先頭フェイス、指定フォント優先、取得拒否、中止、再読み込み、フォント解析タブとの分離を確認。Windows の実測と画面は `var/chromium-ext-j/app-fallback-windows.json` / `app-fallback-windows.png`、再現用スクリプトは `verify-app-fallback.mjs` に保存した。
+
+実装時の参照: [CSS Fonts の合成フォントと文字範囲](https://drafts.csswg.org/css-fonts/#composite-fonts)、[Local Font Access](https://wicg.github.io/local-font-access/)、[OpenType のフォントコレクション](https://learn.microsoft.com/en-us/typography/opentype/spec/otff#collections)。

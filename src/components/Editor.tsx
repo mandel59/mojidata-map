@@ -1,3 +1,4 @@
+import { useFontStyle } from '../useFontFallback';
 import { memo, useMemo, useRef, useState, type RefObject } from 'react';
 import {
   encodeText,
@@ -31,6 +32,7 @@ export const Editor = memo(function Editor({
   notify,
   handle,
 }: Props) {
+  const fontStyle = useFontStyle();
   const textarea = useRef<HTMLTextAreaElement>(null);
   const [format, setFormat] = useState<OutputFormat>('text');
   const [direction, setDirection] = useState<'auto' | 'ltr' | 'rtl'>('auto');
@@ -94,7 +96,7 @@ export const Editor = memo(function Editor({
           placeholder="文字を追加、または貼り付け"
           value={text}
           dir={direction}
-          style={{ fontFamily: font }}
+          style={fontStyle(font)}
           onChange={(event) => change(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === 'F2') {
@@ -243,7 +245,7 @@ export const Editor = memo(function Editor({
                 title={db.name(char.codePointAt(0)!)}
                 onClick={() => onLocate(char.codePointAt(0)!)}
               >
-                <span style={{ fontFamily: font }}>{db.glyph(char.codePointAt(0)!)}</span>
+                <span style={fontStyle(font)}>{db.glyph(char.codePointAt(0)!)}</span>
                 <small>{codeLabel(char.codePointAt(0)!)}</small>
               </button>
             ))}
