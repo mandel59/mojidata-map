@@ -4,6 +4,7 @@ import type { Emoji } from '../../src/data';
 import { searchMethod } from './navigation';
 
 const all: Emoji[] = JSON.parse(readFileSync('public/data/emoji.json', 'utf8'));
+const pageSize = 64;
 const flags = all.filter((emoji) => emoji.group === 'Flags');
 
 for (const width of [1024, 390]) {
@@ -17,7 +18,7 @@ for (const width of [1024, 390]) {
     const mapBox = (await mapCell.boundingBox())!;
     await searchMethod(page, 'emoji');
     const cells = page.locator('.emoji-grid button');
-    await expect(cells).toHaveCount(120);
+    await expect(cells).toHaveCount(pageSize);
     await expect
       .poll(async () => (await cells.first().boundingBox())!.width)
       .toBeCloseTo(mapBox.width, 1);
@@ -61,18 +62,19 @@ for (const width of [1024, 390]) {
     await page.goto('/');
     await searchMethod(page, 'emoji');
     const cells = page.locator('.emoji-grid button');
-    await expect(cells).toHaveCount(120);
+    await expect(cells).toHaveCount(pageSize);
+    await expect(page.locator('.emoji-workspace .pagination')).toContainText('1 / 62');
     const first = await cells.first().elementHandle();
     await page.getByRole('button', { name: '次のページ', exact: true }).click();
-    await expect(cells.first()).toHaveAttribute('aria-label', all[120].name);
+    await expect(cells.first()).toHaveAttribute('aria-label', all[pageSize].name);
     expect(await cells.first().evaluate((cell, original) => cell === original, first)).toBe(true);
     await expect(cells.first().locator('.cell-glyph')).toHaveText(
-      String.fromCodePoint(...all[120].cps),
+      String.fromCodePoint(...all[pageSize].cps),
     );
-    await expect(cells.first()).toHaveAttribute('title', /^grinning cat\nU\+1F63A$/);
+    await expect(cells.first()).toHaveAttribute('title', /^sneezing face\nU\+1F927$/);
     await cells.first().dblclick();
     await expect(page.getByLabel('編集テキスト')).toHaveValue(
-      String.fromCodePoint(...all[120].cps),
+      String.fromCodePoint(...all[pageSize].cps),
     );
     await page.getByLabel('編集テキスト').fill('');
 
@@ -80,33 +82,37 @@ for (const width of [1024, 390]) {
     await page.getByRole('combobox', { name: 'グループ', exact: true }).selectOption('Flags');
     await expect(cells.first()).toHaveAttribute('aria-label', flags[0].name);
     expect(await cells.first().evaluate((cell, original) => cell === original, first)).toBe(true);
-    await cells.nth(119).click();
-    await cells.nth(119).press('PageDown');
-    await expect(cells.nth(119)).toHaveAttribute('aria-label', flags[239].name);
-    await expect(cells.nth(119)).toHaveAttribute('aria-pressed', 'true');
-    await expect(cells.nth(119)).toBeFocused();
-    await cells.nth(119).press('PageDown');
-    await expect(cells).toHaveCount(flags.length - 240);
-    await expect(cells.last()).toHaveAttribute('aria-label', flags.at(-1)!.name);
-    await expect(cells.last()).toHaveAttribute('aria-pressed', 'true');
-    await expect(cells.last()).toBeFocused();
-    await expect(cells.last()).toBeInViewport();
+    await expect(page.locator('.emoji-workspace .pagination')).toContainText('1 / 5');
+    await cells.last().click();
+    for (let targetPage = 1; targetPage < Math.ceil(flags.length / pageSize); targetPage++) {
+      await cells.last().press('PageDown');
+      await expect(cells).toHaveCount(Math.min(pageSize, flags.length - targetPage * pageSize));
+      await expect(cells.last()).toHaveAttribute(
+        'aria-label',
+        flags[Math.min((targetPage + 1) * pageSize, flags.length) - 1].name,
+      );
+      await expect(cells.last()).toHaveAttribute('aria-pressed', 'true');
+      await expect(cells.last()).toBeFocused();
+      await expect(cells.last()).toBeInViewport();
+    }
+    await expect(cells).toHaveCount(14);
+    await expect(page.getByRole('button', { name: '次のページ', exact: true })).toBeDisabled();
     await cells.last().dblclick();
     // Subdivision flags contain invisible tag characters; preserve the entire sequence.
     await expect(page.getByLabel('編集テキスト')).toHaveValue(
       String.fromCodePoint(...flags.at(-1)!.cps),
     );
     await cells.last().press('PageUp');
-    await expect(cells).toHaveCount(120);
-    const returned = cells.nth(flags.length - 241);
+    await expect(cells).toHaveCount(pageSize);
+    const returned = cells.nth((flags.length - 1) % pageSize);
     await expect(returned).toHaveAttribute('aria-pressed', 'true');
     await expect(returned).toBeFocused();
-    await expect(returned).toHaveAttribute('aria-label', flags[flags.length - 121].name);
+    await expect(returned).toHaveAttribute('aria-label', flags[flags.length - pageSize - 1].name);
 
     await page.getByRole('textbox', { name: '英語の名前', exact: true }).fill('no such emoji xyz');
     await expect(cells).toHaveCount(0);
     await page.getByRole('textbox', { name: '英語の名前', exact: true }).fill('');
-    await expect(cells).toHaveCount(120);
+    await expect(cells).toHaveCount(pageSize);
     await expect(cells.first()).toHaveAttribute('aria-label', flags[0].name);
   });
 }

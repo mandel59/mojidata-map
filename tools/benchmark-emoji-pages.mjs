@@ -14,7 +14,8 @@ export async function benchmarkEmojiPages(page, { cpuThrottle = 4, samples = 20 
     const tab = page.getByRole('button', { name: '絵文字検索', exact: true });
     if (await tab.isVisible()) await tab.click();
     else await page.getByLabel('ツールを選択').selectOption('sequences');
-    await expect(page.locator('.emoji-grid button')).toHaveCount(120);
+    await expect(page.locator('.emoji-grid button').first()).toBeVisible();
+    const pageSize = await page.locator('.emoji-grid button').count();
     for (const group of width === 1024 ? ['', 'People & Body'] : ['']) {
       await page.getByRole('combobox', { name: 'グループ', exact: true }).selectOption(group);
       // Start in the longer, multi-code-point sequences for the second group.
@@ -111,6 +112,7 @@ export async function benchmarkEmojiPages(page, { cpuThrottle = 4, samples = 20 
         page.off('request', requested);
         const result = {
           scenario,
+          pageSize,
           cpuThrottle,
           samples,
           ...frame,

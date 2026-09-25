@@ -3,6 +3,8 @@ import { loadData, type Emoji } from '../data';
 import { codeLabel } from '../core/unicode';
 import { usePageKeys } from '../usePageKeys';
 import { CharacterGridSurface } from './CharacterDisplay';
+const PAGE_SIZE = 64;
+
 interface Props {
   active: boolean;
   version: string;
@@ -58,17 +60,20 @@ export const EmojiPanel = memo(function EmojiPanel({
     [all, group, query],
   );
   const groups = useMemo(() => [...new Set(all.map((emoji) => emoji.group))], [all]);
-  const visible = useMemo(() => matches.slice(page * 120, (page + 1) * 120), [matches, page]);
+  const visible = useMemo(
+    () => matches.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE),
+    [matches, page],
+  );
   const selectedKey = selected?.cps.join('-');
   usePageKeys(active && matches.length > 0, (direction) => {
     const next = page + direction;
-    if (next < 0 || next * 120 >= matches.length) return;
+    if (next < 0 || next * PAGE_SIZE >= matches.length) return;
     const offset = Math.max(
       0,
       visible.findIndex((emoji) => emoji.cps.join('-') === selectedKey),
     );
     setPage(next);
-    onSelect(matches[Math.min(next * 120 + offset, matches.length - 1)]);
+    onSelect(matches[Math.min(next * PAGE_SIZE + offset, matches.length - 1)]);
   });
   return (
     <section className="emoji-workspace" aria-label="絵文字検索" hidden={!active} ref={container}>
@@ -145,11 +150,11 @@ export const EmojiPanel = memo(function EmojiPanel({
             ←
           </button>
           <span>
-            {page + 1} / {Math.max(1, Math.ceil(matches.length / 120))}
+            {page + 1} / {Math.max(1, Math.ceil(matches.length / PAGE_SIZE))}
           </span>
           <button
             aria-label="次のページ"
-            disabled={(page + 1) * 120 >= matches.length}
+            disabled={(page + 1) * PAGE_SIZE >= matches.length}
             onClick={() => setPage(page + 1)}
           >
             →

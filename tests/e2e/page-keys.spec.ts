@@ -92,7 +92,7 @@ test('pages emoji sequences and ignores the retained view when another tool is a
   await page.goto('/');
   await searchMethod(page, 'emoji');
   const emojis = page.locator('.emoji-grid button');
-  await expect(emojis).toHaveCount(120);
+  await expect(emojis).toHaveCount(64);
   const firstName = await emojis.nth(30).getAttribute('aria-label');
   await emojis.nth(30).click();
   await emojis.nth(30).press('PageDown');
