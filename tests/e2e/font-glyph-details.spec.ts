@@ -201,3 +201,34 @@ test('keeps a fixed baseline and scale for glyph details and sample rows', async
     expect(position.scale).toBeCloseTo(positions[0].scale, 6);
   }
 });
+
+test('uses the same pixels per em across fonts in details and samples', async ({ page }) => {
+  await page.goto('/?cp=0041');
+  await page.getByRole('button', { name: 'フォント', exact: true }).click();
+  const frames: { detail: number; sample: number; baseline: number }[] = [];
+  for (const file of ['FallbackBase.ttf', 'LiberationSans-Regular.ttf']) {
+    const font = create(readFileSync(`tests/fixtures/${file}`));
+    if ('fonts' in font) throw new Error('Expected one font');
+    await page.locator('input[type=file]').setInputFiles(`tests/fixtures/${file}`);
+    await page.getByRole('tab', { name: '収録文字', exact: true }).click();
+    const svg = page.getByRole('img', { name: 'フォントのグリフ輪郭', exact: true });
+    await expect(svg).toBeVisible();
+    const detail = await svg.evaluate(
+      (el: SVGSVGElement, em) => el.getScreenCTM()!.a * em,
+      font.unitsPerEm,
+    );
+    await page.getByRole('tab', { name: 'サンプル', exact: true }).click();
+    await page.getByLabel('サンプルテキスト', { exact: true }).fill('A');
+    const sample = await page.locator('.sample-glyph-table .layout-glyph').evaluate(
+      (el: SVGSVGElement, em) => ({
+        sample: el.getScreenCTM()!.a * em,
+        baseline: el.getScreenCTM()!.f - el.getBoundingClientRect().y,
+      }),
+      font.unitsPerEm,
+    );
+    frames.push({ detail, ...sample });
+  }
+  expect(frames[0].detail).toBeCloseTo(frames[1].detail, 4);
+  expect(frames[0].sample).toBeCloseTo(frames[1].sample, 4);
+  expect(frames[0].baseline).toBeCloseTo(frames[1].baseline, 4);
+});

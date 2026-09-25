@@ -1,31 +1,16 @@
 import type { Font, Glyph } from 'fontkit';
 
-// Use one font-wide coordinate frame so accents, descenders and narrow glyphs
-// retain their scale and baseline when selection changes. Include the font's
-// global outline bounds to avoid clipping overhangs or accents outside hhea.
+// Keep pixels per em and the baseline identical across fonts. Global font
+// bounds may include oversized symbols and must not shrink unrelated glyphs.
+// The fixed viewport has room above/below the em; exceptional outlines can clip.
 export function glyphFrame(font: Font, glyph: Glyph) {
   const em = font.unitsPerEm;
   if (!Number.isFinite(em) || em <= 0) throw new Error('Invalid units per em');
-  const bounds = font.bbox;
-  const finite = (value: number, fallback: number) => (Number.isFinite(value) ? value : fallback);
-  const ascent = Math.max(0, finite(font.ascent, em * 0.8));
-  const descent = Math.min(0, finite(font.descent, -em * 0.2));
-  const padding = em * 0.08;
-  const fontLeft = Math.min(0, finite(bounds.minX, 0)) - padding;
-  const right = Math.max(em, finite(bounds.maxX, em)) + padding;
-  const top = -Math.max(ascent, finite(bounds.maxY, ascent)) - padding;
-  const bottom = -Math.min(descent, finite(bounds.minY, descent)) + padding;
-  const width = right - fontLeft;
-  // Center the logical advance, not the origin or the ink. Clamp only when
-  // an exceptional overhang would otherwise be clipped by the shared frame.
-  const advance = finite(glyph.advanceWidth, em);
-  const ink = glyph.bbox;
-  const idealLeft = (advance - width) / 2;
-  const left = Math.min(
-    finite(ink.minX, 0) - padding,
-    Math.max(finite(ink.maxX, advance) + padding - width, idealLeft),
-  );
-  const height = Math.max(bottom - top, em);
+  const width = em * 1.5;
+  const height = em * 1.5;
+  const top = -em * 1.15;
+  const advance = Number.isFinite(glyph.advanceWidth) ? glyph.advanceWidth : em;
+  const left = (advance - width) / 2;
   return { left, top, width, height, viewBox: `${left} ${top} ${width} ${height}` };
 }
 
