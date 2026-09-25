@@ -62,7 +62,7 @@ test('keeps file import, local font selection and removal inside the font tab', 
   await expect(preview).not.toHaveCSS('font-family', originalFamily);
   await expect(preview).toHaveCSS('font-family', /Mojidata Imported/);
   const importedFamily = await preview.evaluate((el) => getComputedStyle(el).fontFamily);
-  await page.getByRole('tab', { name: '字形', exact: true }).click();
+  await page.getByRole('tab', { name: '収録文字', exact: true }).click();
   const png = page.waitForEvent('download');
   await page.getByRole('button', { name: 'PNG を保存', exact: true }).click();
   expect((await png).suggestedFilename()).toBe('0041-preview.png');

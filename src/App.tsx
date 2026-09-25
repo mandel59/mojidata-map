@@ -447,6 +447,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                 cp={tab === 'fonts' ? selected : 0}
                 notify={notify}
                 active={tab === 'fonts'}
+                compact={compact}
                 buffer={prefs.buffer}
                 bufferRequest={bufferCoverageRequest}
                 onInsert={insertCp}

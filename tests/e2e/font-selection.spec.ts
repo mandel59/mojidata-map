@@ -188,7 +188,7 @@ test('preserves the committed font on parse failure and explicitly marks unavail
     page.getByText('このフェイスはブラウザで表示できません。', { exact: false }),
   ).toBeVisible();
   await expect.poll(() => registered(page)).toBe(0);
-  await page.getByRole('tab', { name: '字形', exact: true }).click();
+  await page.getByRole('tab', { name: '収録文字', exact: true }).click();
   await expect(page.getByRole('button', { name: 'PNG を保存', exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'SVG を保存', exact: true })).toBeEnabled();
 });

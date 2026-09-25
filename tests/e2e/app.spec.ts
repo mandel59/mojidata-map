@@ -125,7 +125,7 @@ test('inspects a real font, exports outlines, and keeps the font across tabs', a
   await page.getByRole('button', { name: 'フォント', exact: true }).click();
   await page.locator('input[type=file]').setInputFiles('tests/fixtures/LiberationSans-Regular.ttf');
   await expect(page.getByRole('heading', { name: 'Liberation Sans', exact: true })).toBeVisible();
-  await page.getByRole('tab', { name: '字形', exact: true }).click();
+  await page.getByRole('tab', { name: '収録文字', exact: true }).click();
   await page.getByLabel('グリフのコードポイント').fill('0041');
   await page.getByRole('button', { name: 'グリフを表示', exact: true }).click();
   await expect(page.getByText('このフォントに収録', { exact: false })).toBeVisible();
@@ -134,7 +134,7 @@ test('inspects a real font, exports outlines, and keeps the font across tabs', a
   const stream = await (await pending).createReadStream();
   const chunks: Buffer[] = [];
   for await (const chunk of stream!) chunks.push(chunk);
-  expect(Buffer.concat(chunks).toString()).toContain('<path transform="scale(1,-1)" d="M');
+  expect(Buffer.concat(chunks).toString()).toContain('<g transform="scale(1,-1)"><path d="M');
   await page.getByRole('button', { name: '文字マップ', exact: true }).click();
   await page.getByRole('button', { name: '次のページ', exact: true }).click();
   await expect(page.locator('.character-cell.selected')).toHaveAttribute('data-cp', String(0x3080));

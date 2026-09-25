@@ -827,19 +827,6 @@ details[open] > summary {
 .file-button:focus-within {
   outline: 2px solid var(--accent);
 }
-.glyph-outline {
-  text-align: center;
-}
-.glyph-outline svg {
-  width: 170px;
-  height: 180px;
-  max-width: 100%;
-  background: var(--sidebar);
-}
-.glyph-outline p {
-  margin: 7px 0;
-  font-size: 11px;
-}
 .table-scroll {
   overflow: auto;
   max-height: 500px;
@@ -1596,23 +1583,7 @@ td button {
 .font-section-scroll .property-list {
   max-width: 800px;
 }
-.font-glyph-view {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(180px, 1fr);
-  align-content: start;
-  gap: 16px;
-}
-.font-glyph-view > .button-row {
-  align-content: start;
-  align-items: end;
-}
-.font-glyph-view > .note {
-  grid-column: 1 / -1;
-}
 @media (max-width: 600px) {
-  .font-glyph-view {
-    grid-template-columns: 1fr;
-  }
   .font-view-toolbar {
     flex-wrap: wrap;
   }
@@ -1742,4 +1713,122 @@ td button {
   .sample-input {
     height: 68px;
   }
+}
+
+.font-characters-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 244px;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+.font-characters-content > .details-panel {
+  min-width: 0;
+}
+.font-codepoint-jump {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.font-codepoint-jump input {
+  width: 78px;
+  font-family: Consolas, monospace;
+}
+.font-codepoint-jump button {
+  font-size: 11px;
+  padding: 4px 7px;
+}
+.glyph-detail-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 112px;
+  margin: 4px 0;
+}
+.glyph-detail-preview svg {
+  width: 100%;
+  height: 100%;
+}
+.glyph-strip-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+.glyph-strip-preview svg {
+  width: 32px;
+  height: 32px;
+}
+.glyph-strip-preview .muted {
+  font-size: 9px;
+}
+@media (min-width: 1600px) {
+  .font-characters-content {
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+}
+@media (min-width: 701px) and (max-width: 900px) {
+  .font-characters-content {
+    grid-template-columns: minmax(0, 1fr) 210px;
+  }
+}
+@media (max-width: 700px) {
+  .font-characters-content {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .font-characters-view > .font-view-toolbar {
+    flex-wrap: wrap;
+  }
+  .font-characters-view > .font-view-toolbar > label {
+    flex-basis: 100%;
+  }
+  .font-codepoint-jump {
+    width: 100%;
+  }
+  .font-codepoint-jump input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.glyph-baseline,
+.glyph-origin {
+  stroke: var(--muted);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.6;
+}
+.glyph-baseline {
+  stroke-dasharray: 3 3;
+}
+.glyph-preview-caption {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 9px;
+  text-align: center;
+}
+.glyph-strip-preview .glyph-baseline,
+.glyph-strip-preview .glyph-origin {
+  display: none;
+}
+
+.glyph-advance-guide line {
+  stroke: var(--accent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.glyph-strip-preview .glyph-advance-guide {
+  display: none;
+}
+
+.glyph-empty-label {
+  fill: var(--muted);
+}
+.glyph-strip-preview .glyph-empty-label {
+  display: none;
 }

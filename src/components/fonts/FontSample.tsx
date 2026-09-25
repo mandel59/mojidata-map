@@ -182,8 +182,8 @@ export function FontSample({
                 <th>Glyph ID</th>
                 <th>グリフ</th>
                 <th>コードポイント・収録状況</th>
-                <th>X advance</th>
-                <th>Y advance</th>
+                <th>横送り幅</th>
+                <th>縦送り幅</th>
                 <th>X offset</th>
                 <th>Y offset</th>
               </tr>

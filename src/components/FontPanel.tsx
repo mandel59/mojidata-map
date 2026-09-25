@@ -3,13 +3,11 @@ import type { UnicodeDatabase } from '../core/unicode';
 import type { LocalFont } from '../platform';
 import { useFontInspection } from '../useFontInspection';
 import { FontCharacters } from './fonts/FontCharacters';
-import { FontGlyph } from './fonts/FontGlyph';
 import { FontSample } from './fonts/FontSample';
 
 const sections = [
   ['characters', '収録文字'],
   ['sample', 'サンプル'],
-  ['glyph', '字形'],
   ['info', '情報'],
 ] as const;
 type Section = (typeof sections)[number][0];
@@ -17,6 +15,7 @@ interface Props {
   db: UnicodeDatabase;
   cp: number;
   active: boolean;
+  compact: boolean;
   buffer: string;
   bufferRequest: number;
   notify(message: string): void;
@@ -29,6 +28,7 @@ export const FontPanel = memo(function FontPanel({
   cp,
   notify,
   active,
+  compact,
   buffer,
   bufferRequest,
   onInsert,
@@ -238,22 +238,15 @@ export const FontPanel = memo(function FontPanel({
             ) : key === 'characters' ? (
               <FontCharacters
                 font={font}
-                family={family}
+                family={selection?.preview?.family ?? null}
                 db={db}
+                compact={compact}
+                notify={notify}
                 active={active && section === key}
                 cp={cp}
                 onSelect={onSelect}
                 onInsert={onInsert}
                 onLocate={onLocate}
-                onGlyph={() => setSection('glyph')}
-              />
-            ) : key === 'glyph' ? (
-              <FontGlyph
-                font={font}
-                family={selection?.preview?.family ?? null}
-                cp={cp}
-                onSelect={onSelect}
-                notify={notify}
               />
             ) : key === 'sample' ? (
               <FontSample

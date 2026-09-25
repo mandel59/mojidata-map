@@ -13,7 +13,7 @@ for (const width of [1024, 390]) {
     await page.getByRole('button', { name: 'カバレッジ', exact: true }).click();
     const tabs = page.getByRole('tablist', { name: 'フォントの表示内容' });
     const sampleTab = tabs.getByRole('tab', { name: 'サンプル', exact: true });
-    await expect(tabs.getByRole('tab')).toHaveCount(4);
+    await expect(tabs.getByRole('tab')).toHaveCount(3);
     await expect(sampleTab).toHaveAttribute('aria-selected', 'true');
     await page.getByRole('button', { name: 'フォントを選ぶ', exact: true }).click();
     await page.locator('input[type=file]').setInputFiles('tests/fixtures/FallbackBase.ttf');
@@ -80,8 +80,7 @@ for (const width of [1024, 390]) {
     expect(exported.text).toBe('12');
     expect(exported.glyphs[0]).toBe(glyphId);
     await sampleTab.press('ArrowRight');
-    await expect(tabs.getByRole('tab', { name: '字形', exact: true })).toBeFocused();
-    await expect(page.getByLabel('グリフのコードポイント')).toBeVisible();
+    await expect(tabs.getByRole('tab', { name: '情報', exact: true })).toBeFocused();
     await page.keyboard.press('End');
     await expect(tabs.getByRole('tab', { name: '情報', exact: true })).toBeFocused();
     await page.keyboard.press('Home');
