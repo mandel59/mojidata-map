@@ -888,6 +888,11 @@ td button {
   white-space: normal;
   text-align: left;
 }
+/* Reused page slots must update selection without repainting color glyphs
+   throughout the generic button background transition. */
+.emoji-cell {
+  transition: none;
+}
 .emoji-grid .cell-glyph {
   font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
 }

@@ -52,7 +52,15 @@ export async function benchmarkEmojiPages(page, { cpuThrottle = 4, samples = 20 
                   }
               });
               observer.observe(grid, { childList: true });
+              const longTasks = [];
+              const longTaskObserver = PerformanceObserver.supportedEntryTypes.includes('longtask')
+                ? new PerformanceObserver((list) =>
+                    longTasks.push(...list.getEntries().map((entry) => entry.duration)),
+                  )
+                : null;
+              longTaskObserver?.observe({ entryTypes: ['longtask'] });
               const timings = [];
+              const trialStart = performance.now();
               let reused = 0;
               for (let i = 0; i < count; i++) {
                 const first = grid.firstElementChild;
@@ -80,12 +88,25 @@ export async function benchmarkEmojiPages(page, { cpuThrottle = 4, samples = 20 
                   throw new Error('Selection lost focus');
                 await new Promise((resolve) => setTimeout(resolve, 50));
               }
+              const elapsedMs = performance.now() - trialStart;
               observer.disconnect();
+              longTasks.push(
+                ...(longTaskObserver?.takeRecords() ?? []).map((entry) => entry.duration),
+              );
+              longTaskObserver?.disconnect();
               const sorted = [...timings].sort((a, b) => a - b);
               return {
                 medianMs: sorted[Math.floor(count / 2)],
                 p95Ms: sorted[Math.floor(count * 0.95)],
                 timings,
+                // Include work after the second rAF, including delayed 50 ms pauses.
+                elapsedMs,
+                longTasks: {
+                  supported: longTaskObserver !== null,
+                  count: longTasks.length,
+                  totalMs: longTasks.reduce((sum, duration) => sum + duration, 0),
+                  maxMs: Math.max(0, ...longTasks),
+                },
                 reused,
                 ...changes,
               };
