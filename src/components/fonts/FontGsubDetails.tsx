@@ -13,13 +13,14 @@ const labels: Record<number, string> = {
 export function FontGsubDetails({ font, id }: { font: Font; id: number }) {
   const [open, setOpen] = useState(false);
   const [limit, setLimit] = useState(20);
-  const info = useMemo(() => (open ? glyphGsub(font, id) : null), [font, id, open]);
+  const info = useMemo(() => glyphGsub(font, id), [font, id]);
   return (
     <details className="glyph-gsub" onToggle={(event) => setOpen(event.currentTarget.open)}>
       <summary>
-        GSUB（グリフ置換）{info ? ` (${info.rules.length}${info.truncated ? '+' : ''})` : ''}
+        グリフ置換（GSUB）
+        {info.error ? '（取得失敗）' : ` (${info.rules.length}${info.truncated ? '+' : ''})`}
       </summary>
-      {info && (
+      {open && (
         <>
           <p className="note muted">
             このグリフを入力・出力に含む置換規則です。縦書きなどの任意featureも含みます。

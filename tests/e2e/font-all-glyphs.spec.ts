@@ -48,6 +48,9 @@ for (const width of [1024, 390]) {
     }
     await show(6);
     const gsub = panel.locator('details.glyph-gsub');
+    await expect(gsub.locator('summary')).toHaveText('グリフ置換（GSUB） (1)');
+    await expect(gsub).not.toHaveAttribute('open', '');
+    await expect(gsub.locator('.gsub-rule')).toHaveCount(0);
     await gsub.locator('summary').click();
     await expect(gsub).toContainText('合字置換');
     await expect(gsub).toContainText('liga');
