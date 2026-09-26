@@ -271,9 +271,10 @@ test('shows bundled credits and license text on narrow screens in both themes', 
     'https://www.babelstone.co.uk/Software/BabelMap.html',
   );
   await expect(dialog.getByRole('link', { name: 'fontkit', exact: true })).toBeVisible();
-  await expect(
-    dialog.getByRole('link', { name: 'mandel59/mojidata-map', exact: true }),
-  ).toHaveAttribute('href', 'https://github.com/mandel59/mojidata-map');
+  await expect(dialog.getByRole('link', { name: 'Mojidata Map', exact: true })).toHaveAttribute(
+    'href',
+    'https://github.com/mandel59/mojidata-map',
+  );
   await dialog.getByText('Unicode ライセンス全文', { exact: true }).click();
   await expect(
     dialog.locator('details').filter({ hasText: 'Unicode ライセンス全文' }).locator('pre'),

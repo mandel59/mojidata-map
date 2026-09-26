@@ -197,11 +197,8 @@ export function AboutDialog({ db, section, onSection, onClose }: Props) {
       >
         <h3>{t('クレジット')}</h3>
         <article className="credit-card">
-          <h4>Mojidata Map</h4>
+          <h4>{link(repositoryUrl, 'Mojidata Map')}</h4>
           <p>MIT License</p>
-          <p>
-            {t('開発リポジトリ')}: {link(repositoryUrl, repositoryName)}
-          </p>
           <p>{t('Mojidata Mapの開発にはCodexを使用しています。')}</p>
           {credits && (
             <details>
