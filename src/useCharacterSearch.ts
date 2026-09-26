@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CharacterQuery } from './core/searchConditions';
 import type { SearchCharacters } from './useSearchWorker';
@@ -22,6 +23,8 @@ const emptySession = (): SearchSession => ({
 // Search results survive tool switches. Only the latest submitted query can
 // replace them, including when a previous Unihan request finishes later.
 export function useCharacterSearch(searchCharacters: SearchCharacters) {
+  const { t } = useTranslation('app');
+  const [submittedText, setSubmittedText] = useState('');
   const [query, setQuery] = useState<CharacterQuery>({ aliases: true });
   const [session, setSession] = useState<SearchSession>(emptySession);
   const latest = useRef(0);
@@ -35,9 +38,9 @@ export function useCharacterSearch(searchCharacters: SearchCharacters) {
     (query: CharacterQuery) => {
       const id = ++latest.current;
       setQuery(query);
+      setSubmittedText(query.text?.trim() ?? '');
       setSession({
         ...emptySession(),
-        title: query.text?.trim() ? `「${query.text}」の検索結果` : '条件に一致する文字',
         busy: true,
       });
       void searchCharacters(query).then(
@@ -73,8 +76,19 @@ export function useCharacterSearch(searchCharacters: SearchCharacters) {
     [],
   );
   return useMemo(
-    () => ({ query, session, run, select, setPage }),
-    [query, session, run, select, setPage],
+    () => ({
+      query,
+      session: {
+        ...session,
+        title: submittedText
+          ? t('「{{text}}」の検索結果', { text: submittedText })
+          : t('条件に一致する文字'),
+      },
+      run,
+      select,
+      setPage,
+    }),
+    [query, session, run, select, setPage, submittedText, t],
   );
 }
 export type CharacterSearch = ReturnType<typeof useCharacterSearch>;

@@ -1,3 +1,5 @@
+import { useLocale } from './intl/LocaleProvider';
+import { tr } from './intl/i18n';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { UnicodeDatabase, codeLabel, isCodePoint, isScalar, parseCodePoint } from './core/unicode';
 import { MapSearch } from './components/search/MapSearch';
@@ -44,6 +46,7 @@ const planeNames: Record<number, string> = {
 };
 
 export default function App({ db }: { db: UnicodeDatabase }) {
+  const { locale, setLocale, storageError: languageError } = useLocale();
   const { preferences: prefs, update, storageError } = usePreferences();
   const setFontFallback = useCallback(
     (value: boolean) => update({ localFontFallback: value }),
@@ -81,12 +84,12 @@ export default function App({ db }: { db: UnicodeDatabase }) {
     () =>
       selectedEmoji
         ? [
-            ['Emoji バージョン', selectedEmoji.version],
-            ['グループ', selectedEmoji.group],
-            ['サブグループ', selectedEmoji.subgroup],
+            [tr('Emoji バージョン'), selectedEmoji.version],
+            [tr('グループ'), selectedEmoji.group],
+            [tr('サブグループ'), selectedEmoji.subgroup],
           ]
         : [],
-    [selectedEmoji],
+    [selectedEmoji, locale],
   );
   const searchSession = search.session;
   const detailCp =
@@ -186,7 +189,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
   const insertCp = useCallback(
     (cp: number) => {
       if (isScalar(cp)) insert(String.fromCodePoint(cp));
-      else notify('サロゲートは文字として挿入できません。');
+      else notify(tr('サロゲートは文字として挿入できません。'));
     },
     [insert, notify],
   );
@@ -247,12 +250,12 @@ export default function App({ db }: { db: UnicodeDatabase }) {
     selectMap(visible.find((cp) => cp >= preferred) ?? visible.at(-1) ?? preferred);
   });
   const tabs: [Tab, string][] = [
-    ['map', '文字マップ'],
-    ['search', '文字検索'],
-    ['sequences', '絵文字検索'],
-    ['fonts', 'フォント'],
-    ['statistics', 'Unicode データ'],
-    ['bookmarks', `ブックマーク (${prefs.bookmarks.length})`],
+    ['map', tr('文字マップ')],
+    ['search', tr('文字検索')],
+    ['sequences', tr('絵文字検索')],
+    ['fonts', tr('フォント')],
+    ['statistics', tr('Unicode データ')],
+    ['bookmarks', tr('ブックマーク ({{v0}})', { v0: prefs.bookmarks.length })],
   ];
   function menuAction(action: () => void) {
     document.getElementById('application-menu')?.hidePopover();
@@ -265,7 +268,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
         <h1>
           Mojidata <span>Map</span>
         </h1>
-        <nav className="main-tabs" aria-label="ツール">
+        <nav className="main-tabs" aria-label={tr('ツール')}>
           {tabs.map(([value, label]) => (
             <button
               key={value}
@@ -278,7 +281,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
         </nav>
         <select
           className="tool-select"
-          aria-label="ツールを選択"
+          aria-label={tr('ツールを選択')}
           value={tab}
           onChange={(event) => changeTab(event.target.value as Tab)}
         >
@@ -288,27 +291,47 @@ export default function App({ db }: { db: UnicodeDatabase }) {
             </option>
           ))}
         </select>
-        <button ref={menuButton} popoverTarget="application-menu" aria-label="アプリメニュー">
-          メニュー
+        <button ref={menuButton} popoverTarget="application-menu" aria-label={tr('アプリメニュー')}>
+          {tr('メニュー')}
         </button>
       </header>
       <div
         id="application-menu"
         popover="auto"
         className="utility-popover app-menu"
-        aria-label="アプリメニュー"
+        aria-label={tr('アプリメニュー')}
       >
+        <label>
+          {tr('言語 / Language')}
+          <select
+            aria-label="言語 / Language"
+            value={locale}
+            onChange={(event) => setLocale(event.target.value as 'ja' | 'en')}
+          >
+            <option value="ja" lang="ja">
+              日本語
+            </option>
+            <option value="en" lang="en">
+              English
+            </option>
+          </select>
+        </label>
+        {languageError && (
+          <p role="alert">
+            {tr('言語設定を保存できません。この画面では選択した言語を使用します。')}
+          </p>
+        )}
         <button aria-haspopup="dialog" onClick={() => menuAction(() => setAbout('about'))}>
-          アプリについて
+          {tr('アプリについて')}
         </button>
         <button aria-haspopup="dialog" onClick={() => menuAction(() => setAbout('credits'))}>
-          クレジット
+          {tr('クレジット')}
         </button>
         <button
-          aria-label="配色を切り替え"
+          aria-label={tr('配色を切り替え')}
           onClick={() => menuAction(() => update({ dark: !prefs.dark }))}
         >
-          {prefs.dark ? 'ライト表示にする' : 'ダーク表示にする'}
+          {prefs.dark ? tr('ライト表示にする') : tr('ダーク表示にする')}
         </button>
         {window.mojidata && (
           <label className="check">
@@ -324,7 +347,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                 });
               }}
             />
-            最前面に表示
+            {tr('最前面に表示')}
           </label>
         )}
       </div>
@@ -353,7 +376,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                 <CodePointNavigation onLocate={locate} notify={notify} />
               </>
             ) : tab === 'bookmarks' ? (
-              <span className="context-title">ブックマーク</span>
+              <span className="context-title">{tr('ブックマーク')}</span>
             ) : null
           }
           showSettings={showSettings}
@@ -362,11 +385,11 @@ export default function App({ db }: { db: UnicodeDatabase }) {
           fontControls={
             <>
               <label>
-                表示フォント（名前を入力）
+                {tr('表示フォント（名前を入力）')}
                 <input
                   type="text"
-                  aria-label="表示フォント"
-                  placeholder="例: Yu Gothic"
+                  aria-label={tr('表示フォント')}
+                  placeholder={tr('例: Yu Gothic')}
                   autoComplete="off"
                   spellCheck={false}
                   value={prefs.font}
@@ -388,21 +411,21 @@ export default function App({ db }: { db: UnicodeDatabase }) {
           }
           colorControl={
             <select
-              aria-label="色分け"
+              aria-label={tr('色分け')}
               value={prefs.colorBy}
               onChange={(event) => update({ colorBy: event.target.value })}
             >
-              <option value="category">カテゴリで色分け</option>
-              <option value="Script">スクリプトで色分け</option>
-              <option value="Age">追加バージョンで色分け</option>
-              <option value="none">色分けなし</option>
+              <option value="category">{tr('カテゴリで色分け')}</option>
+              <option value="Script">{tr('スクリプトで色分け')}</option>
+              <option value="Age">{tr('追加バージョンで色分け')}</option>
+              <option value="none">{tr('色分けなし')}</option>
             </select>
           }
         >
           <Suspense
             fallback={
               <p className="loading" role="status">
-                ツールを読み込み中…
+                {tr('ツールを読み込み中…')}
               </p>
             }
           >
@@ -459,8 +482,8 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                 onSelect={setSelected}
                 onInsert={insertCp}
                 onLocate={locate}
-                title="ブックマーク"
-                emptyMessage="文字情報の ☆ でブックマークに追加できます。"
+                title={tr('ブックマーク')}
+                emptyMessage={tr('文字情報の ☆ でブックマークに追加できます。')}
                 columns={columns}
                 font={prefs.font}
                 colorBy={prefs.colorBy}
@@ -479,7 +502,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                       checked={assignedOnly}
                       onChange={(event) => setAssignedOnly(event.target.checked)}
                     />
-                    未割当を隠す
+                    {tr('未割当を隠す')}
                   </label>
                 </div>
                 {points.length ? (
@@ -497,13 +520,13 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                   />
                 ) : (
                   <div className="empty-state">
-                    <p>表示する文字がありません。未割当の表示を有効にしてください。</p>
+                    <p>{tr('表示する文字がありません。未割当の表示を有効にしてください。')}</p>
                   </div>
                 )}
                 <div className="pagination">
                   <div className="button-row">
                     <button
-                      aria-label="前のページ"
+                      aria-label={tr('前のページ')}
                       disabled={pageStart === plane * 0x10000}
                       onClick={() => {
                         setPageStart(pageStart - PAGE_SIZE);
@@ -516,7 +539,7 @@ export default function App({ db }: { db: UnicodeDatabase }) {
                       {Math.floor((pageStart & 0xffff) / PAGE_SIZE) + 1} / {0x10000 / PAGE_SIZE}
                     </span>
                     <button
-                      aria-label="次のページ"
+                      aria-label={tr('次のページ')}
                       disabled={pageStart + PAGE_SIZE >= (plane + 1) * 0x10000}
                       onClick={() => {
                         setPageStart(pageStart + PAGE_SIZE);

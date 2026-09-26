@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useId, useMemo, useRef, useState } from 'react';
 import type { Font } from 'fontkit';
 import { bufferCoverage } from '../../core/bufferCoverage';
@@ -31,6 +32,7 @@ export function FontSample({
   buffer: string;
   onShowGlyph(id: number): void;
 }) {
+  const { t, i18n } = useTranslation('fonts');
   const id = useId();
   const input = useRef<HTMLTextAreaElement>(null);
   const [features, setFeatures] = useState('kern, liga');
@@ -96,9 +98,9 @@ export function FontSample({
     <div className="font-sample-view">
       <div className="sample-editor">
         <div className="sample-heading">
-          <label htmlFor={`${id}-text`}>サンプルテキスト</label>
+          <label htmlFor={`${id}-text`}>{t('サンプルテキスト')}</label>
           <button disabled={!buffer} onClick={() => onChange(buffer)}>
-            編集バッファから読み込む
+            {t('編集バッファから読み込む')}
           </button>
         </div>
         <textarea
@@ -120,18 +122,27 @@ export function FontSample({
       {counts && (
         <div className="sample-coverage" aria-live="polite">
           <strong>
-            収録 {counts.covered} / {counts.covered + counts.missing} 種類
+            {t('収録 {{covered}} / {{total}} 種類', {
+              count: counts.covered + counts.missing,
+              covered: counts.covered,
+              total: counts.covered + counts.missing,
+            })}
           </strong>
           <span className={counts.missing || counts.invalid ? 'coverage-missing' : 'muted'}>
-            未収録 {counts.missing} · 無効 {counts.invalid}
+            {t('未収録 {{missing}} · 無効 {{invalid}}', {
+              missing: counts.missing,
+              invalid: counts.invalid,
+            })}
           </span>
-          <span className="muted">制御・表示調整 {counts.control}（集計対象外）</span>
+          <span className="muted">
+            {t('制御・表示調整 {{count}}（集計対象外）', { count: counts.control })}
+          </span>
         </div>
       )}
       <div className="sample-toolbar">
-        <button popoverTarget={`${id}-features`}>OpenType設定</button>
+        <button popoverTarget={`${id}-features`}>{t('OpenType設定')}</button>
         <button
-          aria-label="レイアウト結果を保存"
+          aria-label={t('レイアウト結果を保存')}
           disabled={!layout?.run.glyphs.length}
           onClick={() => {
             if (layout)
@@ -153,21 +164,24 @@ export function FontSample({
               );
           }}
         >
-          結果を保存
+          {t('結果を保存')}
         </button>
       </div>
       <div
         id={`${id}-features`}
         popover="auto"
         className="utility-popover sample-features"
-        aria-label="OpenType設定"
+        aria-label={t('OpenType設定')}
       >
-        <h2>OpenType設定</h2>
+        <h2>{t('OpenType設定')}</h2>
         <label>
-          機能タグ（無効化は -liga のように指定）
+          {t('機能タグ（無効化は -liga のように指定）')}
           <input value={features} onChange={(event) => setFeatures(event.target.value)} />
         </label>
-        <p className="note muted">利用可能: {font.availableFeatures.join(', ') || 'なし'}</p>
+        <p className="note muted">
+          {t('利用可能: ')}
+          {font.availableFeatures.join(', ') || t('なし')}
+        </p>
       </div>
       {analysis?.error && (
         <p role="alert" className="error">
@@ -176,20 +190,21 @@ export function FontSample({
       )}
       {layout?.truncated && (
         <p className="note">
-          配置結果は先頭{SAMPLE_LIMIT.toLocaleString()}
-          コードポイントです。収録数はサンプル全体を集計しています。
+          {t('配置結果は先頭{{limit}}コードポイントです。収録数はサンプル全体を集計しています。', {
+            limit: new Intl.NumberFormat(i18n.language).format(SAMPLE_LIMIT),
+          })}
         </p>
       )}
       <div className="sample-table-scroll">
         {rows.length ? (
-          <table className="sample-glyph-table" aria-label="サンプルのグリフ配置">
+          <table className="sample-glyph-table" aria-label={t('サンプルのグリフ配置')}>
             <thead>
               <tr>
                 <th>Glyph ID</th>
-                <th>グリフ</th>
-                <th>コードポイント・収録状況</th>
-                <th>横送り幅</th>
-                <th>縦送り幅</th>
+                <th>{t('グリフ')}</th>
+                <th>{t('コードポイント・収録状況')}</th>
+                <th>{t('横送り幅')}</th>
+                <th>{t('縦送り幅')}</th>
                 <th>X offset</th>
                 <th>Y offset</th>
               </tr>
@@ -207,7 +222,7 @@ export function FontSample({
                       <button
                         className="text-button"
                         onClick={() => onShowGlyph(glyph.id)}
-                        aria-label={`Glyph ID ${glyph.id} をグリフマップで表示`}
+                        aria-label={t('Glyph ID {{id}} をグリフマップで表示', { id: glyph.id })}
                       >
                         {glyph.id}
                       </button>
@@ -218,16 +233,18 @@ export function FontSample({
                     <td>
                       {(missing || invalid) && (
                         <strong className="missing-glyph-badge">
-                          {invalid ? '無効なコードポイント' : '未収録 (.notdef)'}
+                          {invalid ? t('無効なコードポイント') : t('未収録 (.notdef)')}
                         </strong>
                       )}
-                      {control && <span className="muted">制御・表示調整</span>}
+                      {control && <span className="muted">{t('制御・表示調整')}</span>}
                       <button
                         className="text-button"
                         onClick={() => selectText(sourceRange)}
                         disabled={!sourceRange}
-                        title="サンプル内の文字を選択"
-                        aria-label={`${glyph.codePoints.map(codeLabel).join(' ')} をサンプルで選択`}
+                        title={t('サンプル内の文字を選択')}
+                        aria-label={t('{{text}} をサンプルで選択', {
+                          text: glyph.codePoints.map(codeLabel).join(' '),
+                        })}
                       >
                         {glyph.codePoints.map(codeLabel).join(' ') || '—'}
                       </button>
@@ -244,32 +261,36 @@ export function FontSample({
           <div className="empty-state">
             <p>
               {!sample
-                ? 'サンプルテキストを入力するか、編集バッファから読み込んでください。'
-                : '表示するグリフがありません。'}
+                ? t('サンプルテキストを入力するか、編集バッファから読み込んでください。')
+                : t('表示するグリフがありません。')}
             </p>
           </div>
         )}
       </div>
       <div className="pagination">
         <div className="button-row">
-          <button aria-label="前のページ" disabled={!page} onClick={() => setPage(page - 1)}>
+          <button aria-label={t('前のページ')} disabled={!page} onClick={() => setPage(page - 1)}>
             ←
           </button>
           <span>
             {page + 1} / {Math.max(1, Math.ceil(rows.length / PAGE_SIZE))}
           </span>
           <button
-            aria-label="次のページ"
+            aria-label={t('次のページ')}
             disabled={(page + 1) * PAGE_SIZE >= rows.length}
             onClick={() => setPage(page + 1)}
           >
             →
           </button>
         </div>
-        <span className="muted">{rows.length} グリフ</span>
+        <span className="muted">
+          {t('{{count}} グリフ', { count: rows.length, formattedCount: rows.length })}
+        </span>
       </div>
       <p className="note muted sample-note">
-        入力欄はOSのフォールバックを含みます。表は解析対象のグリフを描画します。収録数は重複を除いた文字単体の判定で、異体字列・絵文字列の表示対応は別です。
+        {t(
+          '入力欄はOSのフォールバックを含みます。表は解析対象のグリフを描画します。収録数は重複を除いた文字単体の判定で、異体字列・絵文字列の表示対応は別です。',
+        )}
       </p>
     </div>
   );

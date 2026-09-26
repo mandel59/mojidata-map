@@ -1,3 +1,4 @@
+import { tr } from '../intl/i18n';
 import type { Font } from 'fontkit';
 
 type Lazy<T> = { length: number; get(index: number): T };
@@ -89,7 +90,7 @@ export function fontLigatures(font: Font, characters: Map<number, number[]>) {
     rules = new Map();
     let count = 0;
     const add = (output: number, inputs: number[]) => {
-      if (++count > 200000) throw new Error('GSUBの規則数が上限を超えました。');
+      if (++count > 200000) throw new Error(tr('GSUBの規則数が上限を超えました。'));
       if (
         output <= 0 ||
         output >= font.numGlyphs ||
@@ -140,7 +141,7 @@ export function fontLigatures(font: Font, characters: Map<number, number[]>) {
         for (const table of lookup.subTables) read(lookup.lookupType, table);
       }
     } catch (reason) {
-      error = `リガチャの対応情報を取得できません: ${String(reason)}`;
+      error = tr('リガチャの対応情報を取得できません: {{v0}}', { v0: String(reason) });
     }
   }
   return (id: number) => {
@@ -199,7 +200,7 @@ export function fontLigatures(font: Font, characters: Map<number, number[]>) {
     }
     const result = {
       sequences: expand(id, new Set()).filter((points) => points.length > 1),
-      error: [error, truncated ? 'リガチャ候補が多いため、一部のみ表示しています。' : '']
+      error: [error, truncated ? tr('リガチャ候補が多いため、一部のみ表示しています。') : '']
         .filter(Boolean)
         .join(' '),
     };

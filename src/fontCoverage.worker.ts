@@ -1,3 +1,4 @@
+import { i18n } from './intl/i18n';
 import { localFontCoverage, localFontMatch, localFontNames } from './core/localFontCoverage';
 
 type Request =
@@ -15,8 +16,10 @@ self.onmessage = (event: MessageEvent<Request>) => {
   if ('required' in event.data) {
     required = event.data.required;
     locale = event.data.locale;
+    void i18n.changeLanguage(locale);
     return;
   }
+  if (event.data.locale) void i18n.changeLanguage(event.data.locale);
   const { bytes, postscriptName, matchOnly, namesOnly } = event.data;
   try {
     if (matchOnly) {

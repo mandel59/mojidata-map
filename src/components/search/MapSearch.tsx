@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SearchCharacters } from '../../useSearchWorker';
 import { SearchField } from './SearchField';
 
@@ -13,6 +14,7 @@ export const MapSearch = memo(function MapSearch({
   searchCharacters: SearchCharacters;
   onLocate(cp: number): void;
 }) {
+  const { t } = useTranslation('search');
   const [text, setText] = useState('');
   const [result, setResult] = useState<{ text: string; points: number[] } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -29,12 +31,12 @@ export const MapSearch = memo(function MapSearch({
   const matches = result?.text === query ? result.points : null;
   const index = matches?.indexOf(selected) ?? -1;
   const status = busy
-    ? '検索中…'
+    ? t('検索中…')
     : matches
       ? !matches.length
-        ? '一致なし'
+        ? t('一致なし')
         : index < 0
-          ? `${matches.length} 件`
+          ? t('{{count}} results', { count: matches.length, formattedCount: matches.length })
           : `${index + 1} / ${matches.length}`
       : '';
   function moveNext(points: number[]) {
@@ -80,7 +82,7 @@ export const MapSearch = memo(function MapSearch({
               status={status}
             />
             <button type="button" popoverTarget="display-options">
-              表示設定
+              {t('表示設定')}
             </button>
           </div>
           {error && (

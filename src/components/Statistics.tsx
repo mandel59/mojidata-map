@@ -1,4 +1,5 @@
 import { memo, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { codeLabel, type UnicodeDatabase } from '../core/unicode';
 import { download } from '../platform';
 export const Statistics = memo(function Statistics({
@@ -8,6 +9,7 @@ export const Statistics = memo(function Statistics({
   db: UnicodeDatabase;
   onLocate(cp: number): void;
 }) {
+  const { t, i18n } = useTranslation('search');
   const [kind, setKind] = useState('Block');
   const [filter, setFilter] = useState('');
   const rows = useMemo(() => {
@@ -34,24 +36,26 @@ export const Statistics = memo(function Statistics({
     <section className="tool-panel">
       <div className="tool-title">
         <span className="eyebrow">UNICODE ATLAS</span>
-        <h2>Unicode の構成</h2>
+        <h2>{t('Unicode の構成')}</h2>
         <p>
-          Unicode {db.data.version}
-          。制御文字を含み、私用・サロゲート・未割当・非文字を除く収録数です。
+          {t(
+            'Unicode {{version}}。制御文字を含み、私用・サロゲート・未割当・非文字を除く収録数です。',
+            { version: db.data.version },
+          )}
         </p>
       </div>
       <div className="filter-fields">
         <label>
-          集計単位
+          {t('集計単位')}
           <select value={kind} onChange={(event) => setKind(event.target.value)}>
-            <option value="Block">ブロック</option>
-            <option value="Script">スクリプト</option>
-            <option value="Age">追加バージョン</option>
-            <option value="Plane">面</option>
+            <option value="Block">{t('ブロック')}</option>
+            <option value="Script">{t('スクリプト')}</option>
+            <option value="Age">{t('追加バージョン')}</option>
+            <option value="Plane">{t('面')}</option>
           </select>
         </label>
         <label>
-          絞り込み
+          {t('絞り込み')}
           <input value={filter} onChange={(event) => setFilter(event.target.value)} />
         </label>
         <button
@@ -68,31 +72,33 @@ export const Statistics = memo(function Statistics({
             )
           }
         >
-          TSV を保存
+          {t('TSV を保存')}
         </button>
       </div>
       <div className="stat-cards">
         <div>
-          <strong>{rows.reduce((sum, row) => sum + row.count, 0).toLocaleString()}</strong>
-          <span>収録コードポイント</span>
+          <strong>
+            {rows.reduce((sum, row) => sum + row.count, 0).toLocaleString(i18n.language)}
+          </strong>
+          <span>{t('収録コードポイント')}</span>
         </div>
         <div>
           <strong>{rows.length}</strong>
-          <span>区分</span>
+          <span>{t('区分')}</span>
         </div>
         <div>
           <strong>{db.data.version}</strong>
-          <span>Unicode バージョン</span>
+          <span>{t('Unicode バージョン')}</span>
         </div>
       </div>
       <div className="table-scroll">
         <table>
           <thead>
             <tr>
-              <th>名前</th>
-              <th>収録数</th>
-              <th>最初の文字</th>
-              <th>最後の文字</th>
+              <th>{t('名前')}</th>
+              <th>{t('収録数')}</th>
+              <th>{t('最初の文字')}</th>
+              <th>{t('最後の文字')}</th>
             </tr>
           </thead>
           <tbody>
@@ -105,7 +111,7 @@ export const Statistics = memo(function Statistics({
                       {row.name}
                     </button>
                   </td>
-                  <td>{row.count.toLocaleString()}</td>
+                  <td>{row.count.toLocaleString(i18n.language)}</td>
                   <td>{codeLabel(row.first)}</td>
                   <td>{codeLabel(row.last)}</td>
                 </tr>

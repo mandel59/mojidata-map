@@ -1,3 +1,4 @@
+import { i18n, tr } from './intl/i18n';
 import { useCallback, useEffect, useRef } from 'react';
 import type { CharacterQuery } from './core/searchConditions';
 
@@ -15,7 +16,8 @@ export function useSearchWorker(): SearchCharacters {
     return () => {
       worker.current?.terminate();
       worker.current = null;
-      for (const request of requests.values()) request.reject(new Error('検索を終了しました。'));
+      for (const request of requests.values())
+        request.reject(new Error(tr('検索を終了しました。')));
       requests.clear();
     };
   }, []);
@@ -37,7 +39,7 @@ export function useSearchWorker(): SearchCharacters {
           };
           instance.onerror = (event) => {
             for (const request of pending.current.values())
-              request.reject(new Error(`検索を開始できません: ${event.message}`));
+              request.reject(new Error(tr('検索を開始できません: {{v0}}', { v0: event.message })));
             pending.current.clear();
             instance.terminate();
             worker.current = null;
@@ -47,7 +49,7 @@ export function useSearchWorker(): SearchCharacters {
         const id = ++nextId.current;
         pending.current.set(id, { resolve, reject });
         try {
-          worker.current.postMessage({ id, query });
+          worker.current.postMessage({ id, query, locale: i18n.language });
         } catch (error) {
           pending.current.delete(id);
           reject(error);

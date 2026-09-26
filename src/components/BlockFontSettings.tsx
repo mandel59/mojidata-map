@@ -1,4 +1,5 @@
 import { memo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { UnicodeDatabase } from '../core/unicode';
 
 export const BlockFontSettings = memo(function BlockFontSettings({
@@ -12,11 +13,12 @@ export const BlockFontSettings = memo(function BlockFontSettings({
   onChange(value: Record<string, string>): void;
   notify(message: string): void;
 }) {
+  const { t } = useTranslation('common');
   const [block, setBlock] = useState('Basic Latin');
   const [mapping, setMapping] = useState(() => composite['Basic Latin'] ?? '');
   return (
     <details>
-      <summary>ブロックごとのフォント設定</summary>
+      <summary>{t('ブロックごとのフォント設定')}</summary>
       <form
         className="filter-fields"
         onSubmit={(event) => {
@@ -25,13 +27,13 @@ export const BlockFontSettings = memo(function BlockFontSettings({
           if (mapping.trim()) next[block] = mapping.trim();
           else delete next[block];
           onChange(next);
-          notify('ブロックのフォント設定を保存しました。');
+          notify(t('ブロックのフォント設定を保存しました。'));
         }}
       >
         <label>
-          ブロック
+          {t('ブロック')}
           <select
-            aria-label="表示フォントのブロック"
+            aria-label={t('表示フォントのブロック')}
             value={block}
             onChange={(event) => {
               setBlock(event.target.value);
@@ -44,23 +46,23 @@ export const BlockFontSettings = memo(function BlockFontSettings({
           </select>
         </label>
         <label>
-          フォント名
+          {t('フォント名')}
           <input
-            aria-label="ブロックの表示フォント"
+            aria-label={t('ブロックの表示フォント')}
             value={mapping}
-            placeholder="例: Yu Mincho"
+            placeholder={t('例: Yu Mincho')}
             autoComplete="off"
             spellCheck={false}
             onChange={(event) => setMapping(event.target.value)}
           />
         </label>
-        <button>設定を保存</button>
+        <button>{t('設定を保存')}</button>
       </form>
       {Object.entries(composite).map(([name, value]) => (
         <p key={name}>
           {name}: {value}{' '}
           <button
-            aria-label={`${name} の設定を削除`}
+            aria-label={t('{{name}} の設定を削除', { name })}
             onClick={() => {
               const next = { ...composite };
               delete next[name];
@@ -68,7 +70,7 @@ export const BlockFontSettings = memo(function BlockFontSettings({
               if (name === block) setMapping('');
             }}
           >
-            解除
+            {t('解除')}
           </button>
         </p>
       ))}

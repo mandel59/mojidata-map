@@ -1,3 +1,4 @@
+import { tr } from '../intl/i18n';
 export type CodePointRange = [number, number];
 
 // A code point belongs to only one face in the synthetic fallback family.
@@ -28,5 +29,5 @@ export function unusedFeatureTag(features: Set<string>): string {
     const tag = `MF${id.toString(36).padStart(2, '0')}`;
     if (!features.has(tag)) return tag;
   }
-  throw new Error('フォント補完用のキャッシュ識別子を確保できません。');
+  throw new Error(tr('フォント補完用のキャッシュ識別子を確保できません。'));
 }

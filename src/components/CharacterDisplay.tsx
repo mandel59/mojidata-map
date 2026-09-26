@@ -8,6 +8,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const GlyphSize = createContext(30);
 
@@ -27,13 +28,14 @@ export function CharacterGridSurface({
   scrollClassName?: string;
   label?: string;
 }) {
+  const { t } = useTranslation('common');
   const size = useContext(GlyphSize);
   return (
     <div className={scrollClassName}>
       <div
         className={className}
         ref={containerRef}
-        aria-label={label}
+        aria-label={t(label)}
         style={{ '--glyph-size': `${size}px`, '--grid-columns': columns } as CSSProperties}
       >
         {children}
@@ -63,6 +65,7 @@ export function CharacterDisplay({
   colorControl,
   children,
 }: Props) {
+  const { t } = useTranslation('common');
   const [previewSize, setPreviewSize] = useState(size);
   const slider = useRef<HTMLInputElement>(null);
   useEffect(() => setPreviewSize(size), [size]);
@@ -93,19 +96,19 @@ export function CharacterDisplay({
         {(navigation || showSettings) && (
           <div className="display-toolbar">
             {navigation}
-            {showSettings && <button popoverTarget="display-options">表示設定</button>}
+            {showSettings && <button popoverTarget="display-options">{t('表示設定')}</button>}
           </div>
         )}
         <div
           id="display-options"
           popover="auto"
           className="utility-popover display-options"
-          aria-label="表示設定"
+          aria-label={t('表示設定')}
         >
-          <h2>表示設定</h2>
+          <h2>{t('表示設定')}</h2>
           {fontControls}
           <label className="size-control">
-            文字サイズ{' '}
+            {t('文字サイズ')}{' '}
             <input
               ref={slider}
               type="range"

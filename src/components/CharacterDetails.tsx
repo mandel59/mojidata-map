@@ -1,4 +1,5 @@
 import { FittedCharacter } from './FittedCharacter';
+import { useTranslation } from 'react-i18next';
 import { useFontStyle } from '../useFontFallback';
 import { memo, useMemo, useEffect, useState } from 'react';
 import { UtilityDialog } from './UtilityDialog';
@@ -35,6 +36,7 @@ export const CharacterDetails = memo(function CharacterDetails({
   onLocate,
   notify,
 }: Props) {
+  const { t, i18n } = useTranslation('search');
   const fontStyle = useFontStyle();
   const [open, setOpen] = useState(false);
   useEffect(() => {
@@ -91,7 +93,7 @@ export const CharacterDetails = memo(function CharacterDetails({
   const copy = async (text: string) => {
     try {
       await copyText(text);
-      notify('コピーしました');
+      notify(t('コピーしました'));
     } catch (error) {
       notify(String(error));
     }
@@ -120,7 +122,7 @@ export const CharacterDetails = memo(function CharacterDetails({
         </div>
         <button
           className={`icon-button ${bookmarked ? 'bookmarked' : ''}`}
-          aria-label={bookmarked ? 'ブックマークを削除' : 'ブックマークに追加'}
+          aria-label={bookmarked ? t('ブックマークを削除') : t('ブックマークに追加')}
           onClick={onBookmark}
         >
           {bookmarked ? '★' : '☆'}
@@ -130,23 +132,23 @@ export const CharacterDetails = memo(function CharacterDetails({
       <h2 className="character-name">{db.name(cp)}</h2>
       <div className="button-row">
         <button className="primary" disabled={!scalar} onClick={() => onInsert(char)}>
-          バッファに追加
+          {t('バッファに追加')}
         </button>
         <button disabled={!scalar} onClick={() => void copy(char)}>
-          コピー
+          {t('コピー')}
         </button>
       </div>
-      {!scalar && <p className="muted">サロゲートは文字として挿入できません。</p>}
+      {!scalar && <p className="muted">{t('サロゲートは文字として挿入できません。')}</p>}
       <dl className="property-list">
         {summary.map((key) => (
           <div key={key}>
-            <dt>{labels[key]}</dt>
+            <dt>{t(labels[key])}</dt>
             <dd>{properties[key] ?? db.property(cp, key)}</dd>
           </div>
         ))}
       </dl>
       <details>
-        <summary>符号化</summary>
+        <summary>{t('符号化')}</summary>
         <dl className="property-list monospace">
           {(['utf8', 'utf16', 'utf32', 'ucn', 'ncr-hex'] as const).map((format) => (
             <div key={format}>
@@ -158,7 +160,7 @@ export const CharacterDetails = memo(function CharacterDetails({
       </details>
       {db.data.aliases[hex(cp)] && (
         <details>
-          <summary>名前の別名</summary>
+          <summary>{t('名前の別名')}</summary>
           {db.data.aliases[hex(cp)].map(([name, type]) => (
             <p className="note" key={`${name}-${type}`}>
               {name} <span className="muted">({type})</span>
@@ -168,7 +170,9 @@ export const CharacterDetails = memo(function CharacterDetails({
       )}
       {variants.length > 0 && (
         <details>
-          <summary>標準化異体字列・絵文字表示列 ({variants.length})</summary>
+          <summary>
+            {t('標準化異体字列・絵文字表示列 ({{count}})', { count: variants.length })}
+          </summary>
           {variants.map(([cps, name]) => (
             <button
               className="variant"
@@ -187,12 +191,15 @@ export const CharacterDetails = memo(function CharacterDetails({
       )}
       {ivs.length > 0 && (
         <details>
-          <summary>漢字異体字列（IVS） ({ivs.length})</summary>
+          <summary>{t('漢字異体字列（IVS） ({{count}})', { count: ivs.length })}</summary>
           {ivs.map(([selector, registrations]) => (
             <button
               className="variant"
               key={selector}
-              aria-label={`IVS ${codeLabel(cp)} ${codeLabel(selector)} をバッファに追加`}
+              aria-label={t('IVS {{base}} {{selector}} をバッファに追加', {
+                base: codeLabel(cp),
+                selector: codeLabel(selector),
+              })}
               onClick={() => onInsert(String.fromCodePoint(cp, selector))}
             >
               <span style={fontStyle(font)}>{String.fromCodePoint(cp, selector)}</span>
@@ -211,14 +218,17 @@ export const CharacterDetails = memo(function CharacterDetails({
       )}
       {relatedHan.length > 0 && (
         <details>
-          <summary>漢字の異体字・関連字 ({relatedHan.length})</summary>
+          <summary>{t('漢字の異体字・関連字 ({{count}})', { count: relatedHan.length })}</summary>
           {relatedHan.map(({ cp: target, relations }) => (
             <button
               className="variant"
               key={target}
-              aria-label={`漢字の異体字 ${codeLabel(target)} へ移動`}
+              aria-label={t('漢字の異体字 {{code}} へ移動', { code: codeLabel(target) })}
               title={relations
-                .map(({ property, source }) => `${property}${source ? `: ${source}` : ''}`)
+                .map(
+                  ({ property, source }) =>
+                    `${t(hanVariantLabels[property])}${source ? `: ${source}` : ''}`,
+                )
                 .join('\n')}
               onClick={() => {
                 setOpen(false);
@@ -229,8 +239,8 @@ export const CharacterDetails = memo(function CharacterDetails({
               <small>
                 {codeLabel(target)}
                 <br />
-                {[...new Set(relations.map(({ property }) => hanVariantLabels[property]))].join(
-                  '・',
+                {[...new Set(relations.map(({ property }) => t(hanVariantLabels[property])))].join(
+                  i18n.language.startsWith('ja') ? '・' : ', ',
                 )}
               </small>
             </button>
@@ -239,8 +249,8 @@ export const CharacterDetails = memo(function CharacterDetails({
       )}
       {(
         [
-          ['Unihan データ', han],
-          ['東アジア文字データ (UAX #60)', eastAsian],
+          [t('Unihan データ'), han],
+          [t('東アジア文字データ (UAX #60)'), eastAsian],
         ] as const
       ).map(
         ([title, data]) =>
@@ -262,7 +272,7 @@ export const CharacterDetails = memo(function CharacterDetails({
       )}
       {db.data.notes[hex(cp)] && (
         <details>
-          <summary>注記・参照</summary>
+          <summary>{t('注記・参照')}</summary>
           {db.data.notes[hex(cp)].map((note, i) => (
             <p className="note" key={i}>
               {note}
@@ -271,7 +281,7 @@ export const CharacterDetails = memo(function CharacterDetails({
         </details>
       )}
       <details>
-        <summary>すべての収録属性</summary>
+        <summary>{t('すべての収録属性')}</summary>
         <dl className="property-list">
           {Object.entries(properties).map(([key, value]) => (
             <div key={key}>
@@ -290,7 +300,7 @@ export const CharacterDetails = memo(function CharacterDetails({
               setRetry((value) => value + 1);
             }}
           >
-            再読み込み
+            {t('再読み込み')}
           </button>
         </p>
       )}
@@ -300,7 +310,7 @@ export const CharacterDetails = memo(function CharacterDetails({
             void copy(JSON.stringify({ ...properties, Unihan: han, EastAsian: eastAsian }, null, 2))
           }
         >
-          情報をコピー
+          {t('情報をコピー')}
         </button>
         <button
           onClick={() =>
@@ -311,34 +321,34 @@ export const CharacterDetails = memo(function CharacterDetails({
             )
           }
         >
-          JSON 保存
+          {t('JSON 保存')}
         </button>
       </div>
     </div>
   );
   if (!compact)
     return (
-      <aside className="details-panel" aria-label="文字の詳細">
+      <aside className="details-panel" aria-label={t('文字の詳細')}>
         {content}
       </aside>
     );
   return (
     <>
-      <aside className="detail-strip" aria-label="選択中の文字">
+      <aside className="detail-strip" aria-label={t('選択中の文字')}>
         <FittedCharacter className="strip-glyph" style={fontStyle(font)} text={db.glyph(cp)} />
         <div>
           <strong>{codeLabel(cp)}</strong>
           <span>{db.name(cp)}</span>
         </div>
         <button disabled={!scalar} onClick={() => onInsert(char)}>
-          追加
+          {t('追加')}
         </button>
         <button aria-haspopup="dialog" onClick={() => setOpen(true)}>
-          文字情報
+          {t('文字情報')}
         </button>
       </aside>
       {open && (
-        <UtilityDialog title="文字情報" onClose={() => setOpen(false)}>
+        <UtilityDialog title={t('文字情報')} onClose={() => setOpen(false)}>
           {content}
         </UtilityDialog>
       )}

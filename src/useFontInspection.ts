@@ -1,3 +1,4 @@
+import { tr } from './intl/i18n';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Font } from 'fontkit';
 import { fontNames } from './core/fontNames';
@@ -75,7 +76,7 @@ export function useFontInspection(notify: (message: string) => void) {
   const failed = useCallback(
     (revision: number, error: unknown) => {
       if (revision !== request.current) return;
-      const message = `フォントを解析できません: ${String(error)}`;
+      const message = tr('フォントを解析できません: {{v0}}', { v0: String(error) });
       setState((previous) => ({ ...previous, pending: null, error: message }));
       notify(message);
     },
@@ -93,7 +94,8 @@ export function useFontInspection(notify: (message: string) => void) {
       try {
         const blob = await read();
         if (revision !== request.current) return false;
-        if (blob.size > FONT_SIZE_LIMIT) throw new Error('64 MB 以下のフォントを選んでください。');
+        if (blob.size > FONT_SIZE_LIMIT)
+          throw new Error(tr('64 MB 以下のフォントを選んでください。'));
         const [{ create }, { Buffer }, bytes] = await Promise.all([
           import('fontkit'),
           import('buffer'),
@@ -102,7 +104,7 @@ export function useFontInspection(notify: (message: string) => void) {
         if (revision !== request.current) return false;
         const parsed = create(Buffer.from(bytes));
         const fonts = 'fonts' in parsed ? parsed.fonts : [parsed];
-        if (!fonts.length) throw new Error('フォントが含まれていません。');
+        if (!fonts.length) throw new Error(tr('フォントが含まれていません。'));
         const index =
           postscriptName && fonts.length > 1
             ? fonts.findIndex(
@@ -111,7 +113,7 @@ export function useFontInspection(notify: (message: string) => void) {
                   fontInstance(font, postscriptName) !== null,
               )
             : 0;
-        if (index < 0) throw new Error('選択したフォントがコレクション内に見つかりません。');
+        if (index < 0) throw new Error(tr('選択したフォントがコレクション内に見つかりません。'));
         if (postscriptName) fonts[index] = resolveFontInstance(fonts[index], postscriptName);
         return await commit({ bytes, fonts, label, postscriptName }, index, revision);
       } catch (error) {

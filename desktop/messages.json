@@ -1,0 +1,62 @@
+{
+  "ja": {
+    "translation": {
+      "save": "Mojidata Map — ファイルを保存",
+      "about": "アプリについて",
+      "aboutMac": "Mojidata Map について",
+      "credits": "クレジット",
+      "edit": "編集",
+      "view": "表示",
+      "window": "ウィンドウ",
+      "help": "ヘルプ",
+      "undo": "元に戻す",
+      "redo": "やり直す",
+      "cut": "切り取り",
+      "copy": "コピー",
+      "paste": "貼り付け",
+      "selectAll": "すべて選択",
+      "reload": "再読み込み",
+      "resetZoom": "実際のサイズ",
+      "zoomIn": "拡大",
+      "zoomOut": "縮小",
+      "togglefullscreen": "全画面表示を切り替え",
+      "minimize": "最小化",
+      "close": "閉じる",
+      "services": "サービス",
+      "hide": "Mojidata Mapを隠す",
+      "hideOthers": "ほかを隠す",
+      "unhide": "すべて表示",
+      "quit": "終了"
+    }
+  },
+  "en": {
+    "translation": {
+      "save": "Mojidata Map — Save file",
+      "about": "About",
+      "aboutMac": "About Mojidata Map",
+      "credits": "Credits",
+      "edit": "Edit",
+      "view": "View",
+      "window": "Window",
+      "help": "Help",
+      "undo": "Undo",
+      "redo": "Redo",
+      "cut": "Cut",
+      "copy": "Copy",
+      "paste": "Paste",
+      "selectAll": "Select all",
+      "reload": "Reload",
+      "resetZoom": "Actual size",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "togglefullscreen": "Toggle full screen",
+      "minimize": "Minimize",
+      "close": "Close",
+      "services": "Services",
+      "hide": "Hide Mojidata Map",
+      "hideOthers": "Hide others",
+      "unhide": "Show all",
+      "quit": "Quit"
+    }
+  }
+}

@@ -103,6 +103,18 @@ try {
   ).toBeVisible();
   await page.getByText('東アジア文字データ (UAX #60)', { exact: true }).click();
   await expect(page.locator('.property-list')).toContainText(['kTGT_MergedSrc']);
+  await page.getByRole('button', { name: 'アプリメニュー', exact: true }).click();
+  await page.getByLabel('言語 / Language', { exact: true }).selectOption('en');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect
+    .poll(() =>
+      app.evaluate(({ Menu }) => Menu.getApplicationMenu().getMenuItemById('app-credits').label),
+    )
+    .toBe('Credits');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.getByRole('textbox', { name: 'Text buffer', exact: true })).toHaveValue('😀');
   expect(errors).toEqual([]);
   console.log(
     'Desktop smoke passed: custom protocol, worker, buffer, clipboard, isolation, always-on-top, About, credits, external-link validation, local font fallback, UAX #60 offline search, Page Up/Down navigation.',

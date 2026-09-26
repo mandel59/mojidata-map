@@ -1,3 +1,4 @@
+import { tr } from '../intl/i18n';
 import { create } from 'fontkit';
 import { Buffer } from 'buffer';
 import { fontNames } from './fontNames';
@@ -14,7 +15,7 @@ function localFont(bytes: ArrayBuffer, postscriptName: string) {
       )
     : 0;
   const font = fonts[index];
-  if (!font) throw new Error('フォントのフェイスが見つかりません。');
+  if (!font) throw new Error(tr('フォントのフェイスが見つかりません。'));
   return { font: resolveFontInstance(font, postscriptName), collection, index };
 }
 

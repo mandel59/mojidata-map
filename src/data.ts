@@ -1,3 +1,4 @@
+import { tr } from './intl/i18n';
 import { UnicodeDatabase, type UnicodeData } from './core/unicode';
 const cache = new Map<string, Promise<unknown>>();
 // Resolved values share the same objects as the Promise cache. Synchronous reads
@@ -15,7 +16,10 @@ export function loadData<T>(name: string): Promise<T> {
         : document.baseURI;
     pending = fetch(new URL(`${import.meta.env.BASE_URL}data/${name}.json`, base))
       .then((response) => {
-        if (!response.ok) throw new Error(`データを読み込めません: ${name} (${response.status})`);
+        if (!response.ok)
+          throw new Error(
+            tr('データを読み込めません: {{v0}} ({{v1}})', { v0: name, v1: response.status }),
+          );
         return response.json();
       })
       .then((data) => {

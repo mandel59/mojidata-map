@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Font } from 'fontkit';
 import { hex, parseCodePoint, type UnicodeDatabase } from '../../core/unicode';
@@ -50,6 +51,7 @@ export function FontCharacters({
   glyphRequest: { id: number } | null;
   onGlyphRequestHandled(): void;
 }) {
+  const { t, i18n } = useTranslation('fonts');
   const container = useRef<HTMLDivElement>(null);
   const [seenRequest, setSeenRequest] = useState(glyphRequest);
   const [block, setBlock] = useState(glyphRequest ? '@glyphs' : '');
@@ -152,9 +154,9 @@ export function FontCharacters({
     <div className="font-characters-view" ref={container}>
       <div className="font-view-toolbar">
         <label>
-          表示範囲
+          {t('表示範囲')}
           <select
-            aria-label="表示範囲"
+            aria-label={t('表示範囲')}
             value={block}
             onChange={(event) => {
               const next = event.target.value;
@@ -179,16 +181,24 @@ export function FontCharacters({
               }
             }}
           >
-            <option value="">Unicodeコードポイント ({all.length.toLocaleString()})</option>
-            <optgroup label="グリフ">
-              <option value="@glyphs">全グリフ ({font.numGlyphs.toLocaleString()})</option>
-              <option value="@unmapped">単一文字の割当なし</option>
+            <option value="">
+              {t('Unicodeコードポイント ({{count}})', {
+                count: new Intl.NumberFormat(i18n.language).format(all.length),
+              })}
+            </option>
+            <optgroup label={t('グリフ')}>
+              <option value="@glyphs">
+                {t('全グリフ ({{count}})', {
+                  count: new Intl.NumberFormat(i18n.language).format(font.numGlyphs),
+                })}
+              </option>
+              <option value="@unmapped">{t('単一文字の割当なし')}</option>
             </optgroup>
-            <optgroup label="異体字列">
-              <option value="@svs">{glyphScopes['@svs']}</option>
-              <option value="@ivs">{glyphScopes['@ivs']}</option>
+            <optgroup label={t('異体字列')}>
+              <option value="@svs">{t(glyphScopes['@svs'])}</option>
+              <option value="@ivs">{t(glyphScopes['@ivs'])}</option>
             </optgroup>
-            <optgroup label="Unicodeブロック">
+            <optgroup label={t('Unicodeブロック')}>
               {blocks.map(([name, count]) => (
                 <option key={name} value={name}>
                   {name} ({count.toLocaleString()})
@@ -204,7 +214,9 @@ export function FontCharacters({
             if (glyphMode) {
               const value = /^\d+$/.test(jump.trim()) ? Number(jump) : NaN;
               if (!Number.isInteger(value) || value < 0 || value >= font.numGlyphs) {
-                notify(`Glyph IDは0〜${font.numGlyphs - 1}の整数で指定してください。`);
+                notify(
+                  t('Glyph IDは0〜{{max}}の整数で指定してください。', { max: font.numGlyphs - 1 }),
+                );
                 return;
               }
               const position = entries.findIndex((entry) => entry.id === value);
@@ -221,7 +233,7 @@ export function FontCharacters({
             }
             const value = parseCodePoint(jump);
             if (value === null) {
-              notify('コードポイントを確認してください。');
+              notify(t('コードポイントを確認してください。'));
               return;
             }
             const position = all.indexOf(value);
@@ -233,21 +245,25 @@ export function FontCharacters({
           }}
         >
           <label>
-            {glyphMode ? 'Glyph ID' : 'コードポイント'}
+            {glyphMode ? 'Glyph ID' : t('コードポイント')}
             <input
-              aria-label={glyphMode ? 'Glyph ID（10進数）' : 'グリフのコードポイント'}
+              aria-label={glyphMode ? t('Glyph ID（10進数）') : t('グリフのコードポイント')}
               value={jump}
               onChange={(event) => setJump(event.target.value)}
               spellCheck={false}
             />
           </label>
-          <button>グリフを表示</button>
+          <button>{t('グリフを表示')}</button>
         </form>
       </div>
       <div className="font-characters-content">
         {active && (
           <>
-            <div className="font-coverage-preview" role="region" aria-label="収録文字のプレビュー">
+            <div
+              className="font-coverage-preview"
+              role="region"
+              aria-label={t('収録文字のプレビュー')}
+            >
               {glyphMode && index ? (
                 <GlyphCollection
                   font={font}
@@ -271,7 +287,7 @@ export function FontCharacters({
                           : glyphReferences(index, entry.id)[0];
                     if (reference) onInsertText(String.fromCodePoint(...reference.points));
                   }}
-                  title={glyphScopes[block]}
+                  title={t(glyphScopes[block])}
                   sequences={variationKind !== null}
                   busy={variationBusy}
                   error={variationError || index.variationError}
@@ -291,8 +307,8 @@ export function FontCharacters({
                   onSelect={onSelect}
                   onInsert={onInsert}
                   onLocate={onLocate}
-                  title={block || 'Unicodeコードポイント'}
-                  emptyMessage="収録文字がありません。"
+                  title={block || t('Unicodeコードポイント')}
+                  emptyMessage={t('収録文字がありません。')}
                   columns={16}
                   font={family ?? 'serif'}
                   colorBy="none"

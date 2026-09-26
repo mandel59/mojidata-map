@@ -14,7 +14,7 @@
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "check": "npm run build && npm test && npm run test:e2e",
+    "check": "npm run i18n:check && npm run build && npm test && npm run test:e2e",
     "data:generate": "python3 tools/build_unicode.py",
     "desktop": "npm run build && electron .",
     "desktop:pack": "npm run build && electron-builder --dir",
@@ -25,7 +25,8 @@
     "credits:generate": "node tools/build-credits.mjs",
     "prebuild": "node tools/patch-fontkit.mjs && npm run credits:generate",
     "predev": "node tools/patch-fontkit.mjs && npm run credits:generate",
-    "postinstall": "node tools/patch-fontkit.mjs"
+    "postinstall": "node tools/patch-fontkit.mjs",
+    "i18n:check": "node tools/check-translations.mjs"
   },
   "build": {
     "appId": "org.mojidata.map",
@@ -62,10 +63,13 @@
   "dependencies": {
     "buffer": "6.0.3",
     "fontkit": "2.0.4",
+    "i18next": "26.4.2",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "react-i18next": "17.0.15"
   },
   "devDependencies": {
+    "@babel/parser": "7.29.9",
     "@playwright/test": "1.63.0",
     "@types/fontkit": "2.0.9",
     "@types/node": "26.6.2",

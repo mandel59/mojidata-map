@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { memo, useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import type { UnicodeDatabase } from '../core/unicode';
 import type { LocalFont } from '../platform';
@@ -43,6 +44,7 @@ export const FontPanel = memo(function FontPanel({
   onLocate,
   onSelect,
 }: Props) {
+  const { t } = useTranslation('fonts');
   const id = useId();
   const fileInput = useRef<HTMLInputElement>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -124,12 +126,12 @@ export const FontPanel = memo(function FontPanel({
     />
   );
   return (
-    <section className="font-workspace" hidden={!active} aria-label="フォントを調べる">
+    <section className="font-workspace" hidden={!active} aria-label={t('フォントを調べる')}>
       <input
         ref={fileInput}
         type="file"
         hidden
-        aria-label="フォントファイル"
+        aria-label={t('フォントファイル')}
         accept=".ttf,.otf,.woff,.woff2,.ttc,.otc,.dfont"
         onChange={(event) => {
           const file = event.target.files?.[0];
@@ -141,7 +143,7 @@ export const FontPanel = memo(function FontPanel({
         }}
       />
       {!compact && (
-        <aside className="font-picker-sidebar" aria-label="フォント一覧">
+        <aside className="font-picker-sidebar" aria-label={t('フォント一覧')}>
           {picker}
         </aside>
       )}
@@ -149,34 +151,36 @@ export const FontPanel = memo(function FontPanel({
         className="font-inspection"
         id={`${id}-inspection`}
         role="tabpanel"
-        aria-label="フォントの解析"
+        aria-label={t('フォントの解析')}
       >
         <header className="font-workspace-heading">
           <div>
             <span className="muted font-inspection-caption" role="status">
-              {busy ? `${pending.label} を解析中…` : '解析対象のフォント'}
+              {busy ? t('{{label}} を解析中…', { label: pending.label }) : t('解析対象のフォント')}
             </span>
             <h2 title={names?.fullName} ref={heading} tabIndex={-1}>
-              {names?.fullName || 'フォントを選んでください'}
+              {names?.fullName || t('フォントを選んでください')}
             </h2>
           </div>
           {compact && (
             <button onClick={() => setPickerOpen(true)} aria-haspopup="dialog">
-              フォント一覧
+              {t('フォント一覧')}
             </button>
           )}
           {(font || busy) && (
-            <button aria-label="追加フォントを解除" onClick={clear}>
-              解除
+            <button aria-label={t('追加フォントを解除')} onClick={clear}>
+              {t('解除')}
             </button>
           )}
         </header>
         {font && !selection?.preview && (
           <p className="note" role="status">
-            このフェイスはブラウザで表示できません。入力欄と文字一覧は標準フォントで表示します。グリフ表・輪郭・収録判定は解析対象の結果です。
+            {t(
+              'このフェイスはブラウザで表示できません。入力欄と文字一覧は標準フォントで表示します。グリフ表・輪郭・収録判定は解析対象の結果です。',
+            )}
           </p>
         )}
-        <div className="font-tabs" role="tablist" aria-label="フォントの表示内容" ref={tabs}>
+        <div className="font-tabs" role="tablist" aria-label={t('フォントの表示内容')} ref={tabs}>
           {sections.map(([key, label], position) => (
             <button
               key={key}
@@ -188,7 +192,7 @@ export const FontPanel = memo(function FontPanel({
               onClick={() => setSection(key)}
               onKeyDown={(event) => moveTab(event, position)}
             >
-              {label}
+              {t(label)}
             </button>
           ))}
         </div>
@@ -205,11 +209,13 @@ export const FontPanel = memo(function FontPanel({
               {!font ? (
                 <div className="empty-state">
                   <h3>
-                    {key === 'sample' ? 'サンプルの字形と収録状況を調べる' : 'フォントを読み込む'}
+                    {key === 'sample'
+                      ? t('サンプルの字形と収録状況を調べる')
+                      : t('フォントを読み込む')}
                   </h3>
-                  <p>フォント一覧から選ぶか、フォントファイルを開いてください。</p>
+                  <p>{t('フォント一覧から選ぶか、フォントファイルを開いてください。')}</p>
                   {compact && (
-                    <button onClick={() => setPickerOpen(true)}>フォント一覧を開く</button>
+                    <button onClick={() => setPickerOpen(true)}>{t('フォント一覧を開く')}</button>
                   )}
                 </div>
               ) : key === 'characters' ? (
@@ -246,7 +252,7 @@ export const FontPanel = memo(function FontPanel({
                 />
               ) : (
                 <div className="font-section-scroll">
-                  <h3>フォント情報</h3>
+                  <h3>{t('フォント情報')}</h3>
                   <dl className="property-list">
                     {Object.entries({
                       Family: names?.family,
@@ -261,13 +267,15 @@ export const FontPanel = memo(function FontPanel({
                       Copyright: font.copyright,
                     }).map(([key, value]) => (
                       <div key={key}>
-                        <dt>{key}</dt>
+                        <dt>{t(key)}</dt>
                         <dd>{value}</dd>
                       </div>
                     ))}
                   </dl>
                   <p className="note muted">
-                    収録判定とSVGは解析対象に基づきます。画面のプレビューとPNGはOSのフォールバックを含みます。
+                    {t(
+                      '収録判定とSVGは解析対象に基づきます。画面のプレビューとPNGはOSのフォールバックを含みます。',
+                    )}
                   </p>
                 </div>
               )}
@@ -278,7 +286,7 @@ export const FontPanel = memo(function FontPanel({
       {compact &&
         pickerOpen &&
         createPortal(
-          <UtilityDialog title="フォント一覧" onClose={() => setPickerOpen(false)}>
+          <UtilityDialog title={t('フォント一覧')} onClose={() => setPickerOpen(false)}>
             {picker}
           </UtilityDialog>,
           document.body,

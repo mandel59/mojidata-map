@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { UnicodeDatabase } from '../../core/unicode';
 import { isReadingProperty } from '../../core/hanReadings';
 import { isPropertyField } from '../../core/propertySearch';
@@ -32,6 +33,7 @@ export const SearchWorkspace = memo(function SearchWorkspace({
   onLocate(cp: number): void;
   focusRequest: number;
 }) {
+  const { t } = useTranslation('search');
   const [text, setText] = useState(search.query.text ?? '');
   useEffect(() => setText(search.query.text ?? ''), [search.query]);
   const container = useRef<HTMLElement>(null);
@@ -58,11 +60,11 @@ export const SearchWorkspace = memo(function SearchWorkspace({
       onSelect={onSelect}
       onInsert={onInsert}
       onLocate={onLocate}
-      title={session.title || '文字・属性から探す'}
+      title={session.title || t('文字・属性から探す')}
       emptyMessage={
         session.points === null
-          ? '文字・名前を入力するか、カテゴリから条件を追加してください。'
-          : '一致する文字がありません。検索条件を変更してください。'
+          ? t('文字・名前を入力するか、カテゴリから条件を追加してください。')
+          : t('一致する文字がありません。検索条件を変更してください。')
       }
       busy={session.busy}
       error={session.error}
@@ -73,13 +75,18 @@ export const SearchWorkspace = memo(function SearchWorkspace({
     />
   );
   return (
-    <section className="search-workspace" aria-label="文字検索" hidden={!active} ref={container}>
+    <section
+      className="search-workspace"
+      aria-label={t('文字検索')}
+      hidden={!active}
+      ref={container}
+    >
       {active && (
         <>
           <div className="search-input-row">
             <SearchField value={text} onChange={setText} onSearch={runSearch} busy={session.busy} />
             <button type="button" popoverTarget="display-options">
-              表示設定
+              {t('表示設定')}
             </button>
           </div>
           <CharacterConditions

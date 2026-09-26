@@ -1,4 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { codeLabel, type UnicodeDatabase } from '../core/unicode';
 import { download } from '../platform';
 import { CharacterGrid } from './CharacterGrid';
@@ -39,6 +40,7 @@ export const CharacterCollection = memo(function CharacterCollection({
   colorBy: string;
   composite: Record<string, string>;
 }) {
+  const { t, i18n } = useTranslation('common');
   const container = useRef<HTMLElement>(null);
   const [availableColumns, setAvailableColumns] = useState(columns);
   useEffect(() => {
@@ -61,11 +63,16 @@ export const CharacterCollection = memo(function CharacterCollection({
       <h2 className="collection-heading">{title}</h2>
       <div className="results-heading">
         <span aria-live="polite">
-          {busy ? '検索中…' : `${points.length.toLocaleString()} 文字`}
+          {busy
+            ? t('検索中…')
+            : t('{{displayCount}} 文字', {
+                count: points.length,
+                displayCount: points.length.toLocaleString(i18n.language),
+              })}
         </span>
         <div className="button-row">
           <button disabled={!points.includes(selected)} onClick={() => onLocate(selected)}>
-            文字表で表示
+            {t('文字表で表示')}
           </button>
           <button
             disabled={!points.length}
@@ -83,7 +90,7 @@ export const CharacterCollection = memo(function CharacterCollection({
               )
             }
           >
-            一覧を保存
+            {t('一覧を保存')}
           </button>
         </div>
       </div>
@@ -113,19 +120,23 @@ export const CharacterCollection = memo(function CharacterCollection({
         />
       ) : (
         <div className="empty-state">
-          <p>{busy ? '検索中…' : emptyMessage}</p>
+          <p>{busy ? t('検索中…') : emptyMessage}</p>
         </div>
       )}
       <div className="pagination">
         <div className="button-row">
-          <button aria-label="前のページ" disabled={page === 0} onClick={() => onPage(page - 1)}>
+          <button
+            aria-label={t('前のページ')}
+            disabled={page === 0}
+            onClick={() => onPage(page - 1)}
+          >
             ←
           </button>
           <span>
             {page + 1} / {Math.max(1, Math.ceil(points.length / 128))}
           </span>
           <button
-            aria-label="次のページ"
+            aria-label={t('次のページ')}
             disabled={(page + 1) * 128 >= points.length}
             onClick={() => onPage(page + 1)}
           >

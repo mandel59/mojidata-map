@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export function UtilityDialog({
   title,
@@ -9,6 +10,8 @@ export function UtilityDialog({
   children: ReactNode;
   onClose(): void;
 }) {
+  const { t } = useTranslation('common');
+  const translatedTitle = t(title);
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   useEffect(() => {
@@ -31,9 +34,9 @@ export function UtilityDialog({
       }}
     >
       <header>
-        <h2 id={titleId}>{title}</h2>
-        <button onClick={close} aria-label={`${title}を閉じる`}>
-          閉じる
+        <h2 id={titleId}>{translatedTitle}</h2>
+        <button onClick={close} aria-label={t('{{title}}を閉じる', { title: translatedTitle })}>
+          {t('閉じる')}
         </button>
       </header>
       <div className="utility-dialog-body">{children}</div>

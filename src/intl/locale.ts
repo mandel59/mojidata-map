@@ -1,5 +1,4 @@
-// The UI currently ships in Japanese. A future language preference should feed
-// LocaleProvider; browser/OS locale must not silently change the UI's language.
+// Japanese remains the initial language; an explicit preference selects the UI locale.
 export const DEFAULT_LOCALE = 'ja';
 export const FALLBACK_LOCALE = 'en';
 

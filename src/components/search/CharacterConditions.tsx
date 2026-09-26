@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { memo, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { UnicodeDatabase } from '../../core/unicode';
 import { isReadingProperty, readingDefinitions } from '../../core/hanReadings';
@@ -29,6 +30,7 @@ export const CharacterConditions = memo(function CharacterConditions({
   onClear(): void;
   children: ReactNode;
 }) {
+  const { t } = useTranslation('search');
   const id = useId();
   const [category, setCategory] = useState(categories[0].id);
   const [expanded, setExpanded] = useState(() => !matchMedia('(max-width: 600px)').matches);
@@ -72,22 +74,29 @@ export const CharacterConditions = memo(function CharacterConditions({
     key === 'radical'
       ? `${String.fromCodePoint(0x2f00 + Number(value) - 1)} ${value}`
       : key === 'aliases'
-        ? '正式名のみ'
+        ? t('正式名のみ')
         : key === 'wholeWord'
-          ? '単語全体で一致'
+          ? t('単語全体で一致')
           : value;
   const radicalSuffix =
     query.radicalForm ??
-    ((db.data.radicalForms[query.radical ?? '']?.length ?? 0) > 1 ? '（すべての形）' : '');
+    ((db.data.radicalForms[query.radical ?? '']?.length ?? 0) > 1 ? t('（すべての形）') : '');
   const conditions = (Object.keys(labels) as (keyof typeof labels)[]).flatMap((key) => {
     if (key === 'binary')
       return (query.binary ?? []).map((value) => ({
         id: `binary:${value}`,
-        label: `${labels.binary}: ${value}`,
+        label: t('{{label}}: {{value}}', { label: t(labels.binary), value }),
       }));
     if (isReadingProperty(key)) {
       const value = query.readings?.[key];
-      return value ? [{ id: `readings:${key}`, label: `${labels[key]}: ${value}` }] : [];
+      return value
+        ? [
+            {
+              id: `readings:${key}`,
+              label: t('{{label}}: {{value}}', { label: t(labels[key]), value }),
+            },
+          ]
+        : [];
     }
     if (isPropertyField(key)) {
       const value = query.properties?.[key];
@@ -95,7 +104,10 @@ export const CharacterConditions = memo(function CharacterConditions({
         ? [
             {
               id: `properties:${key}`,
-              label: `${labels[key]}: ${value === '*' ? '登録あり' : value}`,
+              label: t('{{label}}: {{value}}', {
+                label: t(labels[key]),
+                value: value === '*' ? t('登録あり') : value,
+              }),
             },
           ]
         : [];
@@ -103,7 +115,9 @@ export const CharacterConditions = memo(function CharacterConditions({
     const value = query[key];
     if (key === 'aliases' ? value !== false : !value) return [];
     const display = key === 'radical' ? `${value}${radicalSuffix}` : valueLabel(key, String(value));
-    return [{ id: key, label: `${labels[key]}: ${display}` }];
+    return [
+      { id: key, label: t('{{label}}: {{value}}', { label: t(labels[key]), value: display }) },
+    ];
   });
   function moveTab(event: KeyboardEvent<HTMLButtonElement>, categoryId: string) {
     const index = categories.findIndex((item) => item.id === categoryId);
@@ -125,13 +139,13 @@ export const CharacterConditions = memo(function CharacterConditions({
   return (
     <div className="character-conditions">
       <div className="condition-heading">
-        <span className="muted">すべての条件に一致</span>
+        <span className="muted">{t('すべての条件に一致')}</span>
         <button
           aria-expanded={expanded}
           aria-controls={`${id}-editor`}
           onClick={() => setExpanded(!expanded)}
         >
-          {expanded ? '条件追加を閉じる' : '条件を追加'}
+          {expanded ? t('条件追加を閉じる') : t('条件を追加')}
         </button>
       </div>
       <ConditionChips
@@ -151,7 +165,7 @@ export const CharacterConditions = memo(function CharacterConditions({
         <div id={`${id}-editor`} className="condition-editor" hidden={!expanded}>
           <div
             role="tablist"
-            aria-label="検索条件カテゴリ"
+            aria-label={t('検索条件カテゴリ')}
             aria-orientation="vertical"
             className="condition-tabs"
             ref={tabs}
@@ -164,7 +178,7 @@ export const CharacterConditions = memo(function CharacterConditions({
                 className="condition-tab-group"
               >
                 <h3 id={`${id}-${group.id}-heading`} className="condition-tab-group-heading">
-                  {group.label}
+                  {t(group.label)}
                 </h3>
                 {group.categories.map((item) => (
                   <button
@@ -177,7 +191,7 @@ export const CharacterConditions = memo(function CharacterConditions({
                     onClick={() => setCategory(item.id)}
                     onKeyDown={(event) => moveTab(event, item.id)}
                   >
-                    {item.label}
+                    {t(item.label)}
                   </button>
                 ))}
               </div>
@@ -236,14 +250,14 @@ export const CharacterConditions = memo(function CharacterConditions({
                         });
                       }}
                     >
-                      <label htmlFor={`${id}-${key}`}>{labels[key]}</label>
+                      <label htmlFor={`${id}-${key}`}>{t(labels[key])}</label>
                       {isReadingProperty(key) || isPropertyField(key) ? (
                         <input
                           id={`${id}-${key}`}
                           placeholder={
                             isPropertyField(key)
-                              ? propertyDefinitions[key].placeholder
-                              : readingDefinitions[key].placeholder
+                              ? t(propertyDefinitions[key].placeholder)
+                              : t(readingDefinitions[key].placeholder)
                           }
                           title={isPropertyField(key) ? propertyDefinitions[key].property : key}
                           aria-describedby={isPropertyField(key) ? `${id}-${key}-help` : undefined}
@@ -268,7 +282,7 @@ export const CharacterConditions = memo(function CharacterConditions({
                               setRadicalForm(undefined);
                           }}
                         >
-                          <option value="">条件の値を選択…</option>
+                          <option value="">{t('条件の値を選択…')}</option>
                           {options[key].map((value) => (
                             <option
                               key={value}
@@ -277,7 +291,7 @@ export const CharacterConditions = memo(function CharacterConditions({
                             >
                               {valueLabel(key, value)}
                               {key === 'binary' && query.binary?.includes(value)
-                                ? '（追加済み）'
+                                ? t('（追加済み）')
                                 : ''}
                             </option>
                           ))}
@@ -285,7 +299,7 @@ export const CharacterConditions = memo(function CharacterConditions({
                       )}
                       {key === 'radical' && (
                         <>
-                          <label htmlFor={`${id}-radical-form`}>部首の形（枝番）</label>
+                          <label htmlFor={`${id}-radical-form`}>{t('部首の形（枝番）')}</label>
                           <select
                             id={`${id}-radical-form`}
                             value={radicalForm ?? 'any'}
@@ -305,14 +319,14 @@ export const CharacterConditions = memo(function CharacterConditions({
                               )
                               .map(([value, label]) => (
                                 <option key={value} value={value}>
-                                  {label}
+                                  {t(label)}
                                 </option>
                               ))}
                           </select>
                         </>
                       )}
                       <button
-                        aria-label={`${labels[key]}の条件を追加`}
+                        aria-label={t('{{label}}の条件を追加', { label: t(labels[key]) })}
                         disabled={
                           !value.trim() ||
                           (key === 'radical' && !validRadical) ||
@@ -325,17 +339,19 @@ export const CharacterConditions = memo(function CharacterConditions({
                         current !== undefined &&
                         current !== '' &&
                         (key !== 'aliases' || current === false)
-                          ? '更新'
-                          : '追加'}
+                          ? t('更新')
+                          : t('追加')}
                       </button>
                       {isPropertyField(key) && (
                         <p id={`${id}-${key}-help`} className="condition-hint muted">
-                          {propertyHints[propertyDefinitions[key].match]} * で登録あり。
+                          {t('{{hint}} * で登録あり。', {
+                            hint: t(propertyHints[propertyDefinitions[key].match]),
+                          })}
                         </p>
                       )}
                       {key === 'totalStrokes' && (
                         <p id={`${id}-total-strokes-help`} className="condition-hint muted">
-                          別の数え方を含む、登録済みの総画数のいずれかに一致します。
+                          {t('別の数え方を含む、登録済みの総画数のいずれかに一致します。')}
                         </p>
                       )}
                     </form>
@@ -343,8 +359,8 @@ export const CharacterConditions = memo(function CharacterConditions({
                 })}
               <p className="muted">
                 {item.id === 'properties'
-                  ? '二値属性は複数追加できます。ほかの項目は置き換えます。'
-                  : '同じ項目の条件は置き換えます。'}
+                  ? t('二値属性は複数追加できます。ほかの項目は置き換えます。')
+                  : t('同じ項目の条件は置き換えます。')}
               </p>
             </div>
           ))}

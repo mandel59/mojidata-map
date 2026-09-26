@@ -1,3 +1,4 @@
+import { tr } from '../intl/i18n';
 import type { Font } from 'fontkit';
 import { instanceNameRecords } from './fontInstance';
 import { FALLBACK_LOCALE } from '../intl/locale';
@@ -63,7 +64,7 @@ export function fontNames(font: Font, locale: string, fallback = ''): FontNames 
     }
     return '';
   }
-  const identifier = font.postscriptName || fallback || '名称不明';
+  const identifier = font.postscriptName || fallback || tr('名称不明');
   return {
     fullName: pick(['fullName']) || identifier,
     family: pick(['preferredFamily', 'fontFamily']) || identifier,

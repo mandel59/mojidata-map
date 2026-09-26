@@ -1,3 +1,4 @@
+import { tr } from './intl/i18n';
 import { useLocale } from './intl/LocaleProvider';
 import { useEffect, useRef, useState } from 'react';
 import { bufferCoverage } from './core/bufferCoverage';
@@ -42,14 +43,18 @@ export function useBufferFontSearch(db: UnicodeDatabase) {
     setResult(initial);
     try {
       if (rows.some((row) => row.status === 'invalid'))
-        throw new Error('単独のサロゲートが含まれています。編集バッファの文字を修正してください。');
+        throw new Error(
+          tr('単独のサロゲートが含まれています。編集バッファの文字を修正してください。'),
+        );
       if (!points.length) {
         setResult({ ...initial, status: 'complete' });
         return;
       }
       if (!window.queryLocalFonts)
         throw new Error(
-          'この環境は端末フォントの取得に対応していません。デスクトップ版または対応するブラウザで開いてください。',
+          tr(
+            'この環境は端末フォントの取得に対応していません。デスクトップ版または対応するブラウザで開いてください。',
+          ),
         );
       // Called directly from a click, before any await, to retain user activation.
       const fonts = await window.queryLocalFonts();
@@ -70,7 +75,7 @@ export function useBufferFontSearch(db: UnicodeDatabase) {
       if (!controller.signal.aborted) {
         const message =
           error instanceof DOMException && error.name === 'NotAllowedError'
-            ? '端末フォントへのアクセスが許可されていません。権限を確認して再試行してください。'
+            ? tr('端末フォントへのアクセスが許可されていません。権限を確認して再試行してください。')
             : String(error);
         setResult((current) => current && { ...current, status: 'error', error: message });
       }

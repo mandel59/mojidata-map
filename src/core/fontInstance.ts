@@ -1,3 +1,4 @@
+import { tr } from '../intl/i18n';
 import type { Font } from 'fontkit';
 import { statStyle } from './fontStatNames';
 
@@ -88,7 +89,7 @@ export function resolveFontInstance(font: Font, postscriptName: string): Font {
   const instance = fontInstance(font, postscriptName);
   if (!instance) {
     if ((font as VariableFont).fvar && font.postscriptName !== postscriptName)
-      throw new Error('選択した可変フォントのインスタンスが見つかりません。');
+      throw new Error(tr('選択した可変フォントのインスタンスが見つかりません。'));
     return font;
   }
   const resolved = font.getVariation(instance.coordinates);

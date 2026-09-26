@@ -1,9 +1,11 @@
+import { useTranslation } from 'react-i18next';
 import { useEffect, useRef, useState } from 'react';
 import type { FontMatch } from '../bufferFontSearch';
 import { fontFaceData, FONT_SIZE_LIMIT } from '../core/fontFaceData';
 
 let sequence = 0;
 export function BufferFontPreview({ font, text }: { font: FontMatch; text: string }) {
+  const { t } = useTranslation('fonts');
   const element = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [preview, setPreview] = useState<{ font: FontMatch; family: string | null } | null>(null);
@@ -44,7 +46,11 @@ export function BufferFontPreview({ font, text }: { font: FontMatch; text: strin
   }, [font, visible]);
   const current = visible && preview?.font === font ? preview : null;
   return (
-    <div ref={element} className="buffer-font-preview" aria-label={`${font.fullName}のプレビュー`}>
+    <div
+      ref={element}
+      className="buffer-font-preview"
+      aria-label={t('{{name}}のプレビュー', { name: font.fullName })}
+    >
       {current?.family ? (
         <div
           className="buffer-font-preview-text"
@@ -55,7 +61,9 @@ export function BufferFontPreview({ font, text }: { font: FontMatch; text: strin
         </div>
       ) : (
         <span className="note muted">
-          {current ? 'このフォントはブラウザでプレビューできません。' : 'プレビューを読み込み中…'}
+          {current
+            ? t('このフォントはブラウザでプレビューできません。')
+            : t('プレビューを読み込み中…')}
         </span>
       )}
     </div>

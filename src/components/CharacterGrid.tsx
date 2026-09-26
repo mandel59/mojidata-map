@@ -3,6 +3,7 @@ import { memo, useRef } from 'react';
 import { useGridNavigation } from '../useGridNavigation';
 import { CharacterGridSurface } from './CharacterDisplay';
 import { codeLabel, hex, isCodePoint, type UnicodeDatabase } from '../core/unicode';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   columns: number;
@@ -34,6 +35,7 @@ export const CharacterGrid = memo(function CharacterGrid({
   onMove,
   onMoveIndex,
 }: Props) {
+  const { t } = useTranslation('common');
   const fontStyle = useFontStyle();
   const container = useRef<HTMLDivElement>(null);
   const navigation = useGridNavigation({
@@ -69,7 +71,10 @@ export const CharacterGrid = memo(function CharacterGrid({
             aria-label={`${codeLabel(cp)} ${name}`}
             aria-pressed={selected === cp}
             tabIndex={navigation.tabIndex(index)}
-            title={`${codeLabel(cp)} · ${name}\nダブルクリック / Enter で追加`}
+            title={t('{{code}} · {{name}}\nダブルクリック / Enter で追加', {
+              code: codeLabel(cp),
+              name,
+            })}
             onClick={() => onSelect(cp)}
             onDoubleClick={() => onInsert(cp)}
             onKeyDown={(event) => navigation.onKeyDown(event, index)}

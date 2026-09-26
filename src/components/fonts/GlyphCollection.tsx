@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Font } from 'fontkit';
 import { CharacterGridSurface } from '../CharacterDisplay';
@@ -37,6 +38,7 @@ export function GlyphCollection({
   error?: string;
   onRetry?(): void;
 }) {
+  const { t, i18n } = useTranslation('fonts');
   const section = useRef<HTMLElement>(null);
   const grid = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(16);
@@ -77,10 +79,18 @@ export function GlyphCollection({
       <div className="results-heading">
         <span aria-live="polite">
           {busy
-            ? '読込中…'
+            ? t('読込中…')
             : error
-              ? '取得失敗'
-              : `${entries.length.toLocaleString()} ${sequences ? 'シーケンス' : 'グリフ'}`}
+              ? t('取得失敗')
+              : sequences
+                ? t('{{count}} シーケンス', {
+                    count: entries.length,
+                    formattedCount: new Intl.NumberFormat(i18n.language).format(entries.length),
+                  })
+                : t('{{count}} グリフ', {
+                    count: entries.length,
+                    formattedCount: new Intl.NumberFormat(i18n.language).format(entries.length),
+                  })}
         </span>
         <button
           disabled={busy || !entries.length}
@@ -106,12 +116,12 @@ export function GlyphCollection({
             )
           }
         >
-          一覧を保存
+          {t('一覧を保存')}
         </button>
       </div>
       {error && (
         <p className="note error" role="alert">
-          {error} {onRetry && <button onClick={onRetry}>再読み込み</button>}
+          {error} {onRetry && <button onClick={onRetry}>{t('再読み込み')}</button>}
         </p>
       )}
       {visible.length ? (
@@ -119,7 +129,7 @@ export function GlyphCollection({
           containerRef={grid}
           columns={columns}
           className="character-grid font-glyph-grid"
-          label={sequences ? '異体字列一覧' : 'グリフ一覧'}
+          label={sequences ? t('異体字列一覧') : t('グリフ一覧')}
         >
           {visible.map(({ id, points }, position) => {
             const entryIndex = page * 128 + position;
@@ -164,25 +174,25 @@ export function GlyphCollection({
         <div className="empty-state">
           <p>
             {busy
-              ? '異体字列のデータを読み込み中…'
+              ? t('異体字列のデータを読み込み中…')
               : error
-                ? '一覧を表示できません。'
+                ? t('一覧を表示できません。')
                 : sequences
-                  ? '該当する異体字列がありません。'
-                  : '該当するグリフがありません。'}
+                  ? t('該当する異体字列がありません。')
+                  : t('該当するグリフがありません。')}
           </p>
         </div>
       )}
       <div className="pagination">
         <div className="button-row">
-          <button aria-label="前のページ" disabled={!page} onClick={() => onPage(page - 1)}>
+          <button aria-label={t('前のページ')} disabled={!page} onClick={() => onPage(page - 1)}>
             ←
           </button>
           <span>
             {page + 1} / {Math.max(1, Math.ceil(entries.length / 128))}
           </span>
           <button
-            aria-label="次のページ"
+            aria-label={t('次のページ')}
             disabled={(page + 1) * 128 >= entries.length}
             onClick={() => onPage(page + 1)}
           >

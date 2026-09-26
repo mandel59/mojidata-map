@@ -1,3 +1,4 @@
+import { tr } from '../intl/i18n';
 import type { Font } from 'fontkit';
 import { isScalar } from './unicode';
 import { fontLigatures } from './fontLigatures';
@@ -82,7 +83,7 @@ export function fontGlyphIndex(font: Font): FontGlyphIndex {
       }
     }
   } catch (error) {
-    result.variationError = `VSの対応情報を取得できません: ${String(error)}`;
+    result.variationError = tr('VSの対応情報を取得できません: {{v0}}', { v0: String(error) });
   }
   indices.set(font, result);
   return result;

@@ -1,3 +1,4 @@
+import { tr } from './intl/i18n';
 import {
   createContext,
   useCallback,
@@ -28,7 +29,7 @@ export function useFontFallback(enabled: boolean, onEnabled: (value: boolean) =>
     const controller = new AbortController();
     pending.current = controller;
     setError('');
-    setProgress('端末フォントを取得中…');
+    setProgress(tr('端末フォントを取得中…'));
     try {
       // Invoke directly from the click handler, before the first await, so a
       // browser can request Local Font Access permission with user activation.
@@ -37,7 +38,8 @@ export function useFontFallback(enabled: boolean, onEnabled: (value: boolean) =>
       const next = await buildFontFallback(
         fonts,
         (count, total) => {
-          if (!controller.signal.aborted) setProgress(`フォントを確認中… ${count} / ${total}`);
+          if (!controller.signal.aborted)
+            setProgress(tr('フォントを確認中… {{v0}} / {{v1}}', { v0: count, v1: total }));
         },
         controller.signal,
       );
@@ -51,7 +53,9 @@ export function useFontFallback(enabled: boolean, onEnabled: (value: boolean) =>
     } catch (reason) {
       if (!controller.signal.aborted)
         setError(
-          `端末フォントを取得できませんでした。権限を確認して再試行してください。${String(reason)}`,
+          tr('端末フォントを取得できませんでした。権限を確認して再試行してください。{{v0}}', {
+            v0: String(reason),
+          }),
         );
     } finally {
       if (pending.current === controller) {
@@ -129,35 +133,41 @@ export function FallbackFontSettings({
           disabled={!fallback.loaded || !!fallback.progress}
           onChange={(event) => onEnabled(event.target.checked)}
         />
-        端末フォントで欠字を補完
+        {tr('端末フォントで欠字を補完')}
       </label>
-      <p className="muted">指定フォントにない文字を、端末にある別のフォントで表示します。</p>
+      <p className="muted">
+        {tr('指定フォントにない文字を、端末にある別のフォントで表示します。')}
+      </p>
       <button
         type="button"
         disabled={!fallback.supported || !!fallback.progress}
         onClick={() => void fallback.acquire()}
       >
-        {fallback.loaded ? '補完用フォントを再取得' : '補完用フォントを取得'}
+        {fallback.loaded ? tr('補完用フォントを再取得') : tr('補完用フォントを取得')}
       </button>
       {fallback.progress && (
         <>
           <p role="status">{fallback.progress}</p>
           <button type="button" onClick={fallback.cancel}>
-            中止
+            {tr('中止')}
           </button>
         </>
       )}
       {fallback.loaded && (
         <p className="muted">
-          {fallback.loaded.checked} フォントを確認、{fallback.loaded.faces.length}{' '}
-          フォントを補完に使用。
+          {tr('{{checked}} フォントを確認、{{used}} フォントを補完に使用。', {
+            checked: fallback.loaded.checked,
+            used: fallback.loaded.faces.length,
+          })}
           {fallback.loaded.skipped > 0 &&
-            `読み込めない ${fallback.loaded.skipped} フォントを除外しました。`}
+            tr('読み込めない {{v0}} フォントを除外しました。', { v0: fallback.loaded.skipped })}
         </p>
       )}
       {!fallback.supported && (
         <p className="muted">
-          このブラウザーでは端末フォントを取得できません。表示フォントを直接指定してください。
+          {tr(
+            'このブラウザーでは端末フォントを取得できません。表示フォントを直接指定してください。',
+          )}
         </p>
       )}
       {fallback.error && (

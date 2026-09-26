@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export interface ConditionChip {
   id: string;
@@ -13,9 +14,10 @@ export function ConditionChips({
   onRemove(id: string): void;
   onClear(): void;
 }) {
+  const { t } = useTranslation('search');
   const list = useRef<HTMLDivElement>(null);
   return (
-    <div className="condition-chips" aria-label="検索条件" ref={list} tabIndex={-1}>
+    <div className="condition-chips" aria-label={t('検索条件')} ref={list} tabIndex={-1}>
       {conditions.length ? (
         <>
           {conditions.map(({ id, label }, index) => (
@@ -23,7 +25,7 @@ export function ConditionChips({
               key={id}
               className="condition-chip"
               title={label}
-              aria-label={`${label} を解除`}
+              aria-label={t('{{label}} を解除', { label })}
               onClick={() => {
                 onRemove(id);
                 requestAnimationFrame(() => {
@@ -43,11 +45,11 @@ export function ConditionChips({
               requestAnimationFrame(() => list.current?.focus());
             }}
           >
-            すべて解除
+            {t('すべて解除')}
           </button>
         </>
       ) : (
-        <span className="muted">検索条件なし</span>
+        <span className="muted">{t('検索条件なし')}</span>
       )}
     </div>
   );

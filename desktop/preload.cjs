@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('mojidata', {
+  setLanguage: (language) => ipcRenderer.invoke('set-language', language),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   onOpenAbout: (callback) => {
     const listener = (_event, section) => {

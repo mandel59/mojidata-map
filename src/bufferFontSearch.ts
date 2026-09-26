@@ -1,3 +1,4 @@
+import { tr } from './intl/i18n';
 import { FONT_SIZE_LIMIT } from './core/fontFaceData';
 import type { LocalFont } from './platform';
 import type { FontNames } from './core/fontNames';
@@ -34,7 +35,7 @@ export async function findBufferFonts(
   let failure: Error | null = null;
   let rejectPending: ((error: unknown) => void) | null = null;
   worker.onerror = (event) => {
-    failure = new Error(event.message || 'フォント解析を開始できません。');
+    failure = new Error(event.message || tr('フォント解析を開始できません。'));
     rejectPending?.(failure);
   };
   const abort = () => {

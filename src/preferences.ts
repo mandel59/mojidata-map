@@ -1,3 +1,4 @@
+import { tr } from './intl/i18n';
 import { useCallback, useEffect, useState } from 'react';
 import { isCodePoint } from './core/unicode';
 
@@ -62,7 +63,9 @@ export function usePreferences() {
         localStorage.setItem(key, JSON.stringify(preferences));
         setStorageError('');
       } catch {
-        setStorageError('設定を保存できません。編集内容はこの画面を閉じる前に保存してください。');
+        setStorageError(
+          tr('設定を保存できません。編集内容はこの画面を閉じる前に保存してください。'),
+        );
       }
     };
     const timer = setTimeout(persist, 300);

@@ -1,3 +1,4 @@
+import { tr } from './intl/i18n';
 export type AboutSection = 'about' | 'credits';
 
 export async function copyText(text: string): Promise<void> {
@@ -5,7 +6,7 @@ export async function copyText(text: string): Promise<void> {
   else if (navigator.clipboard) await navigator.clipboard.writeText(text);
   else
     throw new Error(
-      'この環境ではコピー API を利用できません。テキストを選択してコピーしてください。',
+      tr('この環境ではコピー API を利用できません。テキストを選択してコピーしてください。'),
     );
 }
 
@@ -29,6 +30,7 @@ declare global {
   interface Window {
     queryLocalFonts?: () => Promise<LocalFont[]>;
     mojidata?: {
+      setLanguage?(language: 'ja' | 'en'): Promise<void>;
       copyText(text: string): Promise<void>;
       setAlwaysOnTop(value: boolean): Promise<void>;
       openExternal(url: string): Promise<void>;

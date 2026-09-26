@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useMemo, useState, type KeyboardEvent } from 'react';
 import type { useLocalFontList } from '../../useLocalFontList';
 import type { useFontInspection } from '../../useFontInspection';
@@ -47,6 +48,7 @@ export function FontPicker({
   onFace(index: number): void;
   panelId: string;
 }) {
+  const { t } = useTranslation('fonts');
   const { locale, numberFormat } = useLocale();
   const [focused, setFocused] = useState('');
   const [focusedFace, setFocusedFace] = useState<number | null>(null);
@@ -69,39 +71,40 @@ export function FontPicker({
   return (
     <div className="font-picker">
       <div className="font-picker-heading">
-        <h2>フォント一覧</h2>
+        <h2>{t('フォント一覧')}</h2>
         <span className="muted">{numberFormat.format(list.fonts.length)}</span>
       </div>
       <div className="font-picker-actions">
         <button
-          aria-label="端末のフォントを取得"
+          aria-label={t('端末のフォントを取得')}
           disabled={busy}
           onClick={() => void list.enumerate()}
         >
-          {list.fonts.length ? '再取得' : '端末から取得'}
+          {list.fonts.length ? t('再取得') : t('端末から取得')}
         </button>
-        <button aria-label="フォントファイルを開く" onClick={onFile}>
-          ファイルを開く
+        <button aria-label={t('フォントファイルを開く')} onClick={onFile}>
+          {t('ファイルを開く')}
         </button>
       </div>
       <label className="font-picker-search">
-        フォントを検索
+        {t('フォントを検索')}
         <input
           type="search"
           value={query}
-          placeholder="名前・PostScript名"
+          placeholder={t('名前・PostScript名')}
           onChange={(event) => onQuery(event.target.value)}
         />
       </label>
       <div className="font-picker-scroll">
         <section className="font-picker-local">
           <h3>
-            端末フォント <span>{numberFormat.format(matches.length)}</span>
+            {t('端末フォント')}
+            <span>{numberFormat.format(matches.length)}</span>
           </h3>
           {matches.length ? (
             <div
               role="tablist"
-              aria-label="端末のフォント"
+              aria-label={t('端末のフォント')}
               aria-orientation="vertical"
               onKeyDown={moveFocus}
             >
@@ -125,9 +128,9 @@ export function FontPicker({
                   <span>{entry.fullName}</span>
                   <small>
                     {entry.nameStatus === 'pending'
-                      ? '名前を取得中…'
+                      ? t('名前を取得中…')
                       : entry.nameStatus === 'unavailable'
-                        ? '表示名を取得できません'
+                        ? t('表示名を取得できません')
                         : `${entry.style ? `${entry.style} · ` : ''}${entry.postscriptName}`}
                   </small>
                 </button>
@@ -136,26 +139,27 @@ export function FontPicker({
           ) : (
             <p className="font-picker-empty">
               {query
-                ? '一致するフォントがありません。'
+                ? t('一致するフォントがありません。')
                 : list.status === 'idle'
-                  ? '「端末から取得」で一覧を表示します。ファイルを開いて調べることもできます。'
+                  ? t('「端末から取得」で一覧を表示します。ファイルを開いて調べることもできます。')
                   : list.status === 'enumerating'
-                    ? '端末フォントを取得中…'
+                    ? t('端末フォントを取得中…')
                     : list.status === 'complete'
-                      ? '端末フォントがありません。'
-                      : '再取得、またはファイルを開いてください。'}
+                      ? t('端末フォントがありません。')
+                      : t('再取得、またはファイルを開いてください。')}
             </p>
           )}
         </section>
         {imported && (
           <section className="font-picker-imported">
             <h3>
-              読み込んだファイル <span>{numberFormat.format(imported.names.length)}</span>
+              {t('読み込んだファイル')}
+              <span>{numberFormat.format(imported.names.length)}</span>
             </h3>
             <p className="note muted font-picker-source">{imported.source.label}</p>
             <div
               role="tablist"
-              aria-label="読み込んだファイルのフォント"
+              aria-label={t('読み込んだファイルのフォント')}
               aria-orientation="vertical"
               onKeyDown={moveFocus}
             >
@@ -193,18 +197,24 @@ export function FontPicker({
       <div className="font-picker-footer">
         <p role="status">
           {list.status === 'enumerating'
-            ? '端末フォントを取得中…'
+            ? t('端末フォントを取得中…')
             : list.status === 'naming'
-              ? `名前を取得中 ${numberFormat.format(list.checked)} / ${numberFormat.format(list.fonts.length)}`
+              ? t('名前を取得中 {{checked}} / {{total}}', {
+                  checked: numberFormat.format(list.checked),
+                  total: numberFormat.format(list.fonts.length),
+                })
               : list.status === 'cancelled'
-                ? '名前の取得を中止しました'
+                ? t('名前の取得を中止しました')
                 : list.status === 'complete'
-                  ? `${numberFormat.format(list.fonts.length)} フォント`
-                  : '↑↓で移動・Enterで選択'}
+                  ? t('{{formattedCount}} フォント', {
+                      count: list.fonts.length,
+                      formattedCount: numberFormat.format(list.fonts.length),
+                    })
+                  : t('↑↓で移動・Enterで選択')}
         </p>
         {busy && (
-          <button aria-label="フォント名の取得を中止" onClick={list.cancel}>
-            中止
+          <button aria-label={t('フォント名の取得を中止')} onClick={list.cancel}>
+            {t('中止')}
           </button>
         )}
       </div>

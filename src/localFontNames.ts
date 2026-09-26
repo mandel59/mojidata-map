@@ -1,3 +1,4 @@
+import { tr } from './intl/i18n';
 import { FONT_SIZE_LIMIT } from './core/fontFaceData';
 import type { FontNames } from './core/fontNames';
 import type { LocalFont } from './platform';
@@ -17,7 +18,7 @@ export async function localizeFontNames(
   let failure: Error | null = null;
   let rejectPending: ((reason: unknown) => void) | null = null;
   worker.onerror = (event) => {
-    failure = new Error(event.message || 'フォント名を取得できません。');
+    failure = new Error(event.message || tr('フォント名を取得できません。'));
     rejectPending?.(failure);
   };
   const abort = () => {

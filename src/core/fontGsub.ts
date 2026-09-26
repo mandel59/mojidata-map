@@ -1,3 +1,4 @@
+import { tr } from '../intl/i18n';
 import type { Font } from 'fontkit';
 
 type Lazy<T> = { length: number; get(i: number): T };
@@ -134,7 +135,7 @@ export function glyphGsub(font: Font, id: number): GlyphGsub {
       if (contextual) result.contextualLookups++;
     }
   } catch (error) {
-    result.error = `GSUB情報を取得できません: ${String(error)}`;
+    result.error = tr('GSUB情報を取得できません: {{v0}}', { v0: String(error) });
   }
   entries.set(id, result);
   return result;

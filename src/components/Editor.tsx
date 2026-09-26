@@ -1,4 +1,5 @@
 import { BufferFontCoverage } from './BufferFontCoverage';
+import { useTranslation } from 'react-i18next';
 import { useFontStyle } from '../useFontFallback';
 import { memo, useMemo, useRef, useState, type RefObject } from 'react';
 import {
@@ -35,6 +36,7 @@ export const Editor = memo(function Editor({
   notify,
   handle,
 }: Props) {
+  const { t } = useTranslation('common');
   const fontStyle = useFontStyle();
   const textarea = useRef<HTMLTextAreaElement>(null);
   const [format, setFormat] = useState<OutputFormat>('text');
@@ -66,7 +68,7 @@ export const Editor = memo(function Editor({
     try {
       await copyText(output);
       if (cut) change('');
-      notify('コピーしました');
+      notify(t('コピーしました'));
     } catch (error) {
       notify(String(error));
     }
@@ -84,20 +86,24 @@ export const Editor = memo(function Editor({
     if (cp !== undefined) onLocate(cp);
   }
   return (
-    <section className="editor-panel" aria-label="編集バッファ">
+    <section className="editor-panel" aria-label={t('編集バッファ')}>
       <div className="editor-heading">
-        <h2>編集バッファ</h2>
+        <h2>{t('編集バッファ')}</h2>
         <span className="muted">
-          {stats.graphemes} 書記素 · {stats.codePoints} コードポイント · {stats.utf8} bytes
+          {t('{{graphemes}} 書記素 · {{codePoints}} コードポイント · {{bytes}} bytes', {
+            graphemes: stats.graphemes,
+            codePoints: stats.codePoints,
+            bytes: stats.utf8,
+          })}
         </span>
         <BufferFontCoverage db={db} text={text} onInspectFont={onInspectFont} />
-        <button popoverTarget="editor-options">変換・保存</button>
+        <button popoverTarget="editor-options">{t('変換・保存')}</button>
       </div>
       <div className="editor-input-row">
         <textarea
           ref={textarea}
-          aria-label="編集テキスト"
-          placeholder="文字を追加、または貼り付け"
+          aria-label={t('編集テキスト')}
+          placeholder={t('文字を追加、または貼り付け')}
           value={text}
           dir={direction}
           style={fontStyle(font)}
@@ -111,76 +117,81 @@ export const Editor = memo(function Editor({
         />
         <div className="editor-copy">
           <label>
-            出力{' '}
+            {t('出力')}{' '}
             <select
-              aria-label="出力形式"
+              aria-label={t('出力形式')}
               value={format}
               onChange={(event) => setFormat(event.target.value as OutputFormat)}
             >
               {formats.map(([value, label]) => (
                 <option key={value} value={value}>
-                  {label}
+                  {t(label)}
                 </option>
               ))}
             </select>
           </label>
           <button className="primary" disabled={!valid || !text} onClick={() => void copy()}>
-            コピー
+            {t('コピー')}
           </button>
         </div>
       </div>
       {!valid && (
         <p role="alert" className="error">
-          単独のサロゲートが含まれています。文字を修正してからコピー・保存してください。
+          {t('単独のサロゲートが含まれています。文字を修正してからコピー・保存してください。')}
         </p>
       )}
       {format !== 'text' && (
-        <textarea className="encoded-output" aria-label="変換された出力" value={output} readOnly />
+        <textarea
+          className="encoded-output"
+          aria-label={t('変換された出力')}
+          value={output}
+          readOnly
+        />
       )}
       <div
         id="editor-options"
         popover="auto"
         className="utility-popover editor-options"
-        aria-label="変換・保存"
+        aria-label={t('変換・保存')}
       >
-        <h2>変換・保存</h2>
+        <h2>{t('変換・保存')}</h2>
 
         <div className="button-row">
           <button disabled={!text} onClick={locate}>
-            文字を探す <kbd>F2</kbd>
+            {t('文字を探す')} <kbd>F2</kbd>
           </button>
           <select
-            aria-label="正規化"
+            aria-label={t('正規化')}
             value=""
             onChange={(event) => {
               if (event.target.value) change(text.normalize(event.target.value));
             }}
           >
-            <option value="">正規化…</option>
+            <option value="">{t('正規化…')}</option>
             {['NFC', 'NFD', 'NFKC', 'NFKD'].map((value) => (
               <option key={value}>{value}</option>
             ))}
           </select>
           <select
-            aria-label="大小文字変換"
+            aria-label={t('大小文字変換')}
             value=""
             onChange={(event) => {
               if (event.target.value)
                 change(event.target.value === 'upper' ? text.toUpperCase() : text.toLowerCase());
             }}
           >
-            <option value="">大小文字…</option>
-            <option value="upper">大文字に変換</option>
-            <option value="lower">小文字に変換</option>
+            <option value="">{t('大小文字…')}</option>
+            <option value="upper">{t('大文字に変換')}</option>
+            <option value="lower">{t('小文字に変換')}</option>
           </select>
           <select
-            aria-label="テキスト方向"
+            aria-label={t('テキスト方向')}
             value={direction}
             onChange={(event) => setDirection(event.target.value as typeof direction)}
           >
-            <option value="auto">方向: 自動</option>
-            <option value="ltr">左から右</option>
-            <option value="rtl">右から左</option>
+            <option value="auto">{t('方向: 自動')}</option>
+            <option value="ltr">{t('左から右')}</option>
+            <option value="rtl">{t('右から左')}</option>
           </select>
           <button
             onClick={() => {
@@ -188,19 +199,19 @@ export const Editor = memo(function Editor({
               if (previous !== undefined) onChange(previous);
             }}
           >
-            元に戻す
+            {t('元に戻す')}
           </button>
           <button disabled={!text} onClick={() => change('')}>
-            クリア
+            {t('クリア')}
           </button>
           <button disabled={!valid || !text} onClick={() => void copy(true)}>
-            切り取り
+            {t('切り取り')}
           </button>
         </div>
-        <h3>保存・文字単位の確認</h3>
+        <h3>{t('保存・文字単位の確認')}</h3>
         <div className="button-row">
           <select
-            aria-label="保存エンコーディング"
+            aria-label={t('保存エンコーディング')}
             value={encoding}
             onChange={(event) => setEncoding(event.target.value as typeof encoding)}
           >
@@ -230,7 +241,7 @@ export const Editor = memo(function Editor({
               }
             }}
           >
-            テキストを保存
+            {t('テキストを保存')}
           </button>
           <label className="check">
             <input
@@ -238,7 +249,7 @@ export const Editor = memo(function Editor({
               checked={preview}
               onChange={(event) => setPreview(event.target.checked)}
             />
-            文字単位で表示
+            {t('文字単位で表示')}
           </label>
         </div>
         {preview && (
@@ -253,7 +264,7 @@ export const Editor = memo(function Editor({
                 <small>{codeLabel(char.codePointAt(0)!)}</small>
               </button>
             ))}
-            {[...text].length > 500 && <p>先頭 500 コードポイントを表示しています。</p>}
+            {[...text].length > 500 && <p>{t('先頭 500 コードポイントを表示しています。')}</p>}
           </div>
         )}
       </div>

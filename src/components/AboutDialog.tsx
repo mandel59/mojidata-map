@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { version as appVersion } from '../../package.json';
 import type { UnicodeDatabase } from '../core/unicode';
 import type { AboutSection } from '../platform';
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export function AboutDialog({ db, section, onSection, onClose }: Props) {
+  const { t } = useTranslation('common');
   const dialog = useRef<HTMLDialogElement>(null);
   const [credits, setCredits] = useState<{
     libraries: Library[];
@@ -100,14 +102,14 @@ export function AboutDialog({ db, section, onSection, onClose }: Props) {
           </span>
           <div>
             <span className="eyebrow">MOJIDATA MAP</span>
-            <h2 id="about-title">アプリ情報</h2>
+            <h2 id="about-title">{t('アプリ情報')}</h2>
           </div>
         </div>
-        <button type="button" onClick={close} aria-label="アプリ情報を閉じる">
-          閉じる
+        <button type="button" onClick={close} aria-label={t('アプリ情報を閉じる')}>
+          {t('閉じる')}
         </button>
       </header>
-      <div className="about-tabs" role="tablist" aria-label="アプリ情報の表示">
+      <div className="about-tabs" role="tablist" aria-label={t('アプリ情報の表示')}>
         {(['about', 'credits'] as const).map((value, index) => (
           <button
             key={value}
@@ -137,7 +139,7 @@ export function AboutDialog({ db, section, onSection, onClose }: Props) {
               }
             }}
           >
-            {value === 'about' ? 'アプリについて' : 'クレジット'}
+            {value === 'about' ? t('アプリについて') : t('クレジット')}
           </button>
         ))}
       </div>
@@ -150,11 +152,13 @@ export function AboutDialog({ db, section, onSection, onClose }: Props) {
         tabIndex={0}
       >
         <h3>Mojidata Map</h3>
-        <p>文字の世界を、ひとつの地図に。</p>
-        <p>Unicode の文字を探し、属性やフォントを調べ、必要な文字を集めて使う文字マップです。</p>
+        <p>{t('文字の世界を、ひとつの地図に。')}</p>
+        <p>
+          {t('Unicode の文字を探し、属性やフォントを調べ、必要な文字を集めて使う文字マップです。')}
+        </p>
         <dl className="about-properties">
           <div>
-            <dt>アプリのバージョン</dt>
+            <dt>{t('アプリのバージョン')}</dt>
             <dd>{appVersion}</dd>
           </div>
           <div>
@@ -166,15 +170,15 @@ export function AboutDialog({ db, section, onSection, onClose }: Props) {
             <dd>{db.data.emojiVersion}</dd>
           </div>
           <div>
-            <dt>実行環境</dt>
-            <dd>{window.mojidata ? 'デスクトップ版' : 'Web 版'}</dd>
+            <dt>{t('実行環境')}</dt>
+            <dd>{window.mojidata ? t('デスクトップ版') : t('Web 版')}</dd>
           </div>
           <div>
-            <dt>アプリ本体のライセンス</dt>
+            <dt>{t('アプリ本体のライセンス')}</dt>
             <dd>MIT License</dd>
           </div>
         </dl>
-        <p className="muted">設定・ブックマーク・編集テキストは、この端末に保存します。</p>
+        <p className="muted">{t('設定・ブックマーク・編集テキストは、この端末に保存します。')}</p>
       </section>
       <section
         className="about-content"
@@ -184,44 +188,45 @@ export function AboutDialog({ db, section, onSection, onClose }: Props) {
         hidden={section !== 'credits'}
         tabIndex={0}
       >
-        <h3>クレジット</h3>
+        <h3>{t('クレジット')}</h3>
         <article className="credit-card">
           <h4>Mojidata Map</h4>
           <p>MIT License</p>
-          <p>Mojidata Mapの開発にはCodexを使用しています。</p>
+          <p>{t('Mojidata Mapの開発にはCodexを使用しています。')}</p>
           {credits && (
             <details>
-              <summary>Mojidata Map のライセンス全文</summary>
+              <summary>{t('Mojidata Map のライセンス全文')}</summary>
               <pre className="license-text">{credits.appLicense}</pre>
             </details>
           )}
         </article>
-        <p>文字データとオープンソースソフトウェアの提供者に感謝します。</p>
+        <p>{t('文字データとオープンソースソフトウェアの提供者に感謝します。')}</p>
         <article className="credit-card">
-          <h4>Unicode データ</h4>
+          <h4>{t('Unicode データ')}</h4>
           <p>{link('https://www.unicode.org/', 'Unicode Consortium')} — UCD・Unihan・Emoji・IVD</p>
           <p className="muted">
             {credits?.unicode.match(/^Copyright .+$/m)?.[0] ?? 'Unicode, Inc.'} · Unicode License v3
           </p>
           {credits && (
             <details>
-              <summary>Unicode ライセンス全文</summary>
+              <summary>{t('Unicode ライセンス全文')}</summary>
               <pre className="license-text">{credits.unicode}</pre>
             </details>
           )}
         </article>
         <article className="credit-card">
-          <h4>着想・機能の参考</h4>
+          <h4>{t('着想・機能の参考')}</h4>
           <p>
             {link('https://www.babelstone.co.uk/Software/BabelMap.html', 'BabelMap')} — Andrew West
           </p>
           <p>
-            文字マップと豊富な文字・フォント関連機能を、Mojidata Map
-            の開発にあたり参考にしています。
+            {t(
+              '文字マップと豊富な文字・フォント関連機能を、Mojidata Mapの開発にあたり参考にしています。',
+            )}
           </p>
         </article>
-        <h4 className="credits-heading">利用ライブラリ</h4>
-        {!credits && !error && <p role="status">クレジットを読み込み中…</p>}
+        <h4 className="credits-heading">{t('利用ライブラリ')}</h4>
+        {!credits && !error && <p role="status">{t('クレジットを読み込み中…')}</p>}
         {credits?.libraries.map((library) => (
           <article className="credit-card" key={`${library.name}@${library.version}`}>
             <h4>
@@ -231,11 +236,11 @@ export function AboutDialog({ db, section, onSection, onClose }: Props) {
             <p className="muted">
               {library.author && `${library.author} · `}
               {library.license}
-              {library.scope === 'desktop' && ' · デスクトップ実行環境'}
+              {library.scope === 'desktop' && ` · ${t('デスクトップ実行環境')}`}
             </p>
             {library.notices.length ? (
               <details>
-                <summary>{library.name} のライセンス・著作権表示</summary>
+                <summary>{t('{{name}} のライセンス・著作権表示', { name: library.name })}</summary>
                 {library.notices.map((notice) => (
                   <pre className="license-text" key={notice.file}>
                     {notice.text}
@@ -244,13 +249,16 @@ export function AboutDialog({ db, section, onSection, onClose }: Props) {
               </details>
             ) : (
               <p className="muted">
-                ライセンス名は配布元の表記です。本文はプロジェクトの配布元を参照してください。
+                {t(
+                  'ライセンス名は配布元の表記です。本文はプロジェクトの配布元を参照してください。',
+                )}
               </p>
             )}
             {library.scope === 'desktop' && (
               <p className="muted">
-                Chromium 等の著作権表示は、デスクトップ版に付属する LICENSES.chromium.html
-                に収録されています。
+                {t(
+                  'Chromium 等の著作権表示は、デスクトップ版に付属する LICENSES.chromium.html に収録されています。',
+                )}
               </p>
             )}
           </article>
@@ -258,8 +266,10 @@ export function AboutDialog({ db, section, onSection, onClose }: Props) {
       </section>
       {error && section === 'credits' && (
         <div className="about-error">
-          <p role="alert">{error}</p>
-          {!credits && <button onClick={() => setAttempt((value) => value + 1)}>再試行</button>}
+          <p role="alert">{t(error)}</p>
+          {!credits && (
+            <button onClick={() => setAttempt((value) => value + 1)}>{t('再試行')}</button>
+          )}
         </div>
       )}
     </dialog>

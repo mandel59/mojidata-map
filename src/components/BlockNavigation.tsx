@@ -1,4 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { hex, type UnicodeDatabase } from '../core/unicode';
 
 interface Props {
@@ -20,6 +21,7 @@ export const BlockNavigation = memo(function BlockNavigation({
   onLocate,
   onAllPlanesChange,
 }: Props) {
+  const { t } = useTranslation('common');
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState('');
   const list = useRef<HTMLDivElement>(null);
@@ -42,7 +44,7 @@ export const BlockNavigation = memo(function BlockNavigation({
         .filter((i) => allPlanes || planeNames[i])
         .map((i) => (
           <option value={i} key={i}>
-            {i.toString().padStart(2, '0')} · {planeNames[i] ?? '予約面'}
+            {i.toString().padStart(2, '0')} · {planeNames[i] ?? t('予約面')}
           </option>
         )),
     [allPlanes, planeNames],
@@ -65,7 +67,7 @@ export const BlockNavigation = memo(function BlockNavigation({
   return (
     <>
       <select
-        aria-label="Unicode 面"
+        aria-label={t('Unicode 面')}
         value={plane}
         onChange={(event) => onLocate(Number(event.target.value) * 0x10000)}
       >
@@ -73,31 +75,31 @@ export const BlockNavigation = memo(function BlockNavigation({
       </select>
       <select
         className="block-select"
-        aria-label="ブロックへ移動"
+        aria-label={t('ブロックへ移動')}
         value={planeBlocks.find(([, , name]) => name === selectedBlock)?.[0] ?? ''}
         onChange={(event) => {
           if (event.target.value) onLocate(Number(event.target.value));
         }}
       >
-        <option value="">ブロックを選択…</option>
+        <option value="">{t('ブロックを選択…')}</option>
         {blockOptions}
       </select>
-      <button popoverTarget="block-browser" aria-label="ブロック一覧">
-        ブロック一覧
+      <button popoverTarget="block-browser" aria-label={t('ブロック一覧')}>
+        {t('ブロック一覧')}
       </button>
       <div
         id="block-browser"
         popover="auto"
         className="utility-popover block-browser"
-        aria-label="ブロック一覧"
+        aria-label={t('ブロック一覧')}
         onToggle={(event) => setOpen(event.currentTarget.matches(':popover-open'))}
       >
         {open && (
           <>
-            <h2>ブロック一覧</h2>
+            <h2>{t('ブロック一覧')}</h2>
             <input
-              aria-label="ブロックを絞り込み"
-              placeholder="名前で絞り込み…"
+              aria-label={t('ブロックを絞り込み')}
+              placeholder={t('名前で絞り込み…')}
               value={filter}
               onChange={(event) => setFilter(event.target.value)}
             />
@@ -107,9 +109,9 @@ export const BlockNavigation = memo(function BlockNavigation({
                 checked={allPlanes}
                 onChange={(event) => onAllPlanesChange(event.target.checked)}
               />
-              予約面も表示
+              {t('予約面も表示')}
             </label>
-            <div className="block-list" ref={list} aria-label="Unicode ブロック">
+            <div className="block-list" ref={list} aria-label={t('Unicode ブロック')}>
               {blocks.map(([start, end, name]) => (
                 <button
                   key={start}
@@ -125,7 +127,7 @@ export const BlockNavigation = memo(function BlockNavigation({
                   </small>
                 </button>
               ))}
-              {!blocks.length && <p className="muted">一致するブロックはありません。</p>}
+              {!blocks.length && <p className="muted">{t('一致するブロックはありません。')}</p>}
             </div>
           </>
         )}

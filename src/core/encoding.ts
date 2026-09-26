@@ -1,3 +1,4 @@
+import { tr } from '../intl/i18n';
 import { hex, isScalar } from './unicode';
 
 export type OutputFormat =
@@ -17,7 +18,8 @@ export const scalarText = (text: string) =>
   [...text].every((char) => isScalar(char.codePointAt(0)!));
 
 export function encodeText(text: string, format: OutputFormat): string {
-  if (!scalarText(text)) throw new Error('単独のサロゲートは Unicode 文字として出力できません。');
+  if (!scalarText(text))
+    throw new Error(tr('単独のサロゲートは Unicode 文字として出力できません。'));
   if (format === 'text') return text;
   if (format === 'utf8')
     return [...new TextEncoder().encode(text)].map((byte) => hex(byte, 2)).join(' ');
@@ -56,7 +58,7 @@ export function encodeFile(
   encoding: 'utf8' | 'utf16le' | 'utf16be',
   bom: boolean,
 ): Uint8Array {
-  if (!scalarText(text)) throw new Error('単独のサロゲートは保存できません。');
+  if (!scalarText(text)) throw new Error(tr('単独のサロゲートは保存できません。'));
   if (encoding === 'utf8') {
     const body = new TextEncoder().encode(text);
     return bom ? new Uint8Array([0xef, 0xbb, 0xbf, ...body]) : body;

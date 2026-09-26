@@ -1,4 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { loadData, type Emoji } from '../data';
 import { codeLabel } from '../core/unicode';
 import { usePageKeys } from '../usePageKeys';
@@ -20,6 +21,7 @@ export const EmojiPanel = memo(function EmojiPanel({
   selected,
   onSelect,
 }: Props) {
+  const { t, i18n } = useTranslation('common');
   const [all, setAll] = useState<Emoji[]>([]);
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState('');
@@ -96,12 +98,17 @@ export const EmojiPanel = memo(function EmojiPanel({
     movePage(page + direction, Math.max(0, selectedIndex));
   });
   return (
-    <section className="emoji-workspace" aria-label="絵文字検索" hidden={!active} ref={container}>
+    <section
+      className="emoji-workspace"
+      aria-label={t('絵文字検索')}
+      hidden={!active}
+      ref={container}
+    >
       <div className="search-input-row">
         <div className="search-bar">
           <input
-            aria-label="英語の名前"
-            placeholder="絵文字の英語名で検索（cat, family, japan）"
+            aria-label={t('英語の名前')}
+            placeholder={t('絵文字の英語名で検索（cat, family, japan）')}
             value={query}
             onChange={(event) => {
               setQuery(event.target.value);
@@ -110,20 +117,25 @@ export const EmojiPanel = memo(function EmojiPanel({
           />
         </div>
         <button type="button" popoverTarget="display-options">
-          表示設定
+          {t('表示設定')}
         </button>
       </div>
       <div className="results-heading">
-        <span aria-live="polite">{matches.length.toLocaleString()} シーケンス</span>
+        <span aria-live="polite">
+          {t('{{displayCount}} シーケンス', {
+            count: matches.length,
+            displayCount: matches.length.toLocaleString(i18n.language),
+          })}
+        </span>
         <select
-          aria-label="グループ"
+          aria-label={t('グループ')}
           value={group}
           onChange={(event) => {
             setGroup(event.target.value);
             setPage(0);
           }}
         >
-          <option value="">すべてのグループ</option>
+          <option value="">{t('すべてのグループ')}</option>
           {groups.map((name) => (
             <option key={name}>{name}</option>
           ))}
@@ -140,7 +152,7 @@ export const EmojiPanel = memo(function EmojiPanel({
           columns={columns}
           className="emoji-grid"
           scrollClassName="emoji-scroll"
-          label="絵文字一覧"
+          label={t('絵文字一覧')}
         >
           {visible.map((emoji, index) => (
             <button
@@ -163,19 +175,23 @@ export const EmojiPanel = memo(function EmojiPanel({
         </CharacterGridSurface>
       ) : (
         <div className="empty-state">
-          <p>{all.length ? '一致する絵文字がありません。' : '絵文字を読み込み中…'}</p>
+          <p>{all.length ? t('一致する絵文字がありません。') : t('絵文字を読み込み中…')}</p>
         </div>
       )}
       <div className="pagination">
         <div className="button-row">
-          <button aria-label="前のページ" disabled={page === 0} onClick={() => movePage(page - 1)}>
+          <button
+            aria-label={t('前のページ')}
+            disabled={page === 0}
+            onClick={() => movePage(page - 1)}
+          >
             ←
           </button>
           <span>
             {page + 1} / {Math.max(1, Math.ceil(matches.length / PAGE_SIZE))}
           </span>
           <button
-            aria-label="次のページ"
+            aria-label={t('次のページ')}
             disabled={(page + 1) * PAGE_SIZE >= matches.length}
             onClick={() => movePage(page + 1)}
           >

@@ -1,3 +1,4 @@
+import { i18n, tr } from './intl/i18n';
 import type { LocalFont } from './platform';
 import { cssUnicodeRange, unclaimedRanges, unusedFeatureTag } from './core/fontCoverage';
 
@@ -23,7 +24,7 @@ export async function buildFontFallback(
   let workerFailure: Error | null = null;
   let rejectParse: ((reason: Error) => void) | undefined;
   worker.onerror = (event) => {
-    workerFailure = new Error(event.message || 'フォント解析を開始できません。');
+    workerFailure = new Error(event.message || tr('フォント解析を開始できません。'));
     rejectParse?.(workerFailure);
   };
   const faces: FontFace[] = [];
@@ -68,7 +69,10 @@ export async function buildFontFallback(
             if (event.data.error) reject(new Error(event.data.error));
             else resolve(event.data);
           };
-          worker.postMessage({ bytes, postscriptName: font.postscriptName }, [bytes]);
+          worker.postMessage(
+            { bytes, postscriptName: font.postscriptName, locale: i18n.language },
+            [bytes],
+          );
         });
         parsed.features.forEach((feature) => features.add(feature));
         const ranges = unclaimedRanges(parsed.points, claimed);
@@ -94,7 +98,7 @@ export async function buildFontFallback(
       }
       progress(index + 1, ordered.length);
     }
-    if (!faces.length) throw new Error('補完に使えるフォントが見つかりませんでした。');
+    if (!faces.length) throw new Error(tr('補完に使えるフォントが見つかりませんでした。'));
     return {
       family,
       featureTag: unusedFeatureTag(features),

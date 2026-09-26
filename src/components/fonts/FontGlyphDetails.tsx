@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Font } from 'fontkit';
 import { codeLabel, hex, isScalar, type UnicodeDatabase } from '../../core/unicode';
@@ -35,6 +36,7 @@ export function FontGlyphDetails({
   notify(message: string): void;
   openRequest?: object | null;
 }) {
+  const { t } = useTranslation('fonts');
   const [open, setOpen] = useState(false);
   const openButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -117,7 +119,7 @@ export function FontGlyphDetails({
   const drawing = info?.drawing;
   const advanceY = drawing ? drawing.top + drawing.height - font.unitsPerEm * 0.035 : 0;
   const preview = drawing ? (
-    <svg viewBox={drawing.viewBox} role="img" aria-label="フォントのグリフ輪郭">
+    <svg viewBox={drawing.viewBox} role="img" aria-label={t('フォントのグリフ輪郭')}>
       <line
         className="glyph-baseline"
         x1={drawing.left}
@@ -134,7 +136,10 @@ export function FontGlyphDetails({
         y2={font.unitsPerEm * 0.04}
         aria-hidden="true"
       />
-      <g className="glyph-advance-guide" aria-label={`横送り幅 ${info?.advance ?? 0}`}>
+      <g
+        className="glyph-advance-guide"
+        aria-label={t('横送り幅 {{width}}', { width: info?.advance ?? 0 })}
+      >
         <line
           className="glyph-advance-span"
           x1={0}
@@ -160,7 +165,7 @@ export function FontGlyphDetails({
           textAnchor="middle"
           fontSize={font.unitsPerEm * 0.18}
         >
-          輪郭なし
+          {t('輪郭なし')}
         </text>
       )}
       <g transform="scale(1,-1)">
@@ -170,7 +175,7 @@ export function FontGlyphDetails({
       </g>
     </svg>
   ) : (
-    <span className="muted">描画不可</span>
+    <span className="muted">{t('描画不可')}</span>
   );
   async function exportPng() {
     if (id === null && (!family || !scalar)) return;
@@ -188,7 +193,7 @@ export function FontGlyphDetails({
           const image = new Image();
           await new Promise<void>((resolve, reject) => {
             image.onload = () => resolve();
-            image.onerror = () => reject(new Error('グリフ画像を作成できません。'));
+            image.onerror = () => reject(new Error(t('グリフ画像を作成できません。')));
             image.src = url;
           });
           ctx.drawImage(image, 0, 0);
@@ -215,7 +220,10 @@ export function FontGlyphDetails({
       notify(String(error));
     }
   }
-  const title = cp !== null ? `${codeLabel(cp)} · Glyph ID ${info?.id ?? '—'}` : `Glyph ID ${id}`;
+  const title =
+    cp !== null
+      ? t('{{codeLabel}} · Glyph ID {{id}}', { codeLabel: codeLabel(cp), id: info?.id ?? '—' })
+      : t('Glyph ID {{id}}', { id });
   const unicodeName =
     reference && (reference.points.length === 1 || reference.kind === 'variation')
       ? db.name(reference.points[0])
@@ -235,9 +243,9 @@ export function FontGlyphDetails({
         <div className="glyph-references">
           {references.length ? (
             <label>
-              対応する文字・リガチャ・VS
+              {t('対応する文字・リガチャ・VS')}
               <select
-                aria-label="対応する文字・リガチャ・VS"
+                aria-label={t('対応する文字・リガチャ・VS')}
                 value={referenceIndex}
                 onChange={(event) => onReferenceIndex(Number(event.target.value))}
               >
@@ -247,7 +255,7 @@ export function FontGlyphDetails({
                     {ref.kind === 'variation'
                       ? ' (VS)'
                       : ref.kind === 'ligature'
-                        ? ' (リガチャ)'
+                        ? t(' (リガチャ)')
                         : ''}
                   </option>
                 ))}
@@ -255,67 +263,72 @@ export function FontGlyphDetails({
             </label>
           ) : (
             <p className="note">
-              対応する文字・リガチャ・VSが見つかりません。文字列としての追加・コピーはできません。
+              {t(
+                '対応する文字・リガチャ・VSが見つかりません。文字列としての追加・コピーはできません。',
+              )}
             </p>
           )}
           {reference?.kind === 'ligature' && (
             <p className="note">
-              通常の横書きで有効なGSUB
-              featureから逆引きした文字列です。字形は言語・前後の文脈・OpenType設定によって変わります。
+              {t(
+                '通常の横書きで有効なGSUB featureから逆引きした文字列です。字形は言語・前後の文脈・OpenType設定によって変わります。',
+              )}
             </p>
           )}
           {referenceError && <p className="note coverage-missing">{referenceError}</p>}
           {sequenceError && (
             <p className="note coverage-missing">
               {sequenceError}{' '}
-              <button onClick={() => setSequenceRetry((value) => value + 1)}>再読み込み</button>
+              <button onClick={() => setSequenceRetry((value) => value + 1)}>
+                {t('再読み込み')}
+              </button>
             </p>
           )}
         </div>
       )}
       <div className="button-row">
         <button className="primary" disabled={!text} onClick={() => onInsert(text)}>
-          バッファに追加
+          {t('バッファに追加')}
         </button>
         <button
           disabled={!text}
           onClick={() =>
             void copyText(text)
-              .then(() => notify('コピーしました'))
+              .then(() => notify(t('コピーしました')))
               .catch((error) => notify(String(error)))
           }
         >
-          コピー
+          {t('コピー')}
         </button>
       </div>
       <p className={`note glyph-coverage ${info?.covered ? '' : 'coverage-missing'}`}>
         {id !== null
           ? !info
-            ? 'グリフ情報を取得できません。'
+            ? t('グリフ情報を取得できません。')
             : id === 0
-              ? '欠字用グリフ (.notdef)'
-              : 'フォント内のグリフ'
+              ? t('欠字用グリフ (.notdef)')
+              : t('フォント内のグリフ')
           : !scalar
-            ? 'Unicodeスカラー値ではありません。'
+            ? t('Unicodeスカラー値ではありません。')
             : !info
-              ? 'グリフ情報を取得できません。'
+              ? t('グリフ情報を取得できません。')
               : info.covered
-                ? 'このフォントに収録'
-                : 'このフォントには未収録 (.notdef)'}
+                ? t('このフォントに収録')
+                : t('このフォントには未収録 (.notdef)')}
       </p>
       <dl className="property-list">
         {[
-          ...(sequenceName ? [['シーケンス名', sequenceName]] : []),
-          ['グリフ名', info?.name ?? '—'],
-          ['横送り幅', info?.advance ?? '—'],
-          ['輪郭の範囲', info?.bounds ?? '—'],
+          ...(sequenceName ? [[t('シーケンス名'), sequenceName]] : []),
+          [t('グリフ名'), info?.name ?? '—'],
+          [t('横送り幅'), info?.advance ?? '—'],
+          [t('輪郭の範囲'), info?.bounds ?? '—'],
           ['Units per em', font.unitsPerEm],
           ...(cp === null
             ? []
             : [
-                ['ブロック', db.property(cp, 'Block')],
-                ['スクリプト', db.property(cp, 'Script')],
-                ['一般カテゴリ', db.category(cp)],
+                [t('ブロック'), db.property(cp, 'Block')],
+                [t('スクリプト'), db.property(cp, 'Script')],
+                [t('一般カテゴリ'), db.category(cp)],
               ]),
         ].map(([label, value]) => (
           <div key={label}>
@@ -337,45 +350,47 @@ export function FontGlyphDetails({
             )
           }
         >
-          SVG を保存
+          {t('SVG を保存')}
         </button>
         <button
           disabled={id !== null ? !drawing?.paths.length : !family || !scalar}
           onClick={() => void exportPng()}
         >
-          PNG を保存
+          {t('PNG を保存')}
         </button>
       </div>
       <p className="note muted">
         {id !== null
-          ? '輪郭・SVG・PNGは解析対象のグリフです。'
-          : '輪郭・SVGは解析対象のグリフです。PNGは表示用フォントとOSのフォールバックを含みます。'}
+          ? t('輪郭・SVG・PNGは解析対象のグリフです。')
+          : t(
+              '輪郭・SVGは解析対象のグリフです。PNGは表示用フォントとOSのフォールバックを含みます。',
+            )}
       </p>
     </div>
   );
   if (!compact)
     return (
-      <aside className="details-panel" aria-label="グリフの詳細">
+      <aside className="details-panel" aria-label={t('グリフの詳細')}>
         {content}
       </aside>
     );
   return (
     <>
-      <aside className="detail-strip" aria-label="選択中のグリフ">
+      <aside className="detail-strip" aria-label={t('選択中のグリフ')}>
         <span className="strip-glyph glyph-strip-preview">{preview}</span>
         <div>
           <strong>{title}</strong>
           <span>{name}</span>
         </div>
         <button disabled={!text} onClick={() => onInsert(text)}>
-          追加
+          {t('追加')}
         </button>
         <button ref={openButton} aria-haspopup="dialog" onClick={() => setOpen(true)}>
-          グリフ情報
+          {t('グリフ情報')}
         </button>
       </aside>
       {open && (
-        <UtilityDialog title="グリフ情報" onClose={() => setOpen(false)}>
+        <UtilityDialog title={t('グリフ情報')} onClose={() => setOpen(false)}>
           {content}
         </UtilityDialog>
       )}

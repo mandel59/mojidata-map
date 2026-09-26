@@ -1,3 +1,4 @@
+import { tr } from './intl/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { useLocale } from './intl/LocaleProvider';
 import { localizeFontNames } from './localFontNames';
@@ -20,12 +21,13 @@ export function useLocalFontList() {
   const { locale } = useLocale();
   const [state, setState] = useState<State>(empty);
   const request = useRef<AbortController | null>(null);
+  const acquired = useRef<LocalFont[]>([]);
   useEffect(() => {
-    setState(empty);
+    if (acquired.current.length) void enumerate(acquired.current);
     return () => request.current?.abort();
   }, [locale]);
 
-  async function enumerate() {
+  async function enumerate(existing?: LocalFont[]) {
     request.current?.abort();
     const controller = new AbortController();
     request.current = controller;
@@ -51,28 +53,33 @@ export function useLocalFontList() {
       }));
     }
     try {
-      if (!window.queryLocalFonts)
+      if (!existing && !window.queryLocalFonts)
         throw new Error(
-          'この環境は端末フォントの取得に対応していません。ファイルを開いてください。',
+          tr('この環境は端末フォントの取得に対応していません。ファイルを開いてください。'),
         );
       // Keep this in the user gesture. Name resolution never blocks this list.
-      const fonts = await window.queryLocalFonts();
+      const fonts = existing ?? (await window.queryLocalFonts!());
+      acquired.current = fonts;
       controller.signal.throwIfAborted();
       const ordered = [...new Map(fonts.map((font) => [font.postscriptName, font])).values()].sort(
         (a, b) => a.postscriptName.localeCompare(b.postscriptName, 'en'),
       );
-      setState({
-        fonts: ordered.map((font) => ({
-          postscriptName: font.postscriptName,
-          fullName: font.postscriptName,
-          family: font.postscriptName,
-          style: '',
-          blob: () => font.blob(),
-          nameStatus: 'pending',
-        })),
-        status: 'naming',
-        checked: 0,
-        error: '',
+      setState((previous) => {
+        const previousNames = new Map(previous.fonts.map((font) => [font.postscriptName, font]));
+        return {
+          fonts: ordered.map((font) => ({
+            postscriptName: font.postscriptName,
+            fullName: font.postscriptName,
+            family: font.postscriptName,
+            style: '',
+            ...(existing ? previousNames.get(font.postscriptName) : undefined),
+            blob: () => font.blob(),
+            nameStatus: 'pending',
+          })),
+          status: 'naming',
+          checked: 0,
+          error: '',
+        };
       });
       await localizeFontNames(
         ordered,
@@ -94,7 +101,7 @@ export function useLocalFontList() {
         flush();
         const message =
           error instanceof DOMException && error.name === 'NotAllowedError'
-            ? '端末フォントへのアクセスが許可されていません。再取得でやり直せます。'
+            ? tr('端末フォントへのアクセスが許可されていません。再取得でやり直せます。')
             : String(error);
         setState((previous) => ({ ...previous, status: 'error', error: message }));
       }

@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const SearchField = memo(function SearchField({
   value,
@@ -15,19 +16,20 @@ export const SearchField = memo(function SearchField({
   disabled?: boolean;
   status?: string;
 }) {
+  const { t } = useTranslation('search');
   return (
     <form
       className="search-bar"
       role="search"
-      aria-label="文字検索フォーム"
+      aria-label={t('文字検索フォーム')}
       onSubmit={(event) => {
         event.preventDefault();
         onSearch();
       }}
     >
       <input
-        aria-label="文字を検索"
-        placeholder="文字・名前・U+コードで検索"
+        aria-label={t('文字を検索')}
+        placeholder={t('文字・名前・U+コードで検索')}
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />
@@ -37,7 +39,7 @@ export const SearchField = memo(function SearchField({
         </span>
       )}
       <button className="primary" type="submit" disabled={busy || disabled}>
-        検索
+        {t('検索')}
       </button>
     </form>
   );

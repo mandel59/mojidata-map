@@ -13,6 +13,13 @@ const {
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { isAppUrl, assetPath, isExternalUrl } = require('./security.cjs');
+const nativeI18n = require('i18next').createInstance();
+void nativeI18n.init({
+  lng: 'ja',
+  fallbackLng: 'en',
+  resources: require('./messages.json'),
+  initAsync: false,
+});
 const dataRoot = path.join(__dirname, '..', 'dist');
 const csp =
   "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data: blob:; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'";
@@ -48,6 +55,78 @@ ipcMain.handle('always-on-top', (event, value) => {
   if (typeof value !== 'boolean') throw new Error('Invalid window setting');
   BrowserWindow.fromWebContents(event.sender)?.setAlwaysOnTop(value);
 });
+
+ipcMain.handle('set-language', (event, language) => {
+  trusted(event);
+  if (language !== 'ja' && language !== 'en') throw new Error('Invalid language');
+  void nativeI18n.changeLanguage(language);
+  rebuildMenu();
+});
+
+function rebuildMenu() {
+  const openAbout = (section) => {
+    const window = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
+    window?.webContents.send('open-about', section);
+  };
+  Menu.setApplicationMenu(
+    Menu.buildFromTemplate([
+      ...(process.platform === 'darwin'
+        ? [
+            {
+              label: app.name,
+              submenu: [
+                { label: nativeI18n.t('aboutMac'), click: () => openAbout('about') },
+                { type: 'separator' },
+                { role: 'services', label: nativeI18n.t('services') },
+                { type: 'separator' },
+                { role: 'hide', label: nativeI18n.t('hide') },
+                { role: 'hideOthers', label: nativeI18n.t('hideOthers') },
+                { role: 'unhide', label: nativeI18n.t('unhide') },
+                { type: 'separator' },
+                { role: 'quit', label: nativeI18n.t('quit') },
+              ],
+            },
+          ]
+        : []),
+      {
+        label: nativeI18n.t('edit'),
+        submenu: [
+          { role: 'undo', label: nativeI18n.t('undo') },
+          { role: 'redo', label: nativeI18n.t('redo') },
+          { type: 'separator' },
+          { role: 'cut', label: nativeI18n.t('cut') },
+          { role: 'copy', label: nativeI18n.t('copy') },
+          { role: 'paste', label: nativeI18n.t('paste') },
+          { role: 'selectAll', label: nativeI18n.t('selectAll') },
+        ],
+      },
+      {
+        label: nativeI18n.t('view'),
+        submenu: [
+          { role: 'reload', label: nativeI18n.t('reload') },
+          { role: 'resetZoom', label: nativeI18n.t('resetZoom') },
+          { role: 'zoomIn', label: nativeI18n.t('zoomIn') },
+          { role: 'zoomOut', label: nativeI18n.t('zoomOut') },
+          { role: 'togglefullscreen', label: nativeI18n.t('togglefullscreen') },
+        ],
+      },
+      {
+        label: nativeI18n.t('window'),
+        submenu: [
+          { role: 'minimize', label: nativeI18n.t('minimize') },
+          { role: 'close', label: nativeI18n.t('close') },
+        ],
+      },
+      {
+        label: nativeI18n.t('help'),
+        submenu: [
+          { id: 'about-app', label: nativeI18n.t('about'), click: () => openAbout('about') },
+          { id: 'app-credits', label: nativeI18n.t('credits'), click: () => openAbout('credits') },
+        ],
+      },
+    ]),
+  );
+}
 
 function createWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
@@ -93,64 +172,9 @@ app.whenReady().then(() => {
       !!contents && isAppUrl(contents.getURL()) && isAppUrl(origin) && permission === 'local-fonts',
   );
   session.defaultSession.on('will-download', (_event, item) =>
-    item.setSaveDialogOptions({ title: 'Mojidata Map — ファイルを保存' }),
+    item.setSaveDialogOptions({ title: nativeI18n.t('save') }),
   );
-  const openAbout = (section) => {
-    const window = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
-    window?.webContents.send('open-about', section);
-  };
-  Menu.setApplicationMenu(
-    Menu.buildFromTemplate([
-      ...(process.platform === 'darwin'
-        ? [
-            {
-              label: app.name,
-              submenu: [
-                { label: 'Mojidata Map について', click: () => openAbout('about') },
-                { type: 'separator' },
-                { role: 'services' },
-                { type: 'separator' },
-                { role: 'hide' },
-                { role: 'hideOthers' },
-                { role: 'unhide' },
-                { type: 'separator' },
-                { role: 'quit' },
-              ],
-            },
-          ]
-        : []),
-      {
-        label: '編集',
-        submenu: [
-          { role: 'undo' },
-          { role: 'redo' },
-          { type: 'separator' },
-          { role: 'cut' },
-          { role: 'copy' },
-          { role: 'paste' },
-          { role: 'selectAll' },
-        ],
-      },
-      {
-        label: '表示',
-        submenu: [
-          { role: 'reload' },
-          { role: 'resetZoom' },
-          { role: 'zoomIn' },
-          { role: 'zoomOut' },
-          { role: 'togglefullscreen' },
-        ],
-      },
-      { label: 'ウィンドウ', submenu: [{ role: 'minimize' }, { role: 'close' }] },
-      {
-        label: 'ヘルプ',
-        submenu: [
-          { id: 'about-app', label: 'アプリについて', click: () => openAbout('about') },
-          { id: 'app-credits', label: 'クレジット', click: () => openAbout('credits') },
-        ],
-      },
-    ]),
-  );
+  rebuildMenu();
   createWindow();
   app.on('activate', () => {
     if (!BrowserWindow.getAllWindows().length) createWindow();

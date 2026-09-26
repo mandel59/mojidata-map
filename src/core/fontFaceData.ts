@@ -1,3 +1,4 @@
+import { tr } from '../intl/i18n';
 // OpenType collection tables use file-relative offsets. Rebuild one complete
 // sfnt, retaining layout/color/variation tables and original glyph IDs.
 // https://learn.microsoft.com/en-us/typography/opentype/spec/otff
@@ -17,21 +18,21 @@ export function fontFaceData(bytes: ArrayBuffer, index: number): ArrayBuffer {
   const input = new DataView(bytes);
   function check(offset: number, length: number) {
     if (offset < 0 || length < 0 || offset + length > bytes.byteLength)
-      throw new Error('フォントのテーブルがファイルの範囲外です。');
+      throw new Error(tr('フォントのテーブルがファイルの範囲外です。'));
   }
   check(0, 4);
   if (input.getUint32(0) !== TTC) {
-    if (index !== 0) throw new Error('この形式のフェイスの抽出には対応していません。');
+    if (index !== 0) throw new Error(tr('この形式のフェイスの抽出には対応していません。'));
     return bytes;
   }
   check(0, 12);
   const version = input.getUint32(4);
   if (version !== 0x10000 && version !== 0x20000)
-    throw new Error('未対応のフォントコレクションです。');
+    throw new Error(tr('未対応のフォントコレクションです。'));
   const count = input.getUint32(8);
   check(12, count * 4 + (version === 0x20000 ? 12 : 0));
   if (!Number.isInteger(index) || index < 0 || index >= count)
-    throw new Error('コレクションのフェイスが存在しません。');
+    throw new Error(tr('コレクションのフェイスが存在しません。'));
   const directory = input.getUint32(12 + index * 4);
   check(directory, 12);
   const countTables = input.getUint16(directory + 4);
@@ -52,10 +53,10 @@ export function fontFaceData(bytes: ArrayBuffer, index: number): ArrayBuffer {
     tables.length > 4095 ||
     new Set(tables.map((t) => t.tag)).size !== tables.length
   )
-    throw new Error('フォントのテーブル構成が不正です。');
+    throw new Error(tr('フォントのテーブル構成が不正です。'));
   let offset = 12 + tables.length * 16;
   const size = offset + tables.reduce((sum, table) => sum + aligned(table.length), 0);
-  if (size > FONT_SIZE_LIMIT) throw new Error('表示用フォントが64 MBを超えています。');
+  if (size > FONT_SIZE_LIMIT) throw new Error(tr('表示用フォントが64 MBを超えています。'));
   const result = new ArrayBuffer(size);
   const view = new DataView(result);
   const output = new Uint8Array(result);
@@ -69,7 +70,7 @@ export function fontFaceData(bytes: ArrayBuffer, index: number): ArrayBuffer {
   tables.forEach((table, i) => {
     output.set(new Uint8Array(bytes, table.offset, table.length), offset);
     if (table.tag === HEAD) {
-      if (table.length < 12) throw new Error('head テーブルが不正です。');
+      if (table.length < 12) throw new Error(tr('head テーブルが不正です。'));
       head = offset;
       view.setUint32(head + 8, 0);
     }
