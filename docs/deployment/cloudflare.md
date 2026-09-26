@@ -41,7 +41,7 @@ Wranglerのローカル配信はHTTPのlocalhostで動く。本番のHTTPS証明
 - Custom Domainは`wrangler.jsonc`の`routes`で指定済み。デプロイ時にCloudflareがDNSと証明書を管理する。手動のworkers.dev向けCNAMEは作成しない。
 - `workers_dev`と`preview_urls`は無効にしており、公開先を指定の独自ドメインに限定する。
 
-この準備作業ではCloudflareアカウントの設定、DNSの変更、公開は実行していない。
+2026-09-26にローカルのWranglerから初回公開済み。`mojidata-map.ryusei.dev`のCustom Domain接続とHTTPSを確認した。公開バージョンは`02aef683-d6ce-44a9-861d-c8c88c2c1052`。GitHub Actions経由の認証設定・公開は未検証。
 
 ## ローカルから公開
 

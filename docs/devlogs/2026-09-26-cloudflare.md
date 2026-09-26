@@ -7,3 +7,9 @@
 - 通常CIにCloudflare検証を追加し、mainから手動実行する公開ワークフローを用意。認証情報はGitHubのproduction Environmentに設定する。
 - `npm run cloudflare:check`成功。Cloudflareローカル配信テスト2件、既存単体テスト109件成功。
 - 本番公開・DNS変更・アカウント設定は実行していない。ryusei.devのCloudflare zone管理状況は未確認。前提条件と公開手順を[デプロイ文書](../deployment/cloudflare.md)に記載した。
+
+## 初回公開
+
+ユーザーの公開指示を受け、既存のWrangler OAuth認証で`npm run deploy`を実行した。82アセットをアップロードし、Custom Domain `mojidata-map.ryusei.dev`を接続した。公開バージョンは`02aef683-d6ce-44a9-861d-c8c88c2c1052`。
+
+公開URLでHTTPS応答、HTMLとJavaScriptのローカルビルドとの一致、キャッシュヘッダー、欠落JSONの404を検証した。実ブラウザーでUnicode文字情報、検索ワーカー、バッファ追加、英語切替、フォントファイル解析に成功し、JavaScriptエラーはなかった。GitHubへのpushやActions経由の公開は行っていない。
