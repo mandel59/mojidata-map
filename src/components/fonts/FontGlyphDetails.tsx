@@ -324,7 +324,6 @@ export function FontGlyphDetails({
           </div>
         ))}
       </dl>
-      <p className="note muted">寸法はフォント単位です。輪郭の範囲は左下 → 右上の座標です。</p>
       {info && <FontGsubDetails font={font} id={info.id} />}
       <div className="button-row">
         <button
