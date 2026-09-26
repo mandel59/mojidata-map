@@ -1,3 +1,4 @@
+import { FittedCharacter } from './FittedCharacter';
 import { useFontStyle } from '../useFontFallback';
 import { memo, useMemo, useEffect, useState } from 'react';
 import { UtilityDialog } from './UtilityDialog';
@@ -125,9 +126,7 @@ export const CharacterDetails = memo(function CharacterDetails({
           {bookmarked ? '★' : '☆'}
         </button>
       </div>
-      <div className="large-glyph" style={fontStyle(font)} dir="ltr">
-        {db.glyph(cp)}
-      </div>
+      <FittedCharacter className="large-glyph" style={fontStyle(font)} text={db.glyph(cp)} />
       <h2 className="character-name">{db.name(cp)}</h2>
       <div className="button-row">
         <button className="primary" disabled={!scalar} onClick={() => onInsert(char)}>
@@ -326,9 +325,7 @@ export const CharacterDetails = memo(function CharacterDetails({
   return (
     <>
       <aside className="detail-strip" aria-label="選択中の文字">
-        <span className="strip-glyph" style={fontStyle(font)} dir="ltr">
-          {db.glyph(cp)}
-        </span>
+        <FittedCharacter className="strip-glyph" style={fontStyle(font)} text={db.glyph(cp)} />
         <div>
           <strong>{codeLabel(cp)}</strong>
           <span>{db.name(cp)}</span>

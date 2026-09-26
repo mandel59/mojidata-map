@@ -1,3 +1,4 @@
+import { FittedCharacter } from './FittedCharacter';
 import { useFontStyle } from '../useFontFallback';
 import { memo, useRef } from 'react';
 import { useGridNavigation } from '../useGridNavigation';
@@ -71,9 +72,11 @@ export const CharacterGrid = memo(function CharacterGrid({
             onDoubleClick={() => onInsert(cp)}
             onKeyDown={(event) => navigation.onKeyDown(event, index)}
           >
-            <span className="cell-glyph" style={fontStyle(fontFamily)} dir="ltr">
-              {db.glyph(cp)}
-            </span>
+            <FittedCharacter
+              className="cell-glyph"
+              style={fontStyle(fontFamily)}
+              text={db.glyph(cp)}
+            />
             <span className="cell-code">{hex(cp)}</span>
           </button>
         );

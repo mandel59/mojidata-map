@@ -2083,3 +2083,19 @@ td button {
 .gsub-glyph small {
   font-size: 10px;
 }
+
+.fitted-character {
+  direction: ltr;
+  display: block;
+  flex-shrink: 0;
+}
+.large-glyph.fitted-character {
+  direction: ltr;
+  width: 100%;
+  height: 1.35em;
+}
+.strip-glyph.fitted-character {
+  direction: ltr;
+  width: 1.5em;
+  height: 1.35em;
+}
