@@ -43,3 +43,11 @@ Segoeの例では、APIの `Segoe-UI-Variable-Display-Bold` に対してfvarは 
 監査は名前解析までを対象としており、成功した311件について全グリフの輪郭・シェーピングを検証したものではない。隔離したWindowsアプリを使用し、終了後は一時アプリ・プロファイルを削除した。
 
 再現コードと全結果は `var/local-font-audit.test.ts`、`var/audit-all-windows-local-fonts.mjs`、`var/windows-local-font-audit/fonts.json`、`var/local-font-audit.log`（管理対象外）。全件検証は約188秒で完了した。
+
+## 修正対応
+
+- `fontInstance()` にname ID 25（未指定時は英語ファミリー名）の生成名を追加し、Regular省略形も扱う。既存の明示PostScript名とDirectWrite別名の照合を維持する。
+- Segoeの光学サイズ別名はSTATの軸値名・省略フラグ・軸順序を読み、光学サイズなどの非WWS軸をファミリー側へ配置して照合する。既知のfvarインスタンスの座標だけを対象に、一意に一致する場合のみ採用する。表示名にも光学サイズを含め、Regular Textが他のRegularと紛れないようにした。
+- STATのformat 1・2・3に対応。format 4や壊れたテーブルは別名を生成せず、推測したウェイトで読み込まない。STAT形式の根拠は [OpenType STAT仕様](https://learn.microsoft.com/en-us/typography/opentype/spec/stat)。
+- 名前・座標解決の単体10ケース、既存のフォント選択E2E4ケース、ビルド・型検査が成功。実フォントのCascadia／Segoe計27フェイスで期待ウェイトと光学サイズ、Aの輪郭取得を確認した。実バイト列を返す端末APIのテストで、Cascadia Regular／BoldとSegoe Display Bold／Text Regular／Small Lightの5フェイスを選択してサンプル表示とFontFaceのウェイト設定を確認した。
+- Windows APIの実データを使って全343フェイスを再監査し、343件すべての名前解析が成功した（修正前は32件失敗）。約194秒。記録は `var/local-font-audit-after.log` と更新後の `var/windows-local-font-audit/fonts.json`。全グリフの検証ではないという範囲は前回同様。

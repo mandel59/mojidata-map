@@ -1,4 +1,5 @@
 import type { Font } from 'fontkit';
+import { statStyle } from './fontStatNames';
 
 export const instanceNameRecords = new WeakMap<Font, Record<string, Record<string, string>>>();
 
@@ -27,6 +28,7 @@ export function fontInstance(font: Font, postscriptName: string) {
     const names = id === 6 ? records?.postscriptName : records?.fontFeatures?.[id ?? -1];
     return names && Object.values(names).includes(postscriptName);
   });
+  let matchedStyle: Record<string, string> | undefined;
   if (!instance) {
     // DirectWrite may synthesize a family-style PostScript name instead of
     // returning fvar's name (spaces become hyphens; Regular can be omitted).
@@ -39,13 +41,34 @@ export function fontInstance(font: Font, postscriptName: string) {
             (entry.nameID === 2 ? records?.fontSubfamily?.en : records?.preferredSubfamily?.en);
           if (!style) return false;
           const alias = `${family} ${style}`.replace(/\s+/g, '-');
+          const prefix = records?.['25']?.en ?? family.replace(/[^A-Za-z0-9]/g, '');
+          const generated = `${prefix}-${style.replace(/[^A-Za-z0-9]/g, '')}`;
           return (
             alias === postscriptName ||
-            (style === 'Regular' && family.replace(/\s+/g, '-') === postscriptName)
+            generated === postscriptName ||
+            (style === 'Regular' &&
+              (family.replace(/\s+/g, '-') === postscriptName || prefix === postscriptName))
           );
         })
       : [];
     if (aliases.length === 1) instance = aliases[0];
+  }
+  if (!instance) {
+    const family = records?.preferredFamily?.en ?? records?.fontFamily?.en;
+    const matches = family
+      ? instances.flatMap((entry) => {
+          const coordinates = Object.fromEntries(
+            variable.fvar!.axis.map((axis, i) => [axis.axisTag.trim(), entry.coord[i]]),
+          );
+          const style = statStyle(font, coordinates);
+          const alias = style && `${family} ${style.alias}`.trim().replace(/\s+/g, '-');
+          return alias === postscriptName ? [{ entry, style: style!.full }] : [];
+        })
+      : [];
+    if (matches.length === 1) {
+      instance = matches[0].entry;
+      matchedStyle = { en: matches[0].style };
+    }
   }
   if (!instance) return null;
   const coordinates = Object.fromEntries(
@@ -54,6 +77,7 @@ export function fontInstance(font: Font, postscriptName: string) {
   return {
     coordinates,
     style:
+      matchedStyle ??
       instance.name ??
       (instance.nameID === 2 ? records?.fontSubfamily : records?.preferredSubfamily) ??
       {},
