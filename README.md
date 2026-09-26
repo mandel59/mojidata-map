@@ -24,6 +24,8 @@ npm run preview
 `dist/` を静的 HTTP サーバーで配信できます。サブディレクトリ配信にも対応します。
 `index.html` の直接 `file://` 起動には対応していません。Web 版は静的データを配信元から読み込み、Service Worker によるオフラインキャッシュはまだありません。
 
+Cloudflareで `mojidata-map.ryusei.dev` に公開するための設定を用意しています。公開前の検証は `npm run cloudflare:check`、ローカル配信の確認は `npm run cloudflare:preview` です。アカウント・独自ドメイン設定と公開手順は[Cloudflareへのデプロイ](docs/deployment/cloudflare.md)を参照してください。
+
 デスクトップ版:
 
 ```sh

@@ -7,3 +7,9 @@ playwright-report/
 coverage/
 __pycache__/
 *.tsbuildinfo
+
+.wrangler/
+.dev.vars
+.dev.vars.*
+.env
+.env.*

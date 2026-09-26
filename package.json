@@ -26,7 +26,11 @@
     "prebuild": "node tools/patch-fontkit.mjs && npm run credits:generate",
     "predev": "node tools/patch-fontkit.mjs && npm run credits:generate",
     "postinstall": "node tools/patch-fontkit.mjs",
-    "i18n:check": "node tools/check-translations.mjs"
+    "i18n:check": "node tools/check-translations.mjs",
+    "cloudflare:check": "npm run i18n:check && npm run build && node tools/check-cloudflare-assets.mjs && wrangler deploy --dry-run",
+    "cloudflare:preview": "npm run build && wrangler dev --ip 127.0.0.1",
+    "deploy": "npm run i18n:check && npm run build && node tools/check-cloudflare-assets.mjs && wrangler deploy",
+    "test:cloudflare": "playwright test --config playwright.cloudflare.config.ts"
   },
   "build": {
     "appId": "org.mojidata.map",
@@ -81,7 +85,8 @@
     "prettier": "3.9.9",
     "typescript": "7.0.2",
     "vite": "8.3.0",
-    "vitest": "5.0.1"
+    "vitest": "5.0.1",
+    "wrangler": "4.141.0"
   },
   "license": "MIT",
   "repository": {
