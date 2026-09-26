@@ -2,15 +2,30 @@ import type { Font, Glyph } from 'fontkit';
 
 // Keep pixels per em and the baseline identical across fonts. Global font
 // bounds may include oversized symbols and must not shrink unrelated glyphs.
-// The fixed viewport has room above/below the em; exceptional outlines can clip.
+// Only oversized outlines expand the viewport; ordinary glyphs retain their scale.
 export function glyphFrame(font: Font, glyph: Glyph) {
   const em = font.unitsPerEm;
   if (!Number.isFinite(em) || em <= 0) throw new Error('Invalid units per em');
-  const width = em * 1.5;
-  const height = em * 1.5;
-  const top = -em * 1.15;
+  let width = em * 1.5;
+  let height = em * 1.5;
+  let top = -em * 1.15;
   const advance = Number.isFinite(glyph.advanceWidth) ? glyph.advanceWidth : em;
-  const left = (advance - width) / 2;
+  let left = (advance - width) / 2;
+  const box = glyph.bbox;
+  if (
+    [box.minX, box.minY, box.maxX, box.maxY].every(Number.isFinite) &&
+    (box.minX < left || box.maxX > left + width || -box.maxY < top || -box.minY > top + height)
+  ) {
+    const padding = em * 0.08;
+    const right = Math.max(left + width, box.maxX + padding);
+    const bottom = Math.max(top + height, -box.minY + padding);
+    left = Math.min(left, box.minX - padding);
+    top = Math.min(top, -box.maxY - padding);
+    const side = Math.max(right - left, bottom - top);
+    left -= (side - (right - left)) / 2;
+    top -= (side - (bottom - top)) / 2;
+    width = height = side;
+  }
   return { left, top, width, height, viewBox: `${left} ${top} ${width} ${height}` };
 }
 

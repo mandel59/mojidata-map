@@ -42,6 +42,9 @@ test('normalizes pixels per em independently of font-wide bounds and vertical me
     });
     const glyph = Object.create(parsed.glyphForCodePoint(65));
     Object.defineProperty(glyph, 'advanceWidth', { value: em * 0.6 });
+    Object.defineProperty(glyph, 'bbox', {
+      value: { minX: 0, minY: 0, maxX: em * 0.6, maxY: em * 0.8 },
+    });
     const frame = glyphFrame(font, glyph);
     return [frame.left / em, frame.top / em, frame.width / em, frame.height / em];
   });
@@ -50,4 +53,26 @@ test('normalizes pixels per em independently of font-wide bounds and vertical me
   expect(ordinary.width / parsed.unitsPerEm).toBe(frames[0][2]);
   expect(ordinary.height / parsed.unitsPerEm).toBe(frames[0][3]);
   expect(ordinary.top / parsed.unitsPerEm).toBe(frames[0][1]);
+});
+
+test('fits tall and wide outlines with padding while retaining the normal frame', () => {
+  for (const em of [1000, 2048]) {
+    const font = { unitsPerEm: em } as typeof parsed;
+    for (const bounds of [
+      [0.215, -0.547, 0.71, 1.315],
+      [-0.8, -0.1, 2.1, 0.8],
+    ]) {
+      const [minX, minY, maxX, maxY] = bounds.map((value) => value * em);
+      const glyph = { advanceWidth: em, bbox: { minX, minY, maxX, maxY } } as ReturnType<
+        typeof parsed.getGlyph
+      >;
+      const frame = glyphFrame(font, glyph);
+      expect(frame.width).toBe(frame.height);
+      expect(frame.width).toBeGreaterThan(1.5 * em);
+      expect(frame.left).toBeLessThanOrEqual(minX - 0.08 * em + 1e-8);
+      expect(frame.left + frame.width).toBeGreaterThanOrEqual(maxX + 0.08 * em - 1e-8);
+      expect(frame.top).toBeLessThanOrEqual(-maxY - 0.08 * em + 1e-8);
+      expect(frame.top + frame.height).toBeGreaterThanOrEqual(-minY + 0.08 * em - 1e-8);
+    }
+  }
 });
