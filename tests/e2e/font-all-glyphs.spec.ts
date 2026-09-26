@@ -47,6 +47,12 @@ for (const width of [1024, 390]) {
       await expect(panel.getByLabel('対応する文字・リガチャ・VS')).toHaveCount(0);
     }
     await show(6);
+    const gsub = panel.locator('details.glyph-gsub');
+    await gsub.locator('summary').click();
+    await expect(gsub).toContainText('合字置換');
+    await expect(gsub).toContainText('liga');
+    await expect(gsub.getByLabel('GID 3, 4 から GID 6 への置換')).toBeVisible();
+    await gsub.locator('summary').click();
     await expect(panel.getByLabel('対応する文字・リガチャ・VS')).toHaveText(
       'U+0066 U+0069 (リガチャ)',
     );

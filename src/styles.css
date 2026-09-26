@@ -2054,3 +2054,32 @@ td button {
 .utility-dialog .font-picker-actions {
   padding-top: 12px;
 }
+
+.glyph-gsub .gsub-rule {
+  border-bottom: 1px solid var(--border);
+  padding: 8px 0;
+}
+.gsub-sequence,
+.gsub-side {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.gsub-glyph {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 44px;
+}
+.gsub-glyph.current {
+  background: var(--soft);
+  border-radius: 3px;
+}
+.gsub-glyph .layout-glyph {
+  width: 40px;
+  height: 40px;
+}
+.gsub-glyph small {
+  font-size: 10px;
+}

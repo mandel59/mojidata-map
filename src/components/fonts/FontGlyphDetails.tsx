@@ -6,6 +6,7 @@ import { loadData, peekData, type Variations } from '../../data';
 import { glyphDrawing, glyphFrame, glyphSvg } from '../../core/glyphDrawing';
 import { copyText, download } from '../../platform';
 import { UtilityDialog } from '../UtilityDialog';
+import { FontGsubDetails } from './FontGsubDetails';
 
 export function FontGlyphDetails({
   font,
@@ -298,6 +299,7 @@ export function FontGlyphDetails({
         ))}
       </dl>
       <p className="note muted">寸法はフォント単位です。輪郭の範囲は左下 → 右上の座標です。</p>
+      {info && <FontGsubDetails font={font} id={info.id} />}
       <div className="button-row">
         <button
           disabled={!drawing?.paths.length}
