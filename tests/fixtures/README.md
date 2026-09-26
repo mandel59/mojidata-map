@@ -76,3 +76,10 @@ a Thin default, and Thin/Regular/Bold/Black named instances with PostScript name
 It exercises localized instance names, outline interpolation and CSS previews.
 Regenerate with `uv run --with fonttools tools/build-variable-font-fixture.py`.
 No Noto font data is included.
+
+## Glyph-name fallbacks
+
+`NamedGlyphSequence.ttf` and `UnnamedGlyphSequence.ttf` reuse the original
+GlyphVariants outlines, adding U+0100 and U+0300 cmap aliases so a ligature
+matches a Unicode Named Sequence. The latter uses post format 3 without glyph
+names. Regenerate with `uv run --with fonttools tools/build-glyph-name-fixtures.py`.

@@ -45,3 +45,5 @@ export type IdeographicVariations = Record<
   string,
   [selector: number, registrations: [collection: string, identifier: string][]][]
 >;
+
+export type NamedSequences = Record<string, string>;

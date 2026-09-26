@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Font } from 'fontkit';
 import { codeLabel, hex, isScalar, type UnicodeDatabase } from '../../core/unicode';
 import type { GlyphReference } from '../../core/fontGlyphIndex';
-import { loadData, peekData, type Variations } from '../../data';
+import { loadData, peekData, type Variations, type NamedSequences } from '../../data';
 import { glyphDrawing, glyphFrame, glyphSvg } from '../../core/glyphDrawing';
 import { copyText, download } from '../../platform';
 import { UtilityDialog } from '../UtilityDialog';
@@ -55,34 +55,6 @@ export function FontGlyphDetails({
     : id !== null && reference
       ? String.fromCodePoint(...reference.points)
       : '';
-  const isVariation = id !== null && reference?.kind === 'variation';
-  const variations = peekData<Variations>('variations');
-  const [variationStatus, setVariationStatus] = useState({ text: '', error: '' });
-  const variationError =
-    isVariation && !variations && variationStatus.text === text ? variationStatus.error : '';
-  const sequenceName = isVariation
-    ? variations?.[hex(reference.points[0])]?.find(
-        ([points]) =>
-          points.length === reference.points.length &&
-          points.every((cp, i) => cp === reference.points[i]),
-      )?.[1]
-    : undefined;
-  useEffect(() => {
-    if (!isVariation || variations) return;
-    let current = true;
-    void loadData<Variations>('variations').then(
-      () => {
-        if (current) setVariationStatus({ text, error: '' });
-      },
-      (error) => {
-        if (current) setVariationStatus({ text, error: String(error) });
-      },
-    );
-    return () => {
-      current = false;
-    };
-  }, [isVariation, text, variations]);
-  const filename = id === null ? hex(cp!) : `glyph-${id}`;
   const info = useMemo(() => {
     try {
       if (id === null && (cp === null || !isScalar(cp))) return null;
@@ -102,6 +74,46 @@ export function FontGlyphDetails({
       return null;
     }
   }, [font, cp, id]);
+  const isVariation = id !== null && reference?.kind === 'variation';
+  const isLigature =
+    id !== null && reference?.kind === 'ligature' && (!info?.name || info.name === '—');
+  const namedSequences = peekData<NamedSequences>('named-sequences');
+  const variations = peekData<Variations>('variations');
+  const [sequenceStatus, setSequenceStatus] = useState({ text: '', error: '' });
+  const sequenceError =
+    ((isVariation && !variations) || (isLigature && !namedSequences)) &&
+    sequenceStatus.text === text
+      ? sequenceStatus.error
+      : '';
+  const namedSequence = isLigature
+    ? namedSequences?.[reference.points.map((point) => hex(point)).join(' ')]
+    : undefined;
+  const sequenceName = isVariation
+    ? variations?.[hex(reference.points[0])]?.find(
+        ([points]) =>
+          points.length === reference.points.length &&
+          points.every((cp, i) => cp === reference.points[i]),
+      )?.[1]
+    : namedSequence;
+  const sequenceData = isVariation ? 'variations' : isLigature ? 'named-sequences' : null;
+  const sequenceDataReady = isVariation ? !!variations : !!namedSequences;
+  const [sequenceRetry, setSequenceRetry] = useState(0);
+  useEffect(() => {
+    if (!sequenceData || sequenceDataReady) return;
+    let current = true;
+    void loadData(sequenceData).then(
+      () => {
+        if (current) setSequenceStatus({ text, error: '' });
+      },
+      (error) => {
+        if (current) setSequenceStatus({ text, error: String(error) });
+      },
+    );
+    return () => {
+      current = false;
+    };
+  }, [sequenceData, sequenceDataReady, text, sequenceRetry]);
+  const filename = id === null ? hex(cp!) : `glyph-${id}`;
   const drawing = info?.drawing;
   const advanceY = drawing ? drawing.top + drawing.height - font.unitsPerEm * 0.035 : 0;
   const preview = drawing ? (
@@ -204,7 +216,16 @@ export function FontGlyphDetails({
     }
   }
   const title = cp !== null ? `${codeLabel(cp)} · Glyph ID ${info?.id ?? '—'}` : `Glyph ID ${id}`;
-  const name = cp !== null ? db.name(cp) : (info?.name ?? '—');
+  const unicodeName =
+    reference && (reference.points.length === 1 || reference.kind === 'variation')
+      ? db.name(reference.points[0])
+      : undefined;
+  const name =
+    cp !== null
+      ? db.name(cp)
+      : info?.name && info.name !== '—'
+        ? info.name
+        : namedSequence || unicodeName || '—';
   const content = (
     <div className="character-info font-glyph-info">
       <div className="detail-code">{title}</div>
@@ -244,7 +265,12 @@ export function FontGlyphDetails({
             </p>
           )}
           {referenceError && <p className="note coverage-missing">{referenceError}</p>}
-          {variationError && <p className="note coverage-missing">{variationError}</p>}
+          {sequenceError && (
+            <p className="note coverage-missing">
+              {sequenceError}{' '}
+              <button onClick={() => setSequenceRetry((value) => value + 1)}>再読み込み</button>
+            </p>
+          )}
         </div>
       )}
       <div className="button-row">

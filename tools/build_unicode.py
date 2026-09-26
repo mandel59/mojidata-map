@@ -214,6 +214,9 @@ def build(update_lock=False):
     write("east-asian-index.json", {"fields": east_fields, "rows": east_index})
     write("emoji.json", emoji)
     write("variations.json", dict(variations))
+    named_sequences = {" ".join(f"{int(cp, 16):04X}" for cp in row[1].split()): row[0]
+                       for row in fields(read("NamedSequences.txt"))}
+    write("named-sequences.json", named_sequences)
     # Keep standardized sequences separate from emoji presentation sequences.
     svs = sorted({tuple(int(cp, 16) for cp in row[0].split())
                   for row in fields(read("StandardizedVariants.txt"))})
