@@ -60,3 +60,11 @@ original geometric outlines. It covers GSUB type 8, reverse traversal, backtrack
 and lookahead contexts, extension lookups, and ignored combining marks. It
 contains no data from Nishiki-teki. Regenerate with
 `uv run --with fonttools tools/build-reverse-gsub-fixture.py`.
+
+## Mixed-script sample shaping
+
+`ArabicSample.ttf` uses original geometric outlines and Arabic initial, medial,
+and final substitutions alongside a Latin fi ligature. It tests mixed-script
+shaping, combining marks, joiners, and source selection without redistributing
+any data from Nishiki-teki. Regenerate with
+`uv run --with fonttools tools/build-arabic-sample-fixture.py`.

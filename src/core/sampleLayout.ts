@@ -83,6 +83,27 @@ export function featureSettings(value: string): Record<string, boolean> {
   );
 }
 
+// fontkit detects one script from the first strong character; callers must
+// itemize mixed-script text. Keep grapheme clusters (marks, VS and ZWJ) intact.
+function scriptRuns(text: string, db: UnicodeDatabase) {
+  const runs: { text: string; start: number; script: string | null }[] = [];
+  const neutral = new Set(['Common', 'Inherited', 'Unknown']);
+  for (const { segment, index } of new Intl.Segmenter('und', { granularity: 'grapheme' }).segment(
+    text,
+  )) {
+    const script =
+      [...segment]
+        .map((char) => db.property(char.codePointAt(0)!, 'Script'))
+        .find((value) => !neutral.has(value)) ?? null;
+    const previous = runs.at(-1);
+    if (previous && (!script || !previous.script || previous.script === script)) {
+      previous.text += segment;
+      previous.script ??= script;
+    } else runs.push({ text: segment, start: index, script });
+  }
+  return runs.length ? runs : [{ text: '', start: 0, script: null }];
+}
+
 export function sampleLayout(
   font: Font,
   text: string,
@@ -113,10 +134,35 @@ export function sampleLayout(
     return glyph;
   };
   try {
-    const run = font.layout(analyzedText, { ...features });
+    const parts = scriptRuns(analyzedText, db).map((part) => {
+      inputGlyphs = [];
+      const run = font.layout(part.text, { ...features });
+      const ranges = sourceRanges(part.text, inputGlyphs, run).map((range) =>
+        range ? { start: range.start + part.start, end: range.end + part.start } : null,
+      );
+      return { ...part, run, ranges };
+    });
+    let glyphStart = 0;
+    const runs = parts.map((part) => {
+      const result = {
+        start: part.start,
+        end: part.start + part.text.length,
+        script: part.run.script,
+        direction: part.run.direction,
+        glyphStart,
+        glyphCount: part.run.glyphs.length,
+      };
+      glyphStart += result.glyphCount;
+      return result;
+    });
     return {
-      run,
-      sourceRanges: sourceRanges(analyzedText, inputGlyphs, run),
+      run: {
+        glyphs: parts.flatMap((part) => part.run.glyphs),
+        positions: parts.flatMap((part) => part.run.positions),
+        direction: parts.length === 1 ? parts[0].run.direction : 'mixed',
+      },
+      runs,
+      sourceRanges: parts.flatMap((part) => part.ranges),
       text: analyzedText,
       truncated: points.length > SAMPLE_LIMIT,
     };

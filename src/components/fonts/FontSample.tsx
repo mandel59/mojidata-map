@@ -139,6 +139,7 @@ export function FontSample({
                   {
                     text: layout.text,
                     features,
+                    runs: layout.runs,
                     glyphs: layout.run.glyphs.map((g) => g.id),
                     codePoints: layout.run.glyphs.map((g) => g.codePoints),
                     positions: layout.run.positions,

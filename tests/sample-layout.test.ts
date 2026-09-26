@@ -150,3 +150,45 @@ test('applies reverse chaining from end to start, with context, extensions and i
     { start: 3, end: 4 },
   ]);
 });
+
+test('shapes Arabic joining forms independently of neighboring Latin text and ligatures', () => {
+  const f = font('ArabicSample.ttf');
+  const result = sampleLayout(f, 'Aبببfi', {}, db);
+  expect(result.run.glyphs.map((glyph) => glyph.id)).toEqual([2, 9, 8, 7, 5]);
+  expect(result.sourceRanges).toEqual([
+    { start: 0, end: 1 },
+    { start: 3, end: 4 },
+    { start: 2, end: 3 },
+    { start: 1, end: 2 },
+    { start: 4, end: 6 },
+  ]);
+  expect(result.runs.map(({ script, direction }) => [script, direction])).toEqual([
+    ['latn', 'ltr'],
+    ['arab', 'rtl'],
+    ['latn', 'ltr'],
+  ]);
+  expect(
+    sampleLayout(f, 'Aبببfi', { liga: false }, db).run.glyphs.map((glyph) => glyph.id),
+  ).toEqual([2, 9, 8, 7, 3, 4]);
+});
+
+test('keeps Arabic marks and joiners with their script and offsets repeated run selections', () => {
+  const f = font('ArabicSample.ttf');
+  const arabic = 'بِب\u200Dب';
+  const prefix = 'A\u0301';
+  const solo = sampleLayout(f, arabic, {}, db);
+  const mixed = sampleLayout(f, prefix + arabic + 'fi' + arabic, {}, db);
+  for (const index of [1, 3]) {
+    const part = mixed.runs[index];
+    expect(part.script).toBe('arab');
+    expect(
+      mixed.run.glyphs.slice(part.glyphStart, part.glyphStart + part.glyphCount).map((g) => g.id),
+    ).toEqual(solo.run.glyphs.map((g) => g.id));
+    expect(mixed.sourceRanges.slice(part.glyphStart, part.glyphStart + part.glyphCount)).toEqual(
+      solo.sourceRanges.map(
+        (range) => range && { start: range.start + part.start, end: range.end + part.start },
+      ),
+    );
+  }
+  expect(mixed.runs[0].end).toBe(prefix.length);
+});

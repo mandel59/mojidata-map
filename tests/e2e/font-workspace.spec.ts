@@ -192,3 +192,24 @@ test('renders reverse-chaining font samples and selects each substituted occurre
   await page.keyboard.press('Escape');
   await expect(rows.first()).toHaveAttribute('data-glyph-id', '2');
 });
+
+test('shows contextual Arabic glyphs in a mixed-script sample and selects the right occurrence', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await fontSample(page);
+  await page.locator('input[type=file]').setInputFiles('tests/fixtures/ArabicSample.ttf');
+  const input = page.getByLabel('サンプルテキスト', { exact: true });
+  await input.fill('Aبببfi');
+  const rows = page.locator('.sample-glyph-table tbody tr');
+  await expect(rows).toHaveCount(5);
+  expect(
+    await rows.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-glyph-id'))),
+  ).toEqual(['2', '9', '8', '7', '5']);
+  await rows.nth(1).getByRole('button', { name: 'U+0628 をサンプルで選択', exact: true }).click();
+  expect(
+    await input.evaluate((el: HTMLTextAreaElement) => [el.selectionStart, el.selectionEnd]),
+  ).toEqual([3, 4]);
+  await expect(rows.nth(1).locator('svg path')).toHaveAttribute('d', /\S/);
+  await expect(page.getByRole('alert')).toHaveCount(0);
+});
