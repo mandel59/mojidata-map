@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Font } from 'fontkit';
 import { codeLabel, hex, isScalar, type UnicodeDatabase } from '../../core/unicode';
 import type { GlyphReference } from '../../core/fontGlyphIndex';
@@ -19,6 +19,7 @@ export function FontGlyphDetails({
   compact,
   onInsert,
   notify,
+  openRequest,
 }: {
   font: Font;
   family: string | null;
@@ -31,8 +32,16 @@ export function FontGlyphDetails({
   compact: boolean;
   onInsert(text: string): void;
   notify(message: string): void;
+  openRequest?: object | null;
 }) {
   const [open, setOpen] = useState(false);
+  const openButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (compact && openRequest) {
+      openButton.current?.focus();
+      setOpen(true);
+    }
+  }, [compact, openRequest]);
   useEffect(() => {
     if (!compact) setOpen(false);
   }, [compact]);
@@ -324,7 +333,7 @@ export function FontGlyphDetails({
         <button disabled={!text} onClick={() => onInsert(text)}>
           追加
         </button>
-        <button aria-haspopup="dialog" onClick={() => setOpen(true)}>
+        <button ref={openButton} aria-haspopup="dialog" onClick={() => setOpen(true)}>
           グリフ情報
         </button>
       </aside>

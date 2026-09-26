@@ -213,3 +213,63 @@ test('shows contextual Arabic glyphs in a mixed-script sample and selects the ri
   await expect(rows.nth(1).locator('svg path')).toHaveAttribute('d', /\S/);
   await expect(page.getByRole('alert')).toHaveCount(0);
 });
+
+for (const width of [1024, 390]) {
+  test(`opens exact sample glyphs in the full glyph map at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 600 });
+    await page.goto('/');
+    await fontSample(page);
+    await page.locator('input[type=file]').setInputFiles('tests/fixtures/GlyphVariants.ttf');
+    const sample = page.getByLabel('サンプルテキスト', { exact: true });
+    await sample.fill('fi');
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await page
+        .getByRole('button', { name: 'Glyph ID 6 をグリフマップで表示', exact: true })
+        .click();
+      await expect(page.getByRole('tab', { name: 'グリフマップ', exact: true })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      await expect(page.getByLabel('表示範囲', { exact: true })).toHaveValue('@glyphs');
+      const cell = page.locator('.font-glyph-grid .selected');
+      await expect(cell).toHaveAttribute('data-glyph-id', '6');
+      if (width === 390) {
+        const dialog = page.getByRole('dialog', { name: 'グリフ情報', exact: true });
+        await expect(dialog).toBeVisible();
+        await expect(dialog.locator('.detail-code')).toContainText('Glyph ID 6');
+        await page.keyboard.press('Escape');
+        await expect(page.getByRole('button', { name: 'グリフ情報', exact: true })).toBeFocused();
+      } else {
+        await expect(cell).toBeFocused();
+        await expect(
+          page.getByRole('complementary', { name: 'グリフの詳細' }).locator('.detail-code'),
+        ).toContainText('Glyph ID 6');
+      }
+      await page.getByLabel('表示範囲', { exact: true }).selectOption('');
+      await expect(
+        page.getByRole('heading', { name: 'Unicodeコードポイント', exact: true }),
+      ).toBeVisible();
+      await page.getByRole('tab', { name: 'サンプル', exact: true }).click();
+      await expect(sample).toHaveValue('fi');
+    }
+    // An encoded glyph on a later page must select its actual GID, not its code point.
+    await page
+      .locator('input[type=file]')
+      .setInputFiles('tests/fixtures/LiberationSans-Regular.ttf');
+    await sample.fill('é');
+    const parsed = create(readFileSync('tests/fixtures/LiberationSans-Regular.ttf'));
+    if ('fonts' in parsed) throw new Error('Expected one font');
+    const id = parsed.glyphForCodePoint(0xe9).id;
+    expect(id).toBeGreaterThan(127);
+    await page
+      .getByRole('button', { name: `Glyph ID ${id} をグリフマップで表示`, exact: true })
+      .click();
+    await expect(page.locator('.font-glyph-grid .selected')).toHaveAttribute(
+      'data-glyph-id',
+      String(id),
+    );
+    await expect(page.locator('.font-coverage-preview .pagination')).toContainText(
+      `${Math.floor(id / 128) + 1} /`,
+    );
+  });
+}

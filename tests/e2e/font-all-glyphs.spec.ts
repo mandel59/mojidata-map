@@ -21,8 +21,8 @@ for (const width of [1024, 390]) {
     if (width > 700) await page.getByRole('button', { name: 'フォント', exact: true }).click();
     else await page.getByLabel('ツールを選択').selectOption('fonts');
     await page.locator('input[type=file]').setInputFiles(fixture);
-    const scope = page.getByLabel('収録範囲', { exact: true });
-    await expect(scope.locator('option').first()).toHaveText('すべての収録文字 (5)');
+    const scope = page.getByLabel('表示範囲', { exact: true });
+    await expect(scope.locator('option').first()).toHaveText('Unicodeコードポイント (5)');
     await scope.selectOption('@glyphs');
     const cells = page.locator('.font-glyph-grid .character-cell');
     await expect(cells).toHaveCount(10);
@@ -107,7 +107,7 @@ for (const width of [1024, 390]) {
     await page.keyboard.press('ArrowRight');
     await expect(page.locator('[data-glyph-id="5"]')).toBeFocused();
     await page.getByRole('tab', { name: 'サンプル', exact: true }).click();
-    await page.getByRole('tab', { name: '収録文字', exact: true }).click();
+    await page.getByRole('tab', { name: 'グリフマップ', exact: true }).click();
     await expect(scope).toHaveValue('@unmapped');
     await expect(page.locator('[data-glyph-id="5"]')).toHaveAttribute('aria-pressed', 'true');
     // A decimal GID jump to a mapped glyph leaves the unencoded-only scope.
@@ -134,7 +134,7 @@ test('pages all glyphs with the shared keys and resets on collection face change
   await page.goto('/?cp=0041');
   await page.getByRole('button', { name: 'フォント', exact: true }).click();
   await page.locator('input[type=file]').setInputFiles('tests/fixtures/LiberationSans-Regular.ttf');
-  const scope = page.getByLabel('収録範囲', { exact: true });
+  const scope = page.getByLabel('表示範囲', { exact: true });
   await scope.selectOption('@glyphs');
   const cell = (id: number) => page.locator(`[data-glyph-id="${id}"]`);
   await cell(10).click();
@@ -165,7 +165,7 @@ test('exports unencoded glyphs even when CSS font loading fails', async ({ page 
   await page.goto('/?cp=0041');
   await page.getByRole('button', { name: 'フォント', exact: true }).click();
   await page.locator('input[type=file]').setInputFiles(fixture);
-  await page.getByLabel('収録範囲', { exact: true }).selectOption('@unmapped');
+  await page.getByLabel('表示範囲', { exact: true }).selectOption('@unmapped');
   await page.locator('[data-glyph-id="7"]').click();
   const panel = page.getByRole('complementary', { name: 'グリフの詳細' });
   await expect(panel.locator('svg path')).toHaveAttribute('d', font.getGlyph(7).path.toSVG());

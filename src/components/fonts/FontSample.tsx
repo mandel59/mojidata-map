@@ -20,6 +20,7 @@ export function FontSample({
   sample,
   onChange,
   buffer,
+  onShowGlyph,
 }: {
   font: Font;
   family: string;
@@ -28,6 +29,7 @@ export function FontSample({
   sample: string;
   onChange(text: string): void;
   buffer: string;
+  onShowGlyph(id: number): void;
 }) {
   const id = useId();
   const input = useRef<HTMLTextAreaElement>(null);
@@ -201,7 +203,15 @@ export function FontSample({
                     data-glyph-id={glyph.id}
                     className={missing || invalid ? 'missing-glyph-row' : ''}
                   >
-                    <td>{glyph.id}</td>
+                    <td>
+                      <button
+                        className="text-button"
+                        onClick={() => onShowGlyph(glyph.id)}
+                        aria-label={`Glyph ID ${glyph.id} をグリフマップで表示`}
+                      >
+                        {glyph.id}
+                      </button>
+                    </td>
                     <td>
                       <LayoutGlyph font={font} id={glyph.id} />
                     </td>

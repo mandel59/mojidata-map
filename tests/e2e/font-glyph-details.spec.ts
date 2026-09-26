@@ -83,7 +83,7 @@ for (const width of [1024, 390]) {
     await expect(page.getByText(/^U\+03A9 · Glyph ID /)).toBeVisible();
     await page.getByRole('tab', { name: 'サンプル', exact: true }).click();
     await expect(page.getByRole('complementary', { name: /グリフ/ })).toHaveCount(0);
-    await page.getByRole('tab', { name: '収録文字', exact: true }).click();
+    await page.getByRole('tab', { name: 'グリフマップ', exact: true }).click();
     await expect(collection.locator('[data-cp="937"]')).toHaveAttribute('aria-pressed', 'true');
     // Missing and empty outlines remain distinct; neither uses OS fallback in the preview.
     await jump.fill('323B0');
@@ -210,7 +210,7 @@ test('uses the same pixels per em across fonts in details and samples', async ({
     const font = create(readFileSync(`tests/fixtures/${file}`));
     if ('fonts' in font) throw new Error('Expected one font');
     await page.locator('input[type=file]').setInputFiles(`tests/fixtures/${file}`);
-    await page.getByRole('tab', { name: '収録文字', exact: true }).click();
+    await page.getByRole('tab', { name: 'グリフマップ', exact: true }).click();
     const svg = page.getByRole('img', { name: 'フォントのグリフ輪郭', exact: true });
     await expect(svg).toBeVisible();
     const detail = await svg.evaluate(

@@ -7,7 +7,7 @@ async function openGlyphs(page: Page, width = 1024) {
   if (width > 700) await page.getByRole('button', { name: 'フォント', exact: true }).click();
   else await page.getByLabel('ツールを選択').selectOption('fonts');
   await page.locator('input[type=file]').setInputFiles(fixture);
-  await page.getByLabel('収録範囲', { exact: true }).selectOption('@glyphs');
+  await page.getByLabel('表示範囲', { exact: true }).selectOption('@glyphs');
 }
 function sequenceName(page: Page, panel: Locator) {
   return panel
@@ -48,7 +48,7 @@ for (const width of [1024, 390]) {
     await select(2, 'U+4E38');
     await expect(name).toHaveCount(0);
     if (compact) await page.keyboard.press('Escape');
-    await page.getByLabel('収録範囲', { exact: true }).selectOption('');
+    await page.getByLabel('表示範囲', { exact: true }).selectOption('');
     if (compact) await page.getByRole('button', { name: 'グリフ情報', exact: true }).click();
     await expect(name).toHaveCount(0);
   });

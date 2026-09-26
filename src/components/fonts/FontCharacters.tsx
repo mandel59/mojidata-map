@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Font } from 'fontkit';
 import { hex, parseCodePoint, type UnicodeDatabase } from '../../core/unicode';
 import { loadData, peekData } from '../../data';
@@ -33,6 +33,8 @@ export function FontCharacters({
   onLocate,
   compact,
   notify,
+  glyphRequest,
+  onGlyphRequestHandled,
 }: {
   font: Font;
   family: string | null;
@@ -45,15 +47,35 @@ export function FontCharacters({
   onLocate(cp: number): void;
   compact: boolean;
   notify(message: string): void;
+  glyphRequest: { id: number } | null;
+  onGlyphRequestHandled(): void;
 }) {
-  const [block, setBlock] = useState('');
+  const container = useRef<HTMLDivElement>(null);
+  const [seenRequest, setSeenRequest] = useState(glyphRequest);
+  const [block, setBlock] = useState(glyphRequest ? '@glyphs' : '');
   const glyphMode = Object.hasOwn(glyphScopes, block);
   const variationKind = block === '@svs' ? 'svs' : block === '@ivs' ? 'ivs' : null;
-  const [glyphId, setGlyphId] = useState(0);
+  const [glyphId, setGlyphId] = useState(glyphRequest?.id ?? 0);
   const [variationSelection, setVariationSelection] = useState(0);
-  const [glyphPage, setGlyphPage] = useState(0);
+  const [glyphPage, setGlyphPage] = useState(Math.floor((glyphRequest?.id ?? 0) / 128));
   const [referenceIndex, setReferenceIndex] = useState(0);
   const [page, setPage] = useState(0);
+  if (seenRequest !== glyphRequest) {
+    setSeenRequest(glyphRequest);
+    if (glyphRequest && glyphRequest.id >= 0 && glyphRequest.id < font.numGlyphs) {
+      setBlock('@glyphs');
+      setGlyphId(glyphRequest.id);
+      setGlyphPage(Math.floor(glyphRequest.id / 128));
+      setReferenceIndex(0);
+    }
+  }
+  useEffect(() => {
+    if (!active || !glyphRequest) return;
+    if (!compact)
+      container.current?.querySelector<HTMLButtonElement>('.font-glyph-grid .selected')?.focus();
+    onGlyphRequestHandled();
+  }, [active, glyphRequest, compact, onGlyphRequestHandled]);
+
   const variationData = peekData<FontVariationSequences>('font-variation-sequences');
   const [variationStatus, setVariationStatus] = useState({ error: '' });
   const [retry, setRetry] = useState(0);
@@ -127,12 +149,12 @@ export function FontCharacters({
     [all, db, block, glyphMode],
   );
   return (
-    <div className="font-characters-view">
+    <div className="font-characters-view" ref={container}>
       <div className="font-view-toolbar">
         <label>
-          収録範囲
+          表示範囲
           <select
-            aria-label="収録範囲"
+            aria-label="表示範囲"
             value={block}
             onChange={(event) => {
               const next = event.target.value;
@@ -157,7 +179,7 @@ export function FontCharacters({
               }
             }}
           >
-            <option value="">すべての収録文字 ({all.length.toLocaleString()})</option>
+            <option value="">Unicodeコードポイント ({all.length.toLocaleString()})</option>
             <optgroup label="グリフ">
               <option value="@glyphs">全グリフ ({font.numGlyphs.toLocaleString()})</option>
               <option value="@unmapped">単一文字の割当なし</option>
@@ -269,7 +291,7 @@ export function FontCharacters({
                   onSelect={onSelect}
                   onInsert={onInsert}
                   onLocate={onLocate}
-                  title={block || 'すべての収録文字'}
+                  title={block || 'Unicodeコードポイント'}
                   emptyMessage="収録文字がありません。"
                   columns={16}
                   font={family ?? 'serif'}
@@ -291,6 +313,7 @@ export function FontCharacters({
                 onReferenceIndex={setReferenceIndex}
                 referenceError={index?.variationError ?? ''}
                 compact={compact}
+                openRequest={glyphRequest}
                 onInsert={onInsertText}
                 notify={notify}
               />

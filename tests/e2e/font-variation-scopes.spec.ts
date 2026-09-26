@@ -19,7 +19,7 @@ for (const width of [1024, 390]) {
   }) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await openFont(page, width);
-    const scope = page.getByLabel('収録範囲', { exact: true });
+    const scope = page.getByLabel('表示範囲', { exact: true });
     const collection = page.getByRole('region', { name: '収録文字のプレビュー' });
     const cells = collection.locator('.character-cell');
     const compact = width <= 700;
@@ -72,7 +72,7 @@ for (const width of [1024, 390]) {
     expect(tsv).toContain('5\tA.vs\tU+4E38 U+E0102');
     expect(tsv).not.toContain('U+FE00');
     await page.getByRole('tab', { name: 'サンプル', exact: true }).click();
-    await page.getByRole('tab', { name: '収録文字', exact: true }).click();
+    await page.getByRole('tab', { name: 'グリフマップ', exact: true }).click();
     await expect(scope).toHaveValue('@ivs');
     await expect(cell(page, '4E38 E0102')).toHaveAttribute('aria-pressed', 'true');
     const jump = page.getByLabel('Glyph ID（10進数）');
@@ -103,7 +103,7 @@ test('pages distinct sequences sharing a glyph without losing keyboard selection
   page,
 }) => {
   await openFont(page, 1024, 'tests/fixtures/VariationPages.ttf');
-  await page.getByLabel('収録範囲', { exact: true }).selectOption('@ivs');
+  await page.getByLabel('表示範囲', { exact: true }).selectOption('@ivs');
   const registry = JSON.parse(
     readFileSync('public/data/font-variation-sequences.json', 'utf8'),
   ) as { ivs: number[][] };
@@ -119,7 +119,7 @@ test('pages distinct sequences sharing a glyph without losing keyboard selection
   );
   await page.getByRole('tab', { name: 'サンプル', exact: true }).click();
   await page.keyboard.press('PageUp');
-  await page.getByRole('tab', { name: '収録文字', exact: true }).click();
+  await page.getByRole('tab', { name: 'グリフマップ', exact: true }).click();
   await expect(cell(page, key(138))).toHaveAttribute('aria-pressed', 'true');
   await cell(page, key(138)).focus();
   await page.keyboard.press('PageUp');
@@ -137,7 +137,7 @@ test('uses the current scope when sequence data finishes loading', async ({ page
   });
   try {
     await openFont(page);
-    const scope = page.getByLabel('収録範囲', { exact: true });
+    const scope = page.getByLabel('表示範囲', { exact: true });
     await scope.selectOption('@svs');
     await expect(page.getByText('異体字列のデータを読み込み中…')).toBeVisible();
     await expect(page.getByRole('complementary', { name: 'グリフの詳細' })).toHaveCount(0);
@@ -161,7 +161,7 @@ test('retries failed registry loading without treating it as empty font coverage
       : route.fulfill({ path: 'public/data/font-variation-sequences.json' }),
   );
   await openFont(page);
-  await page.getByLabel('収録範囲', { exact: true }).selectOption('@svs');
+  await page.getByLabel('表示範囲', { exact: true }).selectOption('@svs');
   await expect(page.getByRole('alert')).toContainText(
     'データを読み込めません: font-variation-sequences',
   );

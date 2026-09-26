@@ -34,7 +34,7 @@ for (const width of [1024, 390]) {
     await page.getByLabel('文字を検索', { exact: true }).fill('GREEK');
     await fontsTab(page);
     await page.locator('input[type=file]').setInputFiles(fixture);
-    await page.getByLabel('収録範囲', { exact: true }).selectOption('Basic Latin');
+    await page.getByLabel('表示範囲', { exact: true }).selectOption('Basic Latin');
     const preview = page.getByRole('region', { name: '収録文字のプレビュー' });
     const cells = preview.locator('.character-cell');
     await expect(preview.getByRole('heading')).toHaveText('Basic Latin');
@@ -65,9 +65,9 @@ for (const width of [1024, 390]) {
     await expect(page.getByText(/^U\+0042 · Glyph ID /)).toBeAttached();
     await b.press('Enter');
     await expect(page.getByLabel('編集テキスト')).toHaveValue('B');
-    await page.getByLabel('収録範囲', { exact: true }).selectOption('');
+    await page.getByLabel('表示範囲', { exact: true }).selectOption('');
     await expect(cells).toHaveCount(128);
-    await expect(preview.getByRole('heading')).toHaveText('すべての収録文字');
+    await expect(preview.getByRole('heading')).toHaveText('Unicodeコードポイント');
     await cells.nth(10).click();
     await cells.nth(10).press('PageDown');
     await expect(preview.locator('.pagination')).toContainText('2 /');
@@ -98,7 +98,7 @@ for (const width of [1024, 390]) {
     await page.getByRole('tab', { name: '情報', exact: true }).click();
     await expect(preview).toHaveCount(0);
     await page.keyboard.press('PageDown');
-    await page.getByRole('tab', { name: '収録文字', exact: true }).click();
+    await page.getByRole('tab', { name: 'グリフマップ', exact: true }).click();
     await expect(preview.locator('.pagination')).toContainText('2 /');
     await cells.first().click();
     await preview.getByRole('button', { name: '文字表で表示', exact: true }).click();
@@ -115,10 +115,10 @@ test('resets coverage on replacement, collection face change and removal', async
   await fontsTab(page);
   const input = page.locator('input[type=file]');
   await input.setInputFiles(fixture);
-  await page.getByLabel('収録範囲', { exact: true }).selectOption('Basic Latin');
+  await page.getByLabel('表示範囲', { exact: true }).selectOption('Basic Latin');
   const preview = page.getByRole('region', { name: '収録文字のプレビュー' });
   await input.setInputFiles('tests/fixtures/FallbackCollection.ttc');
-  await expect(page.getByLabel('収録範囲', { exact: true })).toHaveValue('');
+  await expect(page.getByLabel('表示範囲', { exact: true })).toHaveValue('');
   await expect(preview.locator('.character-cell')).toHaveCount(2);
   const before = await preview
     .locator('.character-cell')

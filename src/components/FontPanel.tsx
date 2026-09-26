@@ -10,7 +10,7 @@ import { FontCharacters } from './fonts/FontCharacters';
 import { FontSample } from './fonts/FontSample';
 
 const sections = [
-  ['characters', '収録文字'],
+  ['characters', 'グリフマップ'],
   ['sample', 'サンプル'],
   ['info', '情報'],
 ] as const;
@@ -66,6 +66,7 @@ export const FontPanel = memo(function FontPanel({
   }, [focusRequest]);
   const tabs = useRef<HTMLDivElement>(null);
   const [section, setSection] = useState<Section>('characters');
+  const [glyphRequest, setGlyphRequest] = useState<{ id: number; revision: number } | null>(null);
   const [sample, setSample] = useState('office العربية 日本語');
   const { selection, pending, inspect, selectFace, clear } = inspection;
   const font = selection?.source.fonts[selection.index];
@@ -220,6 +221,10 @@ export const FontPanel = memo(function FontPanel({
                   notify={notify}
                   active={active && section === key}
                   cp={cp}
+                  glyphRequest={
+                    glyphRequest?.revision === selection?.revision ? glyphRequest : null
+                  }
+                  onGlyphRequestHandled={() => setGlyphRequest(null)}
                   onSelect={onSelect}
                   onInsert={onInsert}
                   onInsertText={onInsertText}
@@ -234,6 +239,10 @@ export const FontPanel = memo(function FontPanel({
                   sample={sample}
                   onChange={setSample}
                   buffer={buffer}
+                  onShowGlyph={(id) => {
+                    setGlyphRequest({ id, revision: selection!.revision });
+                    setSection('characters');
+                  }}
                 />
               ) : (
                 <div className="font-section-scroll">
