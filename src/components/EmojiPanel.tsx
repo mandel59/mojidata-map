@@ -27,10 +27,10 @@ export const EmojiPanel = memo(function EmojiPanel({
   const [error, setError] = useState('');
   const container = useRef<HTMLElement>(null);
   const grid = useRef<HTMLDivElement>(null);
-  const [columns, setColumns] = useState(16);
+  const [columns, setColumns] = useState(8);
   useEffect(() => {
     const observer = new ResizeObserver(([entry]) =>
-      setColumns(entry.contentRect.width < 600 ? 8 : 16),
+      setColumns(entry.contentRect.width < 600 ? 4 : 8),
     );
     if (container.current) observer.observe(container.current);
     return () => observer.disconnect();

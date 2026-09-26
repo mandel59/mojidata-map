@@ -8,7 +8,7 @@ const pageSize = 64;
 const flags = all.filter((emoji) => emoji.group === 'Flags');
 
 for (const width of [1024, 390]) {
-  test(`aligns emoji density with the map and keeps controls fixed at ${width}px`, async ({
+  test(`gives emoji names twice the map cell width and keeps controls fixed at ${width}px`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: 600 });
@@ -21,8 +21,14 @@ for (const width of [1024, 390]) {
     await expect(cells).toHaveCount(pageSize);
     await expect
       .poll(async () => (await cells.first().boundingBox())!.width)
-      .toBeCloseTo(mapBox.width, 1);
+      .toBeCloseTo(mapBox.width * 2 + 1, 1);
     expect((await cells.first().boundingBox())!.height).toBeCloseTo(mapBox.height, 1);
+    const columns = width === 1024 ? 8 : 4;
+    await cells.first().focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(cells.nth(columns)).toBeFocused();
+    await page.keyboard.press('ArrowUp');
+    await expect(cells.first()).toBeFocused();
     const search = page.getByRole('textbox', { name: '英語の名前', exact: true });
     const next = page.getByRole('button', { name: '次のページ', exact: true });
     const searchBox = await search.boundingBox();
