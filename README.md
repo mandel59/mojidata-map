@@ -40,7 +40,7 @@ Windows x64 のポータブル ZIP を生成:
 npm run desktop:win
 ```
 
-`release/Mojidata Map-0.1.0-win.zip` を展開し、`Mojidata Map.exe` を起動します。コード署名は未設定です。macOS/Linux 用の electron-builder 設定もありますが、配布・実機検証は未完了です。
+`release/Mojidata Map-0.1.0-win.zip` を展開し、`MojidataMap.exe` を起動します。コード署名は未設定です。macOS/Linux 用の electron-builder 設定もありますが、配布・実機検証は未完了です。
 
 ## 使い方
 
@@ -114,6 +114,8 @@ Jujutsu の既定値は新規ファイルを 1 MiB に制限します。生成�
 - [Unicode データのライセンス](public/data/LICENSE-UNICODE.txt)
 - [テスト用 Liberation フォントの出典・ライセンス](tests/fixtures/README.md)
 
-アプリ本体の配布ライセンスは未決定です。Unicode データおよびテストフォントは、それぞれ同梱のライセンスに従います。
+アプリ本体は [MIT License](LICENSE) で提供します。Unicode データおよびテストフォントは、それぞれ同梱のライセンスに従います。
+
+Mojidata Mapの開発にはCodexを使用しています。
 
 クレジットは `npm run credits:generate` で、インストール済みの本番依存パッケージと Electron のメタデータ・ライセンス原文から生成します。`npm run dev` と `npm run build` の前にも自動生成します。専用のライセンスファイルが配布されていないパッケージは、配布元のライセンス名と参照先を表示します。

@@ -36,7 +36,8 @@
     "files": [
       "dist/**/*",
       "desktop/**/*",
-      "package.json"
+      "package.json",
+      "LICENSE"
     ],
     "win": {
       "target": [
@@ -55,7 +56,8 @@
         "AppImage"
       ],
       "category": "Utility"
-    }
+    },
+    "executableName": "MojidataMap"
   },
   "dependencies": {
     "buffer": "6.0.3",
@@ -76,5 +78,6 @@
     "typescript": "7.0.2",
     "vite": "8.3.0",
     "vitest": "5.0.1"
-  }
+  },
+  "license": "MIT"
 }

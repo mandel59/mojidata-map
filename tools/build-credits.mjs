@@ -52,6 +52,14 @@ for (const [directory, entry] of Object.entries(lock.packages).sort(([a], [b]) =
 }
 await writeFile(
   path.join(root, 'public/credits.json'),
-  JSON.stringify({ appVersion: app.version, libraries }, null, 2) + '\n',
+  JSON.stringify(
+    {
+      appVersion: app.version,
+      appLicense: await readFile(path.join(root, 'LICENSE'), 'utf8'),
+      libraries,
+    },
+    null,
+    2,
+  ) + '\n',
 );
 console.log(`Generated credits for ${libraries.length} runtime packages from package-lock.json.`);

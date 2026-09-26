@@ -21,7 +21,11 @@ interface Props {
 
 export function AboutDialog({ db, section, onSection, onClose }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
-  const [credits, setCredits] = useState<{ libraries: Library[]; unicode: string }>();
+  const [credits, setCredits] = useState<{
+    libraries: Library[];
+    unicode: string;
+    appLicense: string;
+  }>();
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -43,12 +47,13 @@ export function AboutDialog({ db, section, onSection, onClose }: Props) {
     };
     void Promise.all([
       fetchAsset('credits.json').then(
-        (response) => response.json() as Promise<{ libraries: Library[] }>,
+        (response) => response.json() as Promise<{ libraries: Library[]; appLicense: string }>,
       ),
       fetchAsset('data/LICENSE-UNICODE.txt').then((response) => response.text()),
     ])
       .then(([data, unicode]) => {
-        if (!controller.signal.aborted) setCredits({ libraries: data.libraries, unicode });
+        if (!controller.signal.aborted)
+          setCredits({ libraries: data.libraries, unicode, appLicense: data.appLicense });
       })
       .catch(() => {
         if (!controller.signal.aborted) setError('クレジットを読み込めませんでした。');
@@ -166,7 +171,7 @@ export function AboutDialog({ db, section, onSection, onClose }: Props) {
           </div>
           <div>
             <dt>アプリ本体のライセンス</dt>
-            <dd>未設定</dd>
+            <dd>MIT License</dd>
           </div>
         </dl>
         <p className="muted">設定・ブックマーク・編集テキストは、この端末に保存します。</p>
@@ -180,6 +185,17 @@ export function AboutDialog({ db, section, onSection, onClose }: Props) {
         tabIndex={0}
       >
         <h3>クレジット</h3>
+        <article className="credit-card">
+          <h4>Mojidata Map</h4>
+          <p>MIT License</p>
+          <p>Mojidata Mapの開発にはCodexを使用しています。</p>
+          {credits && (
+            <details>
+              <summary>Mojidata Map のライセンス全文</summary>
+              <pre className="license-text">{credits.appLicense}</pre>
+            </details>
+          )}
+        </article>
         <p>文字データとオープンソースソフトウェアの提供者に感謝します。</p>
         <article className="credit-card">
           <h4>Unicode データ</h4>

@@ -269,7 +269,14 @@ test('shows bundled credits and license text on narrow screens in both themes', 
   );
   await expect(dialog.getByRole('link', { name: 'fontkit', exact: true })).toBeVisible();
   await dialog.getByText('Unicode ライセンス全文', { exact: true }).click();
-  await expect(dialog.locator('.license-text').first()).toContainText('UNICODE LICENSE V3');
+  await expect(
+    dialog.locator('details').filter({ hasText: 'Unicode ライセンス全文' }).locator('pre'),
+  ).toContainText('UNICODE LICENSE V3');
+  await expect(dialog).toContainText('Mojidata Mapの開発にはCodexを使用しています。');
+  await dialog.getByText('Mojidata Map のライセンス全文', { exact: true }).click();
+  await expect(
+    dialog.locator('details').filter({ hasText: 'Mojidata Map のライセンス全文' }).locator('pre'),
+  ).toContainText('Permission is hereby granted');
   await dialog.getByText('react のライセンス・著作権表示', { exact: true }).click();
   await expect(
     dialog
