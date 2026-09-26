@@ -166,7 +166,7 @@ test('leaves input, selection, IME, modified keys and overlays to their normal h
   await expect(selected).toHaveAttribute('data-cp', String(0x3042));
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'アプリメニュー', exact: true }).click();
-  await page.getByRole('button', { name: '使い方', exact: true }).click();
+  await page.getByRole('button', { name: 'アプリについて', exact: true }).click();
   await page.keyboard.press('PageDown');
   await expect(selected).toHaveAttribute('data-cp', String(0x3042));
   await page.keyboard.press('Escape');

@@ -19,10 +19,8 @@ import { usePreferences } from './preferences';
 import { FontFallbackStyle, FallbackFontSettings, useFontFallback } from './useFontFallback';
 import { type AboutSection, type LocalFont } from './platform';
 import { useFontInspection } from './useFontInspection';
-import { UtilityDialog } from './components/UtilityDialog';
 import { useMediaQuery } from './useMediaQuery';
 import { AboutDialog } from './components/AboutDialog';
-import { version as appVersion } from '../package.json';
 const FontPanel = lazy(() =>
   import('./components/FontPanel').then((module) => ({ default: module.FontPanel })),
 );
@@ -35,7 +33,6 @@ const Statistics = lazy(() =>
 type Tab = 'map' | 'search' | 'sequences' | 'fonts' | 'statistics' | 'bookmarks';
 const PAGE_SIZE = 128;
 const isMac = navigator.platform.startsWith('Mac');
-const searchShortcut = isMac ? 'Cmd+Option+Shift+F' : 'Ctrl+Shift+F';
 const planeNames: Record<number, string> = {
   0: 'BMP',
   1: 'SMP',
@@ -74,7 +71,6 @@ export default function App({ db }: { db: UnicodeDatabase }) {
   const [assignedOnly, setAssignedOnly] = useState(false);
   const [allPlanes, setAllPlanes] = useState(false);
   const [alwaysOnTop, setAlwaysOnTop] = useState(false);
-  const [help, setHelp] = useState(false);
   const [about, setAbout] = useState<AboutSection | null>(null);
   useEffect(() => window.mojidata?.onOpenAbout(setAbout), []);
   const [fontOpened, setFontOpened] = useState(false);
@@ -166,9 +162,6 @@ export default function App({ db }: { db: UnicodeDatabase }) {
           .forEach((popover) => popover.hidePopover());
         setTab('search');
         setFocusRequest((request) => request + 1);
-      }
-      if (event.key === 'Escape') {
-        setHelp(false);
       }
     };
     window.addEventListener('keydown', handler);
@@ -305,9 +298,6 @@ export default function App({ db }: { db: UnicodeDatabase }) {
         className="utility-popover app-menu"
         aria-label="アプリメニュー"
       >
-        <button aria-haspopup="dialog" onClick={() => menuAction(() => setHelp(true))}>
-          使い方
-        </button>
         <button aria-haspopup="dialog" onClick={() => menuAction(() => setAbout('about'))}>
           アプリについて
         </button>
@@ -338,35 +328,6 @@ export default function App({ db }: { db: UnicodeDatabase }) {
           </label>
         )}
       </div>
-      {help && (
-        <UtilityDialog title="使い方" onClose={() => setHelp(false)}>
-          <div className="help-content">
-            <p>
-              名前（英語）・別名・文字・U+コードで検索します。文字をクリックすると詳細を表示し、ダブルクリックまたは
-              Enter で編集バッファへ追加します。矢印キーで文字を移動し、Page Up / Page Down
-              でページを送れます（入力欄を除く）。
-            </p>
-            <p>
-              文字マップの検索は現在位置の次の一致へ移動し、末尾から先頭へ戻ります。同じ条件で検索を繰り返すと順に移動できます。
-            </p>
-            <p>
-              {searchShortcut}: 文字検索へ移動 / 編集バッファ内の F2:
-              カーソル位置の文字を探す。設定、ブックマーク、編集テキストはこの端末に保存します。
-            </p>
-            <p>
-              未収録の字形には表示用フォントが必要です。「◌」「␣」「·」などは結合文字・空白・未割当の表示補助です。実際に追加される文字には補助記号は含まれません。
-            </p>
-            <p>
-              漢字検索では普通話・広東語の声調を区別しません。部首と内画数は Unihan の基準です。
-            </p>
-            <p>
-              バージョン {appVersion}。BabelMap
-              の全機能との互換性は開発中です。文字の歴史データ、IVD、彝文字・西夏文字の専用検索、Windows
-              固有の描画・トレイ機能は未対応です。
-            </p>
-          </div>
-        </UtilityDialog>
-      )}
       <div className={`workspace ${showDetails ? 'with-details' : ''}`}>
         <CharacterDisplay
           searchBar={

@@ -3,7 +3,6 @@ import { test, expect } from '@playwright/test';
 for (const platform of ['Win32', 'MacIntel']) {
   const isMac = platform === 'MacIntel';
   const shortcut = isMac ? 'Meta+Alt+Shift+f' : 'Control+Shift+f';
-  const label = isMac ? 'Cmd+Option+Shift+F' : 'Ctrl+Shift+F';
 
   test(`preserves native find shortcuts and focuses character search on ${platform}`, async ({
     page,
@@ -59,11 +58,11 @@ for (const platform of ['Win32', 'MacIntel']) {
     ).toEqual([0, 5]);
 
     await page.getByRole('button', { name: 'アプリメニュー', exact: true }).click();
-    await page.getByRole('button', { name: '使い方', exact: true }).click();
-    const help = page.getByRole('dialog', { name: '使い方', exact: true });
-    await expect(help).toContainText(`${label}: 文字検索へ移動`);
+    await page.getByRole('button', { name: 'アプリについて', exact: true }).click();
+    const about = page.getByRole('dialog', { name: 'アプリ情報', exact: true });
+    await expect(about).toBeVisible();
     await page.keyboard.press(shortcut);
-    await expect(help).toBeVisible();
+    await expect(about).toBeVisible();
     await expect(search).not.toBeFocused();
   });
 

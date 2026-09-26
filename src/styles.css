@@ -371,9 +371,6 @@ kbd {
   min-height: 0;
   overflow: auto;
 }
-.help-content p + p {
-  margin-top: 12px;
-}
 
 summary {
   cursor: pointer;

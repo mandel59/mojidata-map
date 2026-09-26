@@ -127,8 +127,8 @@ test('opens optional controls, returns focus and keeps navigation available', as
   await expect(page.getByLabel('文字を検索', { exact: true })).toBeFocused();
   await expect(page.locator('#goto-codepoint')).not.toBeVisible();
   await page.getByRole('button', { name: 'アプリメニュー', exact: true }).click();
-  await page.getByRole('button', { name: '使い方', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: '使い方', exact: true })).toBeInViewport();
+  await page.getByRole('button', { name: 'アプリについて', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'アプリ情報', exact: true })).toBeInViewport();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: 'アプリメニュー', exact: true })).toBeFocused();
 });
