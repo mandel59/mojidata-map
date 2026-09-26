@@ -12,7 +12,7 @@ import { FontSample } from './fonts/FontSample';
 const sections = [
   ['characters', 'グリフマップ'],
   ['sample', 'サンプル'],
-  ['info', '情報'],
+  ['info', 'フォント情報'],
 ] as const;
 type Section = (typeof sections)[number][0];
 interface Props {

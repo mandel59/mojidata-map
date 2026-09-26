@@ -95,7 +95,7 @@ for (const width of [1024, 390]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
-    await page.getByRole('tab', { name: '情報', exact: true }).click();
+    await page.getByRole('tab', { name: 'フォント情報', exact: true }).click();
     await expect(preview).toHaveCount(0);
     await page.keyboard.press('PageDown');
     await page.getByRole('tab', { name: 'グリフマップ', exact: true }).click();

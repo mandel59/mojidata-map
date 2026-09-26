@@ -49,9 +49,9 @@ for (const width of [1024, 390]) {
     await expect(faces).not.toContainText('Cursiva');
     await selectFontFace(page, '0');
     await expect(heading).toHaveText('日本語テスト 標準');
-    await page.getByRole('tab', { name: '情報', exact: true }).click();
-    await expect(page.getByRole('tabpanel', { name: '情報' })).toContainText('日本語テスト');
-    await expect(page.getByRole('tabpanel', { name: '情報' })).toContainText('標準');
+    await page.getByRole('tab', { name: 'フォント情報', exact: true }).click();
+    await expect(page.getByRole('tabpanel', { name: 'フォント情報' })).toContainText('日本語テスト');
+    await expect(page.getByRole('tabpanel', { name: 'フォント情報' })).toContainText('標準');
     await openFontPicker(page);
     await page.getByRole('button', { name: '端末のフォントを取得', exact: true }).click();
     const candidates = page.getByLabel('端末のフォント', { exact: true });

@@ -90,9 +90,9 @@ for (const width of [1024, 390]) {
     expect(exported.text).toBe('12');
     expect(exported.glyphs[0]).toBe(glyphId);
     await sampleTab.press('ArrowRight');
-    await expect(tabs.getByRole('tab', { name: '情報', exact: true })).toBeFocused();
+    await expect(tabs.getByRole('tab', { name: 'フォント情報', exact: true })).toBeFocused();
     await page.keyboard.press('End');
-    await expect(tabs.getByRole('tab', { name: '情報', exact: true })).toBeFocused();
+    await expect(tabs.getByRole('tab', { name: 'フォント情報', exact: true })).toBeFocused();
     await page.keyboard.press('Home');
     const preview = page.getByRole('region', { name: '収録文字のプレビュー' });
     await expect(preview.locator('.character-cell')).toHaveCount(128);
