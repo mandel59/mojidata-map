@@ -171,7 +171,9 @@ export const CharacterDetails = memo(function CharacterDetails({
       {variants.length > 0 && (
         <details>
           <summary>
-            {t('標準化異体字列・絵文字表示列 ({{count}})', { count: variants.length })}
+            {t('標準化異体字シーケンス（SVS）・絵文字の表示形式 ({{count}})', {
+              count: variants.length,
+            })}
           </summary>
           {variants.map(([cps, name]) => (
             <button

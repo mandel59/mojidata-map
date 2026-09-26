@@ -22,7 +22,7 @@ for (const width of [1024, 390]) {
         ? page.getByRole('dialog', { name: '文字情報', exact: true })
         : page.getByRole('complementary', { name: '文字の詳細' });
     await expect(
-      panel.getByText('標準化異体字列・絵文字表示列 (1)', { exact: true }),
+      panel.getByText('標準化異体字シーケンス（SVS）・絵文字の表示形式 (1)', { exact: true }),
     ).toBeVisible();
     const summary = panel.getByText('漢字異体字列（IVS） (3)', { exact: true });
     await summary.click();
@@ -55,7 +55,9 @@ for (const width of [1024, 390]) {
     expect(await panel.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
     await goTo(page, '0023');
     await expect(panel.getByText(/^漢字異体字列（IVS）/)).toHaveCount(0);
-    await panel.getByText('標準化異体字列・絵文字表示列 (2)', { exact: true }).click();
+    await panel
+      .getByText('標準化異体字シーケンス（SVS）・絵文字の表示形式 (2)', { exact: true })
+      .click();
     await expect(panel.getByRole('button', { name: /U\+0023 U\+FE0F/ })).toBeVisible();
   });
 }
@@ -104,7 +106,9 @@ test('retries failed IVS data without losing standardized sequences', async ({ p
   );
   await page.goto('/?cp=4E38');
   await expect(page.getByRole('alert')).toContainText('ivs/004');
-  await expect(page.getByText('標準化異体字列・絵文字表示列 (1)', { exact: true })).toBeVisible();
+  await expect(
+    page.getByText('標準化異体字シーケンス（SVS）・絵文字の表示形式 (1)', { exact: true }),
+  ).toBeVisible();
   await page.getByRole('button', { name: '再読み込み', exact: true }).click();
   await expect(page.getByText('漢字異体字列（IVS） (3)', { exact: true })).toBeVisible();
   await expect(page.getByRole('alert')).toHaveCount(0);
