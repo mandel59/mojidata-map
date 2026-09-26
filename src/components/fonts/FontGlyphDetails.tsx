@@ -238,7 +238,8 @@ export function FontGlyphDetails({
           )}
           {reference?.kind === 'ligature' && (
             <p className="note">
-              GSUBから逆引きした文字列です。字形は言語・前後の文脈・OpenType設定によって変わります。
+              通常の横書きで有効なGSUB
+              featureから逆引きした文字列です。字形は言語・前後の文脈・OpenType設定によって変わります。
             </p>
           )}
           {referenceError && <p className="note coverage-missing">{referenceError}</p>}

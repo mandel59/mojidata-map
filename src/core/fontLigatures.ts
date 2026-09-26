@@ -17,8 +17,66 @@ type Subtable = {
   extension?: Subtable;
 };
 type GsubFont = Font & {
-  GSUB?: { lookupList: Lazy<{ lookupType: number; subTables: Subtable[] }> };
+  GSUB?: {
+    featureList: { tag: string; feature: { lookupListIndexes: number[] } }[];
+    lookupList: Lazy<{ lookupType: number; subTables: Subtable[] }>;
+  };
 };
+
+// Default horizontal shaping features in the pinned fontkit shapers. Script-
+// specific features are included; optional stylistic/vertical features are not.
+const defaultFeatures = new Set([
+  'haln',
+  'mark',
+  'mkmk',
+  'curs',
+  'kern',
+  'dist',
+  'abvm',
+  'blwm',
+  'rvrn',
+  'ccmp',
+  'locl',
+  'rlig',
+  'calt',
+  'clig',
+  'liga',
+  'rclt',
+  'ltra',
+  'ltrm',
+  'rtla',
+  'rtlm',
+  'frac',
+  'numr',
+  'dnom',
+  'isol',
+  'fina',
+  'fin2',
+  'fin3',
+  'medi',
+  'med2',
+  'init',
+  'mset',
+  'ljmo',
+  'vjmo',
+  'tjmo',
+  'nukt',
+  'akhn',
+  'rphf',
+  'rkrf',
+  'pref',
+  'blwf',
+  'abvf',
+  'half',
+  'pstf',
+  'vatu',
+  'cjct',
+  'cfar',
+  'abvs',
+  'blws',
+  'pres',
+  'psts',
+]);
 
 // These are GSUB input candidates, not unconditional Unicode assignments.
 // Lookup order, script, context and enabled features govern actual shaping.
@@ -70,9 +128,15 @@ export function fontLigatures(font: Font, characters: Map<number, number[]>) {
             visit(id, range.startCoverageIndex + id - range.start);
     }
     try {
-      const lookups = (font as GsubFont).GSUB?.lookupList;
-      for (let i = 0; i < (lookups?.length ?? 0); i++) {
-        const lookup = lookups!.get(i);
+      const gsub = (font as GsubFont).GSUB;
+      const active = new Set<number>();
+      for (const record of gsub?.featureList ?? []) {
+        if (defaultFeatures.has(record.tag))
+          for (const lookup of record.feature.lookupListIndexes) active.add(lookup);
+      }
+      for (const i of [...active].sort((a, b) => a - b)) {
+        if (!gsub || i < 0 || i >= gsub.lookupList.length) continue;
+        const lookup = gsub.lookupList.get(i);
         for (const table of lookup.subTables) read(lookup.lookupType, table);
       }
     } catch (reason) {

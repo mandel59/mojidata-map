@@ -9,8 +9,14 @@ const characters = new Map([
   [2, [0x69, 0x131]],
   [3, [0x6c]],
 ]);
-function font(lookups: unknown[]): Font {
-  return { numGlyphs: 100, GSUB: { lookupList: lazy(lookups) } } as unknown as Font;
+function font(lookups: unknown[], tags = lookups.map(() => 'liga')): Font {
+  return {
+    numGlyphs: 100,
+    GSUB: {
+      lookupList: lazy(lookups),
+      featureList: tags.map((tag, i) => ({ tag, feature: { lookupListIndexes: [i] } })),
+    },
+  } as unknown as Font;
 }
 const ligatures = {
   lookupType: 4,
@@ -131,4 +137,45 @@ test('reports truncated candidate expansion and broken tables', () => {
     },
   } as unknown as Font;
   expect(fontLigatures(broken, characters)(1).error).toContain('broken');
+});
+
+test('excludes optional ligatures and vertical or stylistic transformations of default ligatures', () => {
+  for (const tag of ['vert', 'vrt2', 'aalt', 'salt', 'ss01', 'dlig', 'hlig', 'fwid']) {
+    const resolve = fontLigatures(
+      font(
+        [
+          ligatures,
+          {
+            lookupType: 1,
+            subTables: [{ version: 1, coverage: coverage([10]), deltaGlyphID: 10 }],
+          },
+        ],
+        ['liga', tag],
+      ),
+      characters,
+    );
+    expect(resolve(10).sequences).toEqual([
+      [0x66, 0x69],
+      [0x66, 0x131],
+    ]);
+    expect(resolve(20).sequences).toEqual([]);
+    expect(fontLigatures(font([ligatures], [tag]), characters)(10).sequences).toEqual([]);
+  }
+});
+
+test('retains required ligatures and script-specific default forms', () => {
+  const resolve = fontLigatures(
+    font(
+      [
+        ligatures,
+        { lookupType: 1, subTables: [{ version: 1, coverage: coverage([10]), deltaGlyphID: 10 }] },
+      ],
+      ['rlig', 'fina'],
+    ),
+    characters,
+  );
+  expect(resolve(20).sequences).toEqual([
+    [0x66, 0x69],
+    [0x66, 0x131],
+  ]);
 });
