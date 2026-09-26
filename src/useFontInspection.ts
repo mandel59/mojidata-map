@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Font } from 'fontkit';
 import { fontNames } from './core/fontNames';
+import { fontInstance, resolveFontInstance } from './core/fontInstance';
 import { useLocale } from './intl/LocaleProvider';
 import { fontFaceData, FONT_SIZE_LIMIT } from './core/fontFaceData';
 
@@ -31,6 +32,7 @@ export function useFontInspection(notify: (message: string) => void) {
   useEffect(() => {
     activeLocale.current = locale;
   }, [locale]);
+  const [importedSource, setImportedSource] = useState<FontSource | null>(null);
   const [state, setState] = useState<Inspection>({ selection: null, pending: null, error: '' });
   const request = useRef(0);
   const registered = useRef<FontFace | null>(null);
@@ -47,7 +49,16 @@ export function useFontInspection(notify: (message: string) => void) {
     let preview: FontFace | null = null;
     try {
       const bytes = fontFaceData(source.bytes, index);
-      preview = await new FontFace(`Mojidata Imported Font${++previewSequence}`, bytes).load();
+      const instance = source.postscriptName
+        ? fontInstance(source.fonts[index], source.postscriptName)
+        : null;
+      preview = await new FontFace(`Mojidata Imported Font${++previewSequence}`, bytes, {
+        variationSettings: instance
+          ? Object.entries(instance.coordinates)
+              .map(([tag, value]) => `"${tag}" ${value}`)
+              .join(', ')
+          : 'normal',
+      }).load();
     } catch {
       // Keep analysis available, but never show a previously selected font as
       // though it were the new face. The UI marks the unavailable preview.
@@ -56,6 +67,7 @@ export function useFontInspection(notify: (message: string) => void) {
     if (preview) document.fonts.add(preview);
     if (registered.current) document.fonts.delete(registered.current);
     registered.current = preview;
+    if (!source.postscriptName) setImportedSource(source);
     setState({ selection: { source, index, revision, preview }, pending: null, error: '' });
     return true;
   }, []);
@@ -93,9 +105,14 @@ export function useFontInspection(notify: (message: string) => void) {
         if (!fonts.length) throw new Error('フォントが含まれていません。');
         const index =
           postscriptName && fonts.length > 1
-            ? fonts.findIndex((font) => font.postscriptName === postscriptName)
+            ? fonts.findIndex(
+                (font) =>
+                  font.postscriptName === postscriptName ||
+                  fontInstance(font, postscriptName) !== null,
+              )
             : 0;
         if (index < 0) throw new Error('選択したフォントがコレクション内に見つかりません。');
+        if (postscriptName) fonts[index] = resolveFontInstance(fonts[index], postscriptName);
         return await commit({ bytes, fonts, label, postscriptName }, index, revision);
       } catch (error) {
         failed(revision, error);
@@ -107,7 +124,7 @@ export function useFontInspection(notify: (message: string) => void) {
 
   const selectFace = useCallback(
     async (index: number) => {
-      const source = state.selection?.source;
+      const source = importedSource;
       if (!source || !source.fonts[index]) return false;
       const revision = ++request.current;
       setState((previous) => ({
@@ -126,13 +143,14 @@ export function useFontInspection(notify: (message: string) => void) {
         return false;
       }
     },
-    [state.selection, commit, failed],
+    [importedSource, commit, failed],
   );
 
   const clear = useCallback(() => {
     request.current++;
     if (registered.current) document.fonts.delete(registered.current);
     registered.current = null;
+    setImportedSource(null);
     setState({ selection: null, pending: null, error: '' });
   }, []);
 
@@ -141,8 +159,16 @@ export function useFontInspection(notify: (message: string) => void) {
     () => source?.fonts.map((font) => fontNames(font, locale, source.label)) ?? [],
     [source, locale],
   );
+  const imported = useMemo(
+    () =>
+      importedSource && {
+        source: importedSource,
+        names: importedSource.fonts.map((font) => fontNames(font, locale, importedSource.label)),
+      },
+    [importedSource, locale],
+  );
   return useMemo(
-    () => ({ ...state, names, inspect, selectFace, clear }),
-    [state, names, inspect, selectFace, clear],
+    () => ({ ...state, names, imported, inspect, selectFace, clear }),
+    [state, names, imported, inspect, selectFace, clear],
   );
 }

@@ -42,7 +42,7 @@ export async function expectFontFace(page: Page, index: string) {
   await openFontPicker(page);
   await expect(
     page
-      .getByRole('tablist', { name: 'コレクションの解析対象' })
+      .getByRole('tablist', { name: '読み込んだファイルのフォント' })
       .getByRole('tab', { selected: true }),
   ).toHaveAttribute('data-face-index', index);
   if (!wasOpen && (await dialog.count())) await page.keyboard.press('Escape');

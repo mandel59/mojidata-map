@@ -1,4 +1,4 @@
-import { openFontPicker, selectFontFace, expectFontFace } from './navigation';
+import { openFontPicker } from './navigation';
 import { expect, test } from '@playwright/test';
 import { fontSample } from './navigation';
 
@@ -43,14 +43,20 @@ for (const width of [1024, 390]) {
     const heading = page.locator('.font-workspace-heading h2');
     await expect(heading).toHaveText('Localized Italic');
     await openFontPicker(page);
-    const faces = page.getByLabel('コレクションの解析対象');
-    await expectFontFace(page, '1');
+    await page.getByRole('button', { name: '端末のフォントを取得', exact: true }).click();
+    const faces = page.getByRole('tablist', { name: '端末のフォント', exact: true });
+    await expect(faces.locator('[data-font-id=LocalizedItalic]')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     await expect(faces).toContainText('日本語テスト 標準');
     await expect(faces).not.toContainText('Cursiva');
-    await selectFontFace(page, '0');
+    await faces.locator('[data-font-id=LocalizedBase]').click();
     await expect(heading).toHaveText('日本語テスト 標準');
     await page.getByRole('tab', { name: 'フォント情報', exact: true }).click();
-    await expect(page.getByRole('tabpanel', { name: 'フォント情報' })).toContainText('日本語テスト');
+    await expect(page.getByRole('tabpanel', { name: 'フォント情報' })).toContainText(
+      '日本語テスト',
+    );
     await expect(page.getByRole('tabpanel', { name: 'フォント情報' })).toContainText('標準');
     await openFontPicker(page);
     await page.getByRole('button', { name: '端末のフォントを取得', exact: true }).click();
@@ -67,7 +73,11 @@ for (const width of [1024, 390]) {
     );
     await candidates.locator('[data-font-id="LocalizedItalic"]').click();
     await expect(heading).toHaveText('Localized Italic');
-    await expectFontFace(page, '1');
+    await openFontPicker(page);
+    await expect(candidates.locator('[data-font-id=LocalizedItalic]')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     // File import shares the same policy rather than fontkit's default language.
     await page.locator('input[type=file]').setInputFiles('tests/fixtures/LocalizedNames.ttc');
     await expect(heading).toHaveText('日本語テスト 標準');

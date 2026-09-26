@@ -68,3 +68,11 @@ and final substitutions alongside a Latin fi ligature. It tests mixed-script
 shaping, combining marks, joiners, and source selection without redistributing
 any data from Nishiki-teki. Regenerate with
 `uv run --with fonttools tools/build-arabic-sample-fixture.py`.
+
+## Named variable instances
+
+`VariableSample.ttf` contains original rectangular outlines with a weight axis,
+a Thin default, and Thin/Regular/Bold/Black named instances with PostScript names.
+It exercises localized instance names, outline interpolation and CSS previews.
+Regenerate with `uv run --with fonttools tools/build-variable-font-fixture.py`.
+No Noto font data is included.

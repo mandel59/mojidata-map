@@ -2,6 +2,7 @@ import { create, type Font } from 'fontkit';
 import { readFileSync } from 'node:fs';
 import { expect, test } from 'vitest';
 import { fontNames } from '../src/core/fontNames';
+import { resolveFontInstance } from '../src/core/fontInstance';
 import { localFontMatch, localFontNames } from '../src/core/localFontCoverage';
 import { canonicalLocale, createLocale } from '../src/intl/locale';
 
@@ -72,4 +73,40 @@ test('central locale formatting is explicit and safely handles a future invalid 
   expect(canonicalLocale('')).toBe('ja');
   expect(createLocale('de-DE').numberFormat.format(1234.5)).toBe('1.234,5');
   expect(createLocale('en-US').numberFormat.format(1234.5)).toBe('1,234.5');
+});
+
+test('resolves named variable instances instead of reusing the default Thin names', () => {
+  const bytes = Uint8Array.from(readFileSync('tests/fixtures/VariableSample.ttf')).buffer;
+  for (const style of ['Thin', 'Regular', 'Bold', 'Black']) {
+    expect(localFontNames(bytes, `VariableSample-${style}`, 'ja')).toEqual({
+      fullName: `VariableSample ${style}`,
+      family: 'VariableSample',
+      style,
+    });
+    expect(localFontMatch(bytes, `VariableSample-${style}`, [65], 'ja')?.fullName).toBe(
+      `VariableSample ${style}`,
+    );
+  }
+});
+
+test('applies named coordinates to glyph outlines without mutating the default font', () => {
+  const base = create(readFileSync('tests/fixtures/VariableSample.ttf')) as Font;
+  const bold = resolveFontInstance(base, 'VariableSample-Bold');
+  expect(bold.glyphForCodePoint(65).bbox.maxX).toBeCloseTo(675, 1);
+  expect(base.glyphForCodePoint(65).bbox.maxX).toBe(300);
+  expect(fontNames(base, 'ja').style).toBe('Thin');
+  expect(fontNames(bold, 'ja').style).toBe('Bold');
+  expect(() => resolveFontInstance(base, 'MissingInstance')).toThrow(
+    'インスタンスが見つかりません',
+  );
+});
+
+test('recognizes DirectWrite English family aliases and an omitted Regular suffix', () => {
+  const base = create(readFileSync('tests/fixtures/VariableSample.ttf')) as Font;
+  const named = base as Font & { name: { records: Record<string, Record<string, string>> } };
+  named.name.records.fontFamily = { en: 'Variable Sample' };
+  named.name.records.preferredFamily = { en: 'Variable Sample' };
+  expect(fontNames(resolveFontInstance(base, 'Variable-Sample-Bold'), 'ja').style).toBe('Bold');
+  expect(fontNames(resolveFontInstance(base, 'Variable-Sample'), 'ja').style).toBe('Regular');
+  expect(() => resolveFontInstance(base, 'Unrelated-Bold')).toThrow('インスタンスが見つかりません');
 });

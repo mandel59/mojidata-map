@@ -4,6 +4,7 @@ import type { FontNames } from './core/fontNames';
 
 export interface FontMatch extends LocalFont {
   faceIndex: number;
+  variationSettings?: string;
 }
 export interface FontSearchProgress {
   checked: number;
@@ -55,25 +56,25 @@ export async function findBufferFonts(
         if (blob.size > FONT_SIZE_LIMIT) throw new Error('Font exceeds 64 MB');
         const bytes = await blob.arrayBuffer();
         signal.throwIfAborted();
-        const match = await new Promise<(FontNames & { faceIndex: number }) | null>(
-          (resolve, reject) => {
-            if (failure) return reject(failure);
-            rejectPending = reject;
-            worker.onmessage = (
-              event: MessageEvent<{
-                match: (FontNames & { faceIndex: number }) | null;
-                error?: string;
-              }>,
-            ) => {
-              rejectPending = null;
-              if (event.data.error) reject(new Error(event.data.error));
-              else resolve(event.data.match);
-            };
-            worker.postMessage({ bytes, postscriptName: font.postscriptName, matchOnly: true }, [
-              bytes,
-            ]);
-          },
-        );
+        const match = await new Promise<
+          (FontNames & { faceIndex: number; variationSettings?: string }) | null
+        >((resolve, reject) => {
+          if (failure) return reject(failure);
+          rejectPending = reject;
+          worker.onmessage = (
+            event: MessageEvent<{
+              match: (FontNames & { faceIndex: number; variationSettings?: string }) | null;
+              error?: string;
+            }>,
+          ) => {
+            rejectPending = null;
+            if (event.data.error) reject(new Error(event.data.error));
+            else resolve(event.data.match);
+          };
+          worker.postMessage({ bytes, postscriptName: font.postscriptName, matchOnly: true }, [
+            bytes,
+          ]);
+        });
         if (match) {
           matches.push({ ...match, postscriptName: font.postscriptName, blob: () => font.blob() });
           matches.sort(

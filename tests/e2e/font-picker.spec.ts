@@ -169,23 +169,18 @@ test('keeps entries usable after a name worker fails, and reports access denial 
 });
 
 for (const width of [1024, 390]) {
-  test(`keeps the collection below local fonts with independent scrolling at ${width}px`, async ({
-    page,
-  }) => {
+  test(`selects collection faces directly from the local list at ${width}px`, async ({ page }) => {
     await page.route('**/__picker-collection', (route) =>
       route.fulfill({ path: 'tests/fixtures/FallbackCollection.ttc' }),
     );
-    await page.route('**/__picker-base', (route) =>
-      route.fulfill({ path: 'tests/fixtures/FallbackBase.ttf' }),
-    );
     await page.addInitScript(() => {
       window.queryLocalFonts = async () =>
-        Array.from({ length: 40 }, (_, i) => ({
-          postscriptName: i ? `Font${i}` : 'FallbackBase',
-          fullName: 'Test',
+        ['FallbackBase', 'FallbackExtra'].map((name) => ({
+          postscriptName: name,
+          fullName: name,
           family: 'Test',
           style: 'Regular',
-          blob: () => fetch(i ? '/__picker-base' : '/__picker-collection').then((r) => r.blob()),
+          blob: () => fetch('/__picker-collection').then((r) => r.blob()),
         }));
     });
     await page.setViewportSize({ width, height: 600 });
@@ -196,32 +191,103 @@ for (const width of [1024, 390]) {
     await page.locator('[data-font-id="FallbackBase"]').click();
     await expect(page.locator('.font-workspace-heading h2')).toHaveText('FallbackBase');
     await openFontPicker(page);
-    const local = page.locator('.font-picker-local .font-picker-scroll');
-    const collection = page.getByRole('tablist', { name: 'コレクションの解析対象' });
-    const above = await page.locator('.font-picker-local').boundingBox();
-    const below = await page.locator('.font-picker-collection').boundingBox();
-    expect(above!.y + above!.height).toBeLessThanOrEqual(below!.y + 1);
-    await expect(local).toHaveCSS('overflow-y', 'auto');
-    await expect(collection).toHaveCSS('overflow-y', 'auto');
-    await local.evaluate((el) => {
-      el.scrollTop = 500;
-    });
-    expect(await local.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
-    expect(await page.locator('.font-picker-collection').boundingBox()).toEqual(below);
-    const localOffset = await local.evaluate((el) => el.scrollTop);
-    await collection.evaluate((el) => {
-      el.scrollTop = 500;
-    });
-    expect(await local.evaluate((el) => el.scrollTop)).toBe(localOffset);
-    await page.locator('[data-face-index="1"]').click();
+    await expect(page.locator('[data-face-index]')).toHaveCount(0);
+    await expect(page.locator('.font-picker-collection')).toHaveCount(0);
+    await page.locator('[data-font-id="FallbackExtra"]').click();
     await expect(page.locator('.font-workspace-heading h2')).toHaveText('FallbackExtra');
     await openFontPicker(page);
-    await expect(page.locator('[data-font-id="FallbackBase"]')).toHaveAttribute(
+    await expect(page.locator('[data-font-id="FallbackExtra"]')).toHaveAttribute(
       'aria-selected',
       'true',
     );
-    await expect(page.locator('[data-face-index="1"]')).toHaveAttribute('aria-selected', 'true');
-    await page.getByLabel('フォントを検索', { exact: true }).fill('No such font');
-    await expect(collection.getByRole('tab')).toHaveCount(2);
+    await expect(page.locator('[data-font-id="FallbackBase"]')).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
+  });
+}
+
+test('uses the named variable instance for names, analysis and browser preview', async ({
+  page,
+}) => {
+  await page.route('**/__variable', (route) =>
+    route.fulfill({ path: 'tests/fixtures/VariableSample.ttf' }),
+  );
+  await page.addInitScript(() => {
+    window.queryLocalFonts = async () =>
+      ['Thin', 'Bold'].map((style) => ({
+        postscriptName: `VariableSample-${style}`,
+        fullName: 'Wrong name',
+        family: 'Wrong family',
+        style: 'Wrong style',
+        blob: () => fetch('/__variable').then((r) => r.blob()),
+      }));
+  });
+  await page.goto('/');
+  await fontSample(page);
+  await page.getByRole('button', { name: '端末のフォントを取得', exact: true }).click();
+  const thin = page.locator('[data-font-id="VariableSample-Thin"]');
+  const bold = page.locator('[data-font-id="VariableSample-Bold"]');
+  await expect(thin.locator('span')).toHaveText('VariableSample Thin');
+  await expect(bold.locator('span')).toHaveText('VariableSample Bold');
+  await expect(bold.locator('small')).toContainText('Bold ·');
+  await bold.click();
+  await expect(page.locator('.font-workspace-heading h2')).toHaveText('VariableSample Bold');
+  await page.getByLabel('サンプルテキスト', { exact: true }).fill('A');
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          [...document.fonts].find((f) => f.family.startsWith('Mojidata Imported'))
+            ?.variationSettings,
+      ),
+    )
+    .toBe('"wght" 700');
+  const width = await page.getByLabel('サンプルテキスト', { exact: true }).evaluate((el) => {
+    const ctx = document.createElement('canvas').getContext('2d')!;
+    ctx.font = `1000px ${getComputedStyle(el).fontFamily}`;
+    return ctx.measureText('A').width;
+  });
+  expect(width).toBeCloseTo(775, 0);
+  await expect(page.locator('.font-picker-collection')).toHaveCount(0);
+});
+
+for (const width of [1024, 390]) {
+  test(`retains file faces when switching to a local font at ${width}px`, async ({ page }) => {
+    await page.route('**/__local', (route) =>
+      route.fulfill({ path: 'tests/fixtures/FallbackBase.ttf' }),
+    );
+    await page.addInitScript(() => {
+      window.queryLocalFonts = async () => [
+        {
+          postscriptName: 'FallbackBase',
+          fullName: 'Base',
+          family: 'Base',
+          style: 'Regular',
+          blob: () => fetch('/__local').then((r) => r.blob()),
+        },
+      ];
+    });
+    await page.setViewportSize({ width, height: 600 });
+    await page.goto('/');
+    await fontSample(page);
+    await page.locator('input[type=file]').setInputFiles('tests/fixtures/FallbackCollection.ttc');
+    await openFontPicker(page);
+    await page.getByRole('button', { name: '端末のフォントを取得', exact: true }).click();
+    await page.locator('[data-font-id="FallbackBase"]').click();
+    await openFontPicker(page);
+    const files = page.getByRole('tablist', { name: '読み込んだファイルのフォント', exact: true });
+    await expect(files.getByRole('tab')).toHaveCount(2);
+    await expect(files.getByRole('tab', { selected: true })).toHaveCount(0);
+    await expect(page.locator('.font-picker-scroll')).toHaveCount(1);
+    await expect(page.getByRole('heading', { name: /読み込んだファイル/ })).toBeVisible();
+    await files.locator('[data-face-index="1"]').click();
+    await expect(page.locator('.font-workspace-heading h2')).toHaveText('FallbackExtra');
+    await openFontPicker(page);
+    await expect(files.locator('[data-face-index="1"]')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('[data-font-id="FallbackBase"]')).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
   });
 }

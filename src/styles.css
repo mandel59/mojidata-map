@@ -1934,24 +1934,9 @@ td button {
 .font-picker-search input {
   width: 100%;
 }
-.font-picker-lists {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-}
-.font-picker-group {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 0;
-  min-height: 0;
-}
-.font-picker-group > h3,
-.font-picker-source {
-  flex-shrink: 0;
-}
-.font-picker-collection {
+.font-picker-imported {
   border-top: 1px solid var(--border);
+  margin-top: 8px;
 }
 .font-picker-scroll {
   flex: 1;
@@ -1961,7 +1946,7 @@ td button {
   scrollbar-width: thin;
   padding: 0 5px 5px;
 }
-.font-picker-group h3 {
+.font-picker-scroll h3 {
   display: flex;
   justify-content: space-between;
   padding: 8px 7px 6px;

@@ -27,6 +27,7 @@ export function BufferFontPreview({ font, text }: { font: FontMatch; text: strin
         const face = await new FontFace(
           `Mojidata Coverage Font${++sequence}`,
           fontFaceData(bytes, font.faceIndex),
+          { variationSettings: font.variationSettings ?? 'normal' },
         ).load();
         if (disposed) return;
         document.fonts.add(face);

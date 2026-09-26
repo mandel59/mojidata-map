@@ -62,7 +62,8 @@ test('applies the chosen local PostScript face and retains the candidate after e
   await expect(candidate).toHaveAttribute('aria-selected', 'true');
   await page.getByRole('button', { name: '端末のフォントを取得', exact: true }).click();
   await expect(candidate).toHaveAttribute('aria-selected', 'true');
-  await expectFontFace(page, '1');
+  await expect(page.locator('[data-face-index]')).toHaveCount(1);
+  await expect(page.locator('[data-face-index="0"]')).toHaveAttribute('aria-selected', 'false');
   await expect.poll(() => widthOfA(page)).toBe(90);
   await expect.poll(() => registered(page)).toBe(1);
 });
@@ -86,7 +87,7 @@ test('commits only the latest collection choice and cannot restore a cleared fac
     };
   });
   await openSample(page, collectionFile);
-  const face = page.getByLabel('コレクションの解析対象');
+  const face = page.getByRole('tablist', { name: '読み込んだファイルのフォント', exact: true });
   const family = await preview(page).evaluate((el) => getComputedStyle(el).fontFamily);
   const labels = await face.innerText();
   const tabsBox = await page.locator('.font-tabs').boundingBox();

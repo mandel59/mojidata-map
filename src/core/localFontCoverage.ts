@@ -1,15 +1,21 @@
 import { create } from 'fontkit';
 import { Buffer } from 'buffer';
 import { fontNames } from './fontNames';
+import { fontInstance, resolveFontInstance } from './fontInstance';
 
 function localFont(bytes: ArrayBuffer, postscriptName: string) {
   const parsed = create(Buffer.from(bytes));
   const collection = 'fonts' in parsed;
   const fonts = collection ? parsed.fonts : [parsed];
-  const index = collection ? fonts.findIndex((face) => face.postscriptName === postscriptName) : 0;
+  const index = collection
+    ? fonts.findIndex(
+        (face) =>
+          face.postscriptName === postscriptName || fontInstance(face, postscriptName) !== null,
+      )
+    : 0;
   const font = fonts[index];
   if (!font) throw new Error('フォントのフェイスが見つかりません。');
-  return { font, collection, index };
+  return { font: resolveFontInstance(font, postscriptName), collection, index };
 }
 
 export function localFontCovers(bytes: ArrayBuffer, postscriptName: string, points: number[]) {
@@ -26,7 +32,14 @@ export function localFontMatch(
 ) {
   const { font, index } = localFont(bytes, postscriptName);
   return points.length > 0 && points.every((cp) => font.hasGlyphForCodePoint(cp))
-    ? { faceIndex: index, ...fontNames(font, locale, postscriptName) }
+    ? {
+        faceIndex: index,
+        ...fontNames(font, locale, postscriptName),
+        variationSettings:
+          Object.entries(fontInstance(font, postscriptName)?.coordinates ?? {})
+            .map(([tag, value]) => `"${tag}" ${value}`)
+            .join(', ') || 'normal',
+      }
     : null;
 }
 

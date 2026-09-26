@@ -1,4 +1,3 @@
-import { expectFontFace } from './navigation';
 import { expect, test, type Page } from '@playwright/test';
 import { fontSample } from './navigation';
 
@@ -279,10 +278,10 @@ for (const width of [1024, 390]) {
     const open = page.getByRole('button', { name: 'カバレッジ', exact: true });
     const dialog = page.getByRole('dialog', { name: dialogName });
     // Works when the lazy font panel has never been opened, and when it already exists.
-    for (const [label, name, index, advance] of [
-      ['FallbackExtra', 'FallbackExtra', '1', 90],
-      ['FallbackBase', 'FallbackBase', '0', 50],
-      ['FallbackBase', 'FallbackBase', '0', 50],
+    for (const [label, name, advance] of [
+      ['FallbackExtra', 'FallbackExtra', 90],
+      ['FallbackBase', 'FallbackBase', 50],
+      ['FallbackBase', 'FallbackBase', 50],
     ] as const) {
       await open.click();
       await expect(dialog.getByRole('status')).toHaveText('4 フォントを確認しました');
@@ -295,7 +294,7 @@ for (const width of [1024, 390]) {
       const heading = page.locator('.font-workspace-heading h2');
       await expect(heading).toHaveText(name);
       await expect(heading).toBeFocused();
-      await expectFontFace(page, index);
+      await expect(page.locator('.font-picker-collection')).toHaveCount(0);
       await expect.poll(() => previewFonts(page)).toHaveLength(0);
       await page.getByRole('tab', { name: 'サンプル', exact: true }).click();
       await expect

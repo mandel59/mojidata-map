@@ -1,4 +1,5 @@
 import type { Font } from 'fontkit';
+import { instanceNameRecords } from './fontInstance';
 import { FALLBACK_LOCALE } from '../intl/locale';
 
 export interface FontNames {
@@ -19,7 +20,10 @@ function language(tag: string) {
 // Read the records explicitly: fontkit's getName() can fall through to an
 // arbitrary language, and the browser's Local Font Access names can do so too.
 export function fontNames(font: Font, locale: string, fallback = ''): FontNames {
-  const records = (font as Font & { name?: { records?: NameRecords } }).name?.records ?? {};
+  const records = {
+    ...((font as Font & { name?: { records?: NameRecords } }).name?.records ?? {}),
+    ...instanceNameRecords.get(font),
+  };
   const names = new Map<string, Map<string, string>>();
   for (const key of [
     'fullName',

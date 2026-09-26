@@ -50,11 +50,8 @@ export function FontPicker({
   const { locale, numberFormat } = useLocale();
   const [focused, setFocused] = useState('');
   const [focusedFace, setFocusedFace] = useState<number | null>(null);
-  const { selection, pending } = inspection;
-  const font = selection?.source.fonts[selection.index];
-  const selected =
-    selection?.source.postscriptName ??
-    (selection?.source.fonts.length === 1 ? font?.postscriptName : undefined);
+  const { selection, pending, imported } = inspection;
+  const selected = selection?.source.postscriptName;
   const busy = list.status === 'enumerating' || list.status === 'naming';
   const matches = useMemo(() => {
     const term = query.trim().toLocaleLowerCase(locale);
@@ -96,88 +93,85 @@ export function FontPicker({
           onChange={(event) => onQuery(event.target.value)}
         />
       </label>
-      <div className="font-picker-lists">
-        <section className="font-picker-group font-picker-local">
+      <div className="font-picker-scroll">
+        <section className="font-picker-local">
           <h3>
             端末フォント <span>{numberFormat.format(matches.length)}</span>
           </h3>
-          <div className="font-picker-scroll">
-            {matches.length ? (
-              <div
-                role="tablist"
-                aria-label="端末のフォント"
-                aria-orientation="vertical"
-                onKeyDown={moveFocus}
-              >
-                {matches.map((entry) => (
-                  <button
-                    key={entry.postscriptName}
-                    role="tab"
-                    aria-controls={panelId}
-                    aria-selected={selected === entry.postscriptName}
-                    aria-busy={
-                      pending?.index === null && pending.postscriptName === entry.postscriptName
-                    }
-                    tabIndex={entry.postscriptName === focusable ? 0 : -1}
-                    data-font-id={entry.postscriptName}
-                    data-name-status={entry.nameStatus}
-                    className="font-picker-item"
-                    title={`${entry.fullName}\n${entry.postscriptName}`}
-                    onFocus={() => setFocused(entry.postscriptName)}
-                    onClick={() => onLocal(entry)}
-                  >
-                    <span>{entry.fullName}</span>
-                    <small>
-                      {entry.nameStatus === 'pending'
-                        ? '名前を取得中…'
-                        : entry.nameStatus === 'unavailable'
-                          ? '表示名を取得できません'
-                          : `${entry.style ? `${entry.style} · ` : ''}${entry.postscriptName}`}
-                    </small>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="font-picker-empty">
-                {query
-                  ? '一致するフォントがありません。'
-                  : list.status === 'idle'
-                    ? '「端末から取得」で一覧を表示します。ファイルを開いて調べることもできます。'
-                    : list.status === 'enumerating'
-                      ? '端末フォントを取得中…'
-                      : list.status === 'complete'
-                        ? '端末フォントがありません。'
-                        : '再取得、またはファイルを開いてください。'}
-              </p>
-            )}
-          </div>
-        </section>
-        {selection && selection.source.fonts.length > 1 && (
-          <section className="font-picker-group font-picker-collection">
-            <h3>
-              コレクション <span>{numberFormat.format(selection.source.fonts.length)}</span>
-            </h3>
-            <p className="note muted font-picker-source" title={selection.source.label}>
-              {selection.source.label}
-            </p>
+          {matches.length ? (
             <div
-              className="font-picker-scroll"
               role="tablist"
-              aria-label="コレクションの解析対象"
+              aria-label="端末のフォント"
               aria-orientation="vertical"
               onKeyDown={moveFocus}
             >
-              {inspection.names.map((names, index) => (
+              {matches.map((entry) => (
+                <button
+                  key={entry.postscriptName}
+                  role="tab"
+                  aria-controls={panelId}
+                  aria-selected={selected === entry.postscriptName}
+                  aria-busy={
+                    pending?.index === null && pending.postscriptName === entry.postscriptName
+                  }
+                  tabIndex={entry.postscriptName === focusable ? 0 : -1}
+                  data-font-id={entry.postscriptName}
+                  data-name-status={entry.nameStatus}
+                  className="font-picker-item"
+                  title={`${entry.fullName}\n${entry.postscriptName}`}
+                  onFocus={() => setFocused(entry.postscriptName)}
+                  onClick={() => onLocal(entry)}
+                >
+                  <span>{entry.fullName}</span>
+                  <small>
+                    {entry.nameStatus === 'pending'
+                      ? '名前を取得中…'
+                      : entry.nameStatus === 'unavailable'
+                        ? '表示名を取得できません'
+                        : `${entry.style ? `${entry.style} · ` : ''}${entry.postscriptName}`}
+                  </small>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="font-picker-empty">
+              {query
+                ? '一致するフォントがありません。'
+                : list.status === 'idle'
+                  ? '「端末から取得」で一覧を表示します。ファイルを開いて調べることもできます。'
+                  : list.status === 'enumerating'
+                    ? '端末フォントを取得中…'
+                    : list.status === 'complete'
+                      ? '端末フォントがありません。'
+                      : '再取得、またはファイルを開いてください。'}
+            </p>
+          )}
+        </section>
+        {imported && (
+          <section className="font-picker-imported">
+            <h3>
+              読み込んだファイル <span>{numberFormat.format(imported.names.length)}</span>
+            </h3>
+            <p className="note muted font-picker-source">{imported.source.label}</p>
+            <div
+              role="tablist"
+              aria-label="読み込んだファイルのフォント"
+              aria-orientation="vertical"
+              onKeyDown={moveFocus}
+            >
+              {imported.names.map((names, index) => (
                 <button
                   key={index}
                   role="tab"
                   aria-controls={panelId}
-                  aria-selected={selection.index === index}
+                  aria-selected={selection?.source === imported.source && selection.index === index}
                   aria-busy={pending?.index === index}
                   tabIndex={
-                    (focusedFace !== null && focusedFace < inspection.names.length
+                    (focusedFace !== null && focusedFace < imported.names.length
                       ? focusedFace
-                      : selection.index) === index
+                      : selection?.source === imported.source
+                        ? selection.index
+                        : 0) === index
                       ? 0
                       : -1
                   }
@@ -187,7 +181,9 @@ export function FontPicker({
                   onClick={() => onFace(index)}
                 >
                   <span>{names.fullName}</span>
-                  <small>{selection.source.fonts[index].postscriptName}</small>
+                  <small>
+                    {imported.source.label} · {imported.source.fonts[index].postscriptName}
+                  </small>
                 </button>
               ))}
             </div>
