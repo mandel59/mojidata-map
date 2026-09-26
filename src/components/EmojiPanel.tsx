@@ -74,6 +74,13 @@ export const EmojiPanel = memo(function EmojiPanel({
     selectedIndex,
     pageKey: visible[0]?.cps.join('-'),
     active,
+    onMove: (index, delta) => {
+      const next = page * PAGE_SIZE + index + delta;
+      if (next < 0 || next >= matches.length) return false;
+      setPage(Math.floor(next / PAGE_SIZE));
+      onSelect(matches[next]);
+      return true;
+    },
     onSelect: (index) => onSelect(visible[index]),
     onInsert: (index) => onInsert(String.fromCodePoint(...visible[index].cps)),
   });

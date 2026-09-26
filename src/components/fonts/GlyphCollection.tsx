@@ -54,6 +54,13 @@ export function GlyphCollection({
     count: visible.length,
     selectedIndex: selected - page * 128,
     pageKey: `${page}:${visible[0]?.id}:${visible[0]?.points?.join('-') ?? ''}`,
+    onMove: (index, delta) => {
+      const next = page * 128 + index + delta;
+      if (busy || next < 0 || next >= entries.length) return false;
+      onPage(Math.floor(next / 128));
+      onSelect(next);
+      return true;
+    },
     onSelect: (i) => onSelect(page * 128 + i),
     onInsert: (i) => onInsert(page * 128 + i),
   });

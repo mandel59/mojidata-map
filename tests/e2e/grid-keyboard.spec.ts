@@ -5,8 +5,9 @@ for (const width of [1024, 390]) {
   test(`uses the same grid keys for characters and emoji at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 600 });
     await page.goto('/');
-    const columns = width === 1024 ? 16 : 8;
+
     for (const kind of ['unicode', 'emoji'] as const) {
+      const columns = (width === 1024 ? 16 : 8) / (kind === 'emoji' ? 2 : 1);
       await searchMethod(page, kind);
       const root = page.locator(kind === 'emoji' ? '.emoji-workspace' : '.search-workspace');
       const cells = root.locator(kind === 'emoji' ? '.emoji-cell' : '.character-cell');
@@ -70,7 +71,23 @@ for (const width of [1024, 390]) {
       await at(columns + 1);
       await expect(selected).toHaveAttribute('aria-label', name!);
 
-      // End stops at the actual end of a partial final row, and arrows do not wrap pages.
+      // Arrow keys cross page boundaries and restore the same column and focus.
+      const size = kind === 'emoji' ? 64 : 128;
+      await cells.nth(size - columns + 1).click();
+      const boundaryName = await selected.getAttribute('aria-label');
+      await selected.press('ArrowDown');
+      await at(1);
+      await expect(previous).toBeEnabled();
+      await selected.press('ArrowUp');
+      await at(size - columns + 1);
+      await expect(selected).toHaveAttribute('aria-label', boundaryName!);
+      await expect(previous).toBeDisabled();
+      await cells.last().press('ArrowRight');
+      await at(0);
+      await selected.press('ArrowLeft');
+      await at(size - 1);
+
+      // End stops at the actual end of a partial final row; dataset edges stay put.
       while (!(await next.isDisabled())) await next.click();
       const last = (await cells.count()) - 1;
       await cells.last().click();

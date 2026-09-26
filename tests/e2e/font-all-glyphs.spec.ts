@@ -190,3 +190,39 @@ test('exports unencoded glyphs even when CSS font loading fails', async ({ page 
   await panel.getByRole('button', { name: 'PNG を保存', exact: true }).click();
   expect((await saved).suggestedFilename()).toBe('glyph-7.png');
 });
+
+for (const width of [1024, 390]) {
+  test(`crosses font map page boundaries at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 600 });
+    await page.goto('/');
+    if (width > 700) await page.getByRole('button', { name: 'フォント', exact: true }).click();
+    else await page.getByLabel('ツールを選択').selectOption('fonts');
+    await page
+      .locator('input[type=file]')
+      .setInputFiles('tests/fixtures/LiberationSans-Regular.ttf');
+    const scope = page.getByLabel('表示範囲', { exact: true });
+    for (const value of ['', '@glyphs']) {
+      await scope.selectOption(value);
+      const grid = page.locator('.font-coverage-preview .character-grid');
+      const cells = grid.locator('.character-cell');
+      await expect(cells).toHaveCount(128);
+      const columns = await grid.evaluate(
+        (el) => getComputedStyle(el).gridTemplateColumns.split(' ').length,
+      );
+      const start = 128 - columns + 1;
+      await cells.nth(start).click();
+      const label = await cells.nth(start).getAttribute('aria-label');
+      await cells.nth(start).press('ArrowDown');
+      await expect(cells.nth(1)).toBeFocused();
+      await expect(cells.nth(1)).toHaveAttribute('aria-pressed', 'true');
+      await expect(cells.nth(1)).toBeInViewport();
+      await cells.nth(1).press('ArrowUp');
+      await expect(cells.nth(start)).toBeFocused();
+      await expect(cells.nth(start)).toHaveAttribute('aria-label', label!);
+      await cells.last().press('ArrowRight');
+      await expect(cells.first()).toBeFocused();
+      await cells.first().press('ArrowLeft');
+      await expect(cells.last()).toBeFocused();
+    }
+  });
+}

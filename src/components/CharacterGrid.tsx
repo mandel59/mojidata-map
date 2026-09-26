@@ -16,6 +16,7 @@ interface Props {
   colorBy: string;
   composite: Record<string, string>;
   onMove?(cp: number): void;
+  onMoveIndex?(index: number, delta: number): boolean;
 }
 function colorIndex(value: string) {
   return [...value].reduce((n, c) => n + c.charCodeAt(0), 0) % 8;
@@ -32,6 +33,7 @@ export const CharacterGrid = memo(function CharacterGrid({
   colorBy,
   composite,
   onMove,
+  onMoveIndex,
 }: Props) {
   const fontStyle = useFontStyle();
   const container = useRef<HTMLDivElement>(null);
@@ -44,6 +46,7 @@ export const CharacterGrid = memo(function CharacterGrid({
     onSelect: (index) => onSelect(points[index]),
     onInsert: (index) => onInsert(points[index]),
     onMove: (index, delta) => {
+      if (onMoveIndex) return onMoveIndex(index, delta);
       const next = points[index] + delta;
       if (!onMove || !isCodePoint(next)) return false;
       onMove(next);

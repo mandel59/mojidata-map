@@ -100,6 +100,13 @@ export const CharacterCollection = memo(function CharacterCollection({
           selected={selected}
           onSelect={onSelect}
           onInsert={onInsert}
+          onMoveIndex={(index, delta) => {
+            const next = page * 128 + index + delta;
+            if (busy || next < 0 || next >= points.length) return false;
+            onPage(Math.floor(next / 128));
+            onSelect(points[next]);
+            return true;
+          }}
           font={font}
           colorBy={colorBy}
           composite={composite}
