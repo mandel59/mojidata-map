@@ -23,9 +23,10 @@ test('finds every direct cmap alias regardless of prior glyph lookups or shaping
   expect(index.characters.get(2)).toEqual([0x41, 0x391]);
   expect(index.characters.has(0)).toBe(false);
   expect(index.unmapped).toEqual([0, 5, 6, 7, 8, 9]);
+  expect(glyphReferences(index, 6)).toEqual([{ points: [0x66, 0x69], kind: 'ligature' }]);
   // Ligatures, alternates, and unused glyphs must not acquire the cached
   // input characters as false direct Unicode assignments.
-  for (const id of [0, 6, 7, 8]) expect(glyphReferences(index, id)).toEqual([]);
+  for (const id of [0, 7, 8]) expect(glyphReferences(index, id)).toEqual([]);
 });
 
 test('resolves default, non-default and supplementary variation selectors', () => {

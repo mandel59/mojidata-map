@@ -26,7 +26,7 @@ for (const width of [1024, 390]) {
       if (compact && (await panel.isVisible())) await page.keyboard.press('Escape');
       await page.locator(`[data-glyph-id="${id}"]`).click();
       if (compact) await page.getByRole('button', { name: 'グリフ情報', exact: true }).click();
-      await panel.getByLabel('対応する文字・VS列').selectOption({ label });
+      await panel.getByLabel('対応する文字・リガチャ・VS').selectOption({ label });
     }
     const name = sequenceName(page, panel);
     await select(5, 'U+4E38 U+FE00 (VS)');
@@ -34,9 +34,13 @@ for (const width of [1024, 390]) {
     await panel.getByRole('button', { name: 'バッファに追加', exact: true }).click();
     await expect(page.getByLabel('編集テキスト')).toHaveValue('\u4E38\uFE00');
     // The same base and glyph also have an unregistered sequence: do not reuse its SVS name.
-    await panel.getByLabel('対応する文字・VS列').selectOption({ label: 'U+4E38 U+FE01 (VS)' });
+    await panel
+      .getByLabel('対応する文字・リガチャ・VS')
+      .selectOption({ label: 'U+4E38 U+FE01 (VS)' });
     await expect(name).toHaveCount(0);
-    await panel.getByLabel('対応する文字・VS列').selectOption({ label: 'U+0041 U+E0100 (VS)' });
+    await panel
+      .getByLabel('対応する文字・リガチャ・VS')
+      .selectOption({ label: 'U+0041 U+E0100 (VS)' });
     await expect(name).toHaveCount(0);
     await select(9, 'U+0030 U+FE00 (VS)');
     await expect(name).toHaveText('short diagonal stroke form');
@@ -67,9 +71,13 @@ test('resolves a delayed variation lookup for the current selection', async ({ p
     await openGlyphs(page);
     const panel = page.getByRole('complementary', { name: 'グリフの詳細' });
     await page.locator('[data-glyph-id="5"]').click();
-    await panel.getByLabel('対応する文字・VS列').selectOption({ label: 'U+4E38 U+FE00 (VS)' });
+    await panel
+      .getByLabel('対応する文字・リガチャ・VS')
+      .selectOption({ label: 'U+4E38 U+FE00 (VS)' });
     await page.locator('[data-glyph-id="4"]').click();
-    await panel.getByLabel('対応する文字・VS列').selectOption({ label: 'U+1D49C U+FE00 (VS)' });
+    await panel
+      .getByLabel('対応する文字・リガチャ・VS')
+      .selectOption({ label: 'U+1D49C U+FE00 (VS)' });
     release();
     await expect(sequenceName(page, panel)).toHaveText('chancery style');
     await expect(panel.getByText('CJK COMPATIBILITY IDEOGRAPH-2F801', { exact: true })).toHaveCount(
@@ -92,15 +100,21 @@ test('reports failed variation data without losing glyphs and retries on selecti
   await openGlyphs(page);
   const panel = page.getByRole('complementary', { name: 'グリフの詳細' });
   await page.locator('[data-glyph-id="5"]').click();
-  await panel.getByLabel('対応する文字・VS列').selectOption({ label: 'U+4E38 U+FE00 (VS)' });
+  await panel
+    .getByLabel('対応する文字・リガチャ・VS')
+    .selectOption({ label: 'U+4E38 U+FE00 (VS)' });
   await expect(panel.getByText(/データを読み込めません: variations/)).toBeVisible();
   await expect(panel.locator('svg path')).toHaveCount(1);
   fail = false;
   await page.locator('[data-glyph-id="4"]').click();
-  await panel.getByLabel('対応する文字・VS列').selectOption({ label: 'U+1D49C U+FE00 (VS)' });
+  await panel
+    .getByLabel('対応する文字・リガチャ・VS')
+    .selectOption({ label: 'U+1D49C U+FE00 (VS)' });
   await expect(sequenceName(page, panel)).toHaveText('chancery style');
   await page.locator('[data-glyph-id="5"]').click();
-  await panel.getByLabel('対応する文字・VS列').selectOption({ label: 'U+4E38 U+FE00 (VS)' });
+  await panel
+    .getByLabel('対応する文字・リガチャ・VS')
+    .selectOption({ label: 'U+4E38 U+FE00 (VS)' });
   await expect(sequenceName(page, panel)).toHaveText('CJK COMPATIBILITY IDEOGRAPH-2F801');
   await expect(panel.getByText(/データを読み込めません: variations/)).toHaveCount(0);
 });

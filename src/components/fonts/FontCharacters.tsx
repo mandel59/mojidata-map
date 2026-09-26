@@ -311,7 +311,12 @@ export function FontCharacters({
                 references={references}
                 referenceIndex={referenceIndex}
                 onReferenceIndex={setReferenceIndex}
-                referenceError={index?.variationError ?? ''}
+                referenceError={[
+                  index?.variationError,
+                  index && selectedEntry ? index.ligatures(selectedEntry.id).error : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
                 compact={compact}
                 openRequest={glyphRequest}
                 onInsert={onInsertText}

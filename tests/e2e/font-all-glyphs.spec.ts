@@ -36,7 +36,7 @@ for (const width of [1024, 390]) {
       if (compact) await page.getByRole('button', { name: 'グリフ情報', exact: true }).click();
     };
     // Actual unencoded GSUB outputs and a wholly unreferenced glyph are visible.
-    for (const id of [6, 7, 8, 0]) {
+    for (const id of [7, 8, 0]) {
       await show(id);
       await expect(panel.locator('.detail-code')).toHaveText(`Glyph ID ${id}`);
       await expect(panel.locator('svg path')).toHaveAttribute('d', font.getGlyph(id).path.toSVG());
@@ -44,9 +44,17 @@ for (const width of [1024, 390]) {
         panel.getByRole('button', { name: 'バッファに追加', exact: true }),
       ).toBeDisabled();
       await expect(panel.getByRole('button', { name: 'コピー', exact: true })).toBeDisabled();
-      await expect(panel.getByLabel('対応する文字・VS列')).toHaveCount(0);
+      await expect(panel.getByLabel('対応する文字・リガチャ・VS')).toHaveCount(0);
     }
     await show(6);
+    await expect(panel.getByLabel('対応する文字・リガチャ・VS')).toHaveText(
+      'U+0066 U+0069 (リガチャ)',
+    );
+    await panel.getByRole('button', { name: 'バッファに追加', exact: true }).click();
+    await expect(page.getByLabel('編集テキスト')).toHaveValue('fi');
+    await panel.getByRole('button', { name: 'コピー', exact: true }).click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('fi');
+    await page.getByLabel('編集テキスト').fill('');
     const svgSave = page.waitForEvent('download');
     await panel.getByRole('button', { name: 'SVG を保存', exact: true }).click();
     const svg = await svgSave;
@@ -71,18 +79,18 @@ for (const width of [1024, 390]) {
     }, pngBytes.toString('base64'));
     expect(ink).toBeGreaterThan(1000);
     await show(5);
-    await expect(panel.getByLabel('対応する文字・VS列')).toHaveText('U+0041 U+E0100 (VS)');
+    await expect(panel.getByLabel('対応する文字・リガチャ・VS')).toHaveText('U+0041 U+E0100 (VS)');
     await panel.getByRole('button', { name: 'バッファに追加', exact: true }).click();
     await expect(page.getByLabel('編集テキスト')).toHaveValue('A\u{E0100}');
     await panel.getByRole('button', { name: 'コピー', exact: true }).click();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('A\u{E0100}');
     await show(2);
-    await expect(panel.getByLabel('対応する文字・VS列').locator('option')).toHaveText([
+    await expect(panel.getByLabel('対応する文字・リガチャ・VS').locator('option')).toHaveText([
       'U+0041',
       'U+0391',
       'U+0041 U+FE00 (VS)',
     ]);
-    await panel.getByLabel('対応する文字・VS列').selectOption('1');
+    await panel.getByLabel('対応する文字・リガチャ・VS').selectOption('1');
     await panel.getByRole('button', { name: 'コピー', exact: true }).click();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('Α');
     if (compact) await page.keyboard.press('Escape');
@@ -155,7 +163,7 @@ test('pages all glyphs with the shared keys and resets on collection face change
   await expect(page.locator('.font-glyph-grid .character-cell')).toHaveCount(6);
   const panel = page.getByRole('complementary', { name: 'グリフの詳細' });
   await cell(2).click();
-  await expect(panel.getByLabel('対応する文字・VS列')).toHaveText('U+1E4D0');
+  await expect(panel.getByLabel('対応する文字・リガチャ・VS')).toHaveText('U+1E4D0');
 });
 
 test('exports unencoded glyphs even when CSS font loading fails', async ({ page }) => {

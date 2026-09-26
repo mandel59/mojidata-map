@@ -1,5 +1,6 @@
 import type { Font } from 'fontkit';
 import { isScalar } from './unicode';
+import { fontLigatures } from './fontLigatures';
 
 interface VariationRecord {
   varSelector: number;
@@ -22,7 +23,7 @@ interface CmapFont extends Font {
 }
 export interface GlyphReference {
   points: number[];
-  kind: 'character' | 'variation';
+  kind: 'character' | 'variation' | 'ligature';
 }
 export interface FontGlyphIndex {
   characters: Map<number, number[]>;
@@ -30,6 +31,7 @@ export interface FontGlyphIndex {
   defaults: VariationRecord[];
   unmapped: number[];
   variationError: string;
+  ligatures: ReturnType<typeof fontLigatures>;
 }
 const indices = new WeakMap<Font, FontGlyphIndex>();
 export function fontGlyphIndex(font: Font): FontGlyphIndex {
@@ -50,6 +52,7 @@ export function fontGlyphIndex(font: Font): FontGlyphIndex {
     variations: new Map(),
     defaults: [],
     variationError: '',
+    ligatures: fontLigatures(font, characters),
     unmapped: Array.from({ length: font.numGlyphs }, (_, id) => id).filter(
       (id) => !characters.has(id),
     ),
@@ -107,6 +110,8 @@ export function glyphReferences(index: FontGlyphIndex, id: number): GlyphReferen
   }
   for (const sequence of variations.values())
     references.push({ points: sequence, kind: 'variation' });
+  for (const sequence of index.ligatures(id).sequences)
+    references.push({ points: sequence, kind: 'ligature' });
   return references;
 }
 

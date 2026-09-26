@@ -213,23 +213,32 @@ export function FontGlyphDetails({
         <div className="glyph-references">
           {references.length ? (
             <label>
-              対応する文字・VS列
+              対応する文字・リガチャ・VS
               <select
-                aria-label="対応する文字・VS列"
+                aria-label="対応する文字・リガチャ・VS"
                 value={referenceIndex}
                 onChange={(event) => onReferenceIndex(Number(event.target.value))}
               >
                 {references.map((ref, i) => (
                   <option key={i} value={i}>
                     {ref.points.map(codeLabel).join(' ')}
-                    {ref.kind === 'variation' ? ' (VS)' : ''}
+                    {ref.kind === 'variation'
+                      ? ' (VS)'
+                      : ref.kind === 'ligature'
+                        ? ' (リガチャ)'
+                        : ''}
                   </option>
                 ))}
               </select>
             </label>
           ) : (
             <p className="note">
-              単一文字・VS列の割当なし。文字列としての追加・コピーはできません。
+              対応する文字・リガチャ・VSが見つかりません。文字列としての追加・コピーはできません。
+            </p>
+          )}
+          {reference?.kind === 'ligature' && (
+            <p className="note">
+              GSUBから逆引きした文字列です。字形は言語・前後の文脈・OpenType設定によって変わります。
             </p>
           )}
           {referenceError && <p className="note coverage-missing">{referenceError}</p>}

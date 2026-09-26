@@ -38,7 +38,7 @@ for (const width of [1024, 390]) {
     await page.keyboard.press('Enter');
     await expect(page.getByLabel('編集テキスト')).toHaveValue('\u4e41\ufe00');
     if (compact) await page.getByRole('button', { name: 'グリフ情報', exact: true }).click();
-    await expect(panel.getByLabel('対応する文字・VS列')).toHaveText('U+4E41 U+FE00 (VS)');
+    await expect(panel.getByLabel('対応する文字・リガチャ・VS')).toHaveText('U+4E41 U+FE00 (VS)');
     await expect(
       panel.getByText('CJK COMPATIBILITY IDEOGRAPH-2F802', { exact: true }),
     ).toBeVisible();
@@ -55,7 +55,7 @@ for (const width of [1024, 390]) {
     await page.keyboard.press('Enter');
     await expect(page.getByLabel('編集テキスト')).toHaveValue('\u4e41\ufe00\u4e38\u{e0102}');
     if (compact) await page.getByRole('button', { name: 'グリフ情報', exact: true }).click();
-    await expect(panel.getByLabel('対応する文字・VS列')).toHaveText('U+4E38 U+E0102 (VS)');
+    await expect(panel.getByLabel('対応する文字・リガチャ・VS')).toHaveText('U+4E38 U+E0102 (VS)');
     await expect(panel.getByText('シーケンス名', { exact: true })).toHaveCount(0);
     await panel.getByRole('button', { name: 'コピー', exact: true }).click();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('\u4e38\u{e0102}');
@@ -114,7 +114,7 @@ test('pages distinct sequences sharing a glyph without losing keyboard selection
   await page.keyboard.press('PageDown');
   await expect(cell(page, key(138))).toBeFocused();
   await expect(page.locator('[data-sequence]')).toHaveCount(17);
-  await expect(page.getByLabel('対応する文字・VS列')).toHaveText(
+  await expect(page.getByLabel('対応する文字・リガチャ・VS')).toHaveText(
     registry.ivs[138].map((cp) => 'U+' + cp.toString(16).toUpperCase()).join(' ') + ' (VS)',
   );
   await page.getByRole('tab', { name: 'サンプル', exact: true }).click();
