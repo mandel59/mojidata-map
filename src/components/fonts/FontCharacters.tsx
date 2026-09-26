@@ -19,8 +19,8 @@ const noComposite: Record<string, string> = {};
 const glyphScopes: Record<string, string> = {
   '@glyphs': '全グリフ',
   '@unmapped': '単一文字の割当なし',
-  '@svs': 'SVS（標準化異体字列）',
-  '@ivs': 'IVS（漢字異体字列）',
+  '@svs': '標準化異体字列（SVS）',
+  '@ivs': '漢字異体字列（IVS）',
 };
 export function FontCharacters({
   font,
@@ -82,7 +82,7 @@ export function FontCharacters({
   const [variationStatus, setVariationStatus] = useState({ error: '' });
   const [retry, setRetry] = useState(0);
   useEffect(() => {
-    if (!active || !variationKind || variationData) return;
+    if (!active || variationData) return;
     let current = true;
     setVariationStatus({ error: '' });
     void loadData<FontVariationSequences>('font-variation-sequences').then(
@@ -99,17 +99,39 @@ export function FontCharacters({
   }, [active, variationKind, variationData, retry]);
   const variationError = variationKind && !variationData ? variationStatus.error : '';
   const variationBusy = Boolean(variationKind && !variationData && !variationError);
-  const index = useMemo(() => (glyphMode ? fontGlyphIndex(font) : null), [font, glyphMode]);
+  const index = useMemo(() => fontGlyphIndex(font), [font]);
+  // Reuse the same entries for dropdown counts and the selected list.
+  const variations = useMemo(
+    () =>
+      variationData
+        ? {
+            svs: fontVariationEntries(font, index, variationData.svs),
+            ivs: fontVariationEntries(font, index, variationData.ivs),
+          }
+        : null,
+    [font, index, variationData],
+  );
+  const numberFormat = useMemo(() => new Intl.NumberFormat(i18n.language), [i18n.language]);
+  function scopeLabel(key: string, count: number | null) {
+    return t('{{label}} ({{total}})', {
+      label: t(glyphScopes[key]),
+      total:
+        count === null
+          ? variationStatus.error || index.variationError
+            ? t('取得失敗')
+            : '…'
+          : numberFormat.format(count),
+    });
+  }
   const entries: GlyphEntry[] = useMemo(() => {
-    if (!index) return [];
-    if (variationKind)
-      return variationData ? fontVariationEntries(font, index, variationData[variationKind]) : [];
+    if (!glyphMode) return [];
+    if (variationKind) return variations?.[variationKind] ?? [];
     const ids =
       block === '@unmapped'
         ? index.unmapped
         : Array.from({ length: font.numGlyphs }, (_, id) => id);
     return ids.map((id) => ({ id }));
-  }, [font, index, block, variationKind, variationData]);
+  }, [font, index, block, glyphMode, variationKind, variations]);
   const selectedPosition = variationKind
     ? variationSelection
     : entries.findIndex((entry) => entry.id === glyphId);
@@ -192,11 +214,15 @@ export function FontCharacters({
                   count: new Intl.NumberFormat(i18n.language).format(font.numGlyphs),
                 })}
               </option>
-              <option value="@unmapped">{t('単一文字の割当なし')}</option>
+              <option value="@unmapped">{scopeLabel('@unmapped', index.unmapped.length)}</option>
             </optgroup>
-            <optgroup label={t('異体字列')}>
-              <option value="@svs">{t(glyphScopes['@svs'])}</option>
-              <option value="@ivs">{t(glyphScopes['@ivs'])}</option>
+            <optgroup label={t('異体字シーケンス')}>
+              <option value="@svs">
+                {scopeLabel('@svs', index.variationError ? null : (variations?.svs.length ?? null))}
+              </option>
+              <option value="@ivs">
+                {scopeLabel('@ivs', index.variationError ? null : (variations?.ivs.length ?? null))}
+              </option>
             </optgroup>
             <optgroup label={t('Unicodeブロック')}>
               {blocks.map(([name, count]) => (

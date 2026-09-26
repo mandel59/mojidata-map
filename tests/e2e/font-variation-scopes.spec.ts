@@ -26,6 +26,9 @@ for (const width of [1024, 390]) {
     const panel = compact
       ? page.getByRole('dialog', { name: 'グリフ情報' })
       : page.getByRole('complementary', { name: 'グリフの詳細' });
+    await expect(scope.locator('option[value="@unmapped"]')).toHaveText('単一文字の割当なし (6)');
+    await expect(scope.locator('option[value="@svs"]')).toHaveText('標準化異体字列（SVS） (6)');
+    await expect(scope.locator('option[value="@ivs"]')).toHaveText('漢字異体字列（IVS） (5)');
     await scope.selectOption('@svs');
     await expect(cells).toHaveCount(6);
     expect(
@@ -85,6 +88,7 @@ for (const width of [1024, 390]) {
     await expect(collection.locator('[data-glyph-id="0"]')).toHaveAttribute('aria-pressed', 'true');
     await page.locator('input[type=file]').setInputFiles('tests/fixtures/FallbackCollection.ttc');
     await expect(scope).toHaveValue('');
+    await expect(scope.locator('option[value="@ivs"]')).toHaveText('漢字異体字列（IVS） (0)');
     await scope.selectOption('@ivs');
     await expect(collection.getByText('該当する異体字列がありません。')).toBeVisible();
     await expect(page.getByRole('complementary', { name: /グリフ/ })).toHaveCount(0);
@@ -138,6 +142,7 @@ test('uses the current scope when sequence data finishes loading', async ({ page
   try {
     await openFont(page);
     const scope = page.getByLabel('表示範囲', { exact: true });
+    await expect(scope.locator('option[value="@svs"]')).toHaveText('標準化異体字列（SVS） (…)');
     await scope.selectOption('@svs');
     await expect(page.getByText('異体字列のデータを読み込み中…')).toBeVisible();
     await expect(page.getByRole('complementary', { name: 'グリフの詳細' })).toHaveCount(0);
@@ -170,4 +175,19 @@ test('retries failed registry loading without treating it as empty font coverage
   await page.getByRole('button', { name: '再読み込み', exact: true }).click();
   await expect(page.locator('[data-sequence]')).toHaveCount(6);
   await expect(page.getByRole('alert')).toHaveCount(0);
+});
+
+test('translates counted scope labels into English', async ({ page }) => {
+  await openFont(page);
+  await page.getByRole('button', { name: 'アプリメニュー', exact: true }).click();
+  await page.getByLabel('言語 / Language', { exact: true }).selectOption('en');
+  await page.keyboard.press('Escape');
+  const scope = page.getByLabel('Display range', { exact: true });
+  await expect(scope.locator('option[value="@unmapped"]')).toHaveText('Unencoded glyphs (6)');
+  await expect(scope.locator('option[value="@svs"]')).toHaveText(
+    'Standardized variation sequences (SVS) (6)',
+  );
+  await expect(scope.locator('option[value="@ivs"]')).toHaveText(
+    'Ideographic variation sequences (IVS) (5)',
+  );
 });

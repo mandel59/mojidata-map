@@ -20,12 +20,9 @@
   "グリフを表示": "Show glyph",
   "全グリフ": "All glyphs",
   "単一文字の割当なし": "Unencoded glyphs",
-  "SVS（標準化異体字列）": "SVS (standardized variation sequences)",
-  "IVS（漢字異体字列）": "IVS (ideographic variation sequences)",
   "表示範囲": "Display range",
   "Unicodeコードポイント": "Unicode code points",
   "グリフ": "Glyph",
-  "異体字列": "Variation sequences",
   "Unicodeブロック": "Unicode blocks",
   "Glyph IDは0〜{{max}}の整数で指定してください。": "Enter a whole number from 0 to {{max}} for the Glyph ID.",
   "コードポイントを確認してください。": "Check the code point.",
@@ -207,5 +204,9 @@
   "Glyphs": "Glyphs",
   "Unicode coverage": "Unicode coverage",
   "Units per em": "Units per em",
-  "Copyright": "Copyright"
+  "Copyright": "Copyright",
+  "標準化異体字列（SVS）": "Standardized variation sequences (SVS)",
+  "漢字異体字列（IVS）": "Ideographic variation sequences (IVS)",
+  "{{label}} ({{total}})": "{{label}} ({{total}})",
+  "異体字シーケンス": "Variation sequences"
 }
