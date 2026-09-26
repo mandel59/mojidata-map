@@ -138,17 +138,13 @@ export function GlyphCollection({
                 onKeyDown={(event) => navigation.onKeyDown(event, position)}
               >
                 <LayoutGlyph font={font} id={id} />
-                <span className="cell-code">
-                  {points ? (
-                    <>
-                      {hex(points[0])}
-                      <br />
-                      {hex(points[1])}
-                    </>
-                  ) : (
-                    `GID ${id}`
-                  )}
-                </span>
+                {points && (
+                  <span className="cell-code">
+                    {hex(points[0])}
+                    <br />
+                    {hex(points[1])}
+                  </span>
+                )}
               </button>
             );
           })}
