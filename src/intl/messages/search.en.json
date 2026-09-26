@@ -78,7 +78,7 @@
   "繁体字の参照先": "Traditional variant reference",
   "意味上の異体字の参照先": "Semantic variant reference",
   "特殊な意味の異体字の参照先": "Specialized semantic variant reference",
-  "字形異体字の参照先": "Z-form variant reference",
+  "Z異体字の参照先": "Z variant reference",
   "互換漢字の統合先": "Compatibility ideograph unified target",
   "常用漢字の登録": "Jōyō kanji registration",
   "人名用漢字の登録": "Jinmeiyō kanji registration",
@@ -243,7 +243,7 @@
   "日本の旧字体": "Japanese kyūjitai",
   "意味上の異体字": "Semantic variant",
   "特定の語義での異体字": "Specialized semantic variant",
-  "同形の異体字": "Z variant",
+  "Z異体字": "Z variant",
   "字形が似た文字": "Spoofing variant",
   "{{count}} results_one": "{{formattedCount}} result",
   "{{count}} results_other": "{{formattedCount}} results"

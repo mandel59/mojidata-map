@@ -7,7 +7,7 @@ export const hanVariantLabels = {
   kJapaneseOldVariant: '日本の旧字体',
   kSemanticVariant: '意味上の異体字',
   kSpecializedSemanticVariant: '特定の語義での異体字',
-  kZVariant: '同形の異体字',
+  kZVariant: 'Z異体字',
   kSpoofingVariant: '字形が似た文字',
   kCompatibilityVariant: '互換漢字の統合先',
 };

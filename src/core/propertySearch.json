@@ -140,7 +140,7 @@
     "placeholder": "例: 国 / U+56FD"
   },
   "kZVariant": {
-    "label": "字形異体字の参照先",
+    "label": "Z異体字の参照先",
     "source": "unihan",
     "property": "kZVariant",
     "match": "codepoint",
