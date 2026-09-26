@@ -205,7 +205,7 @@
   "Unicode coverage": "Unicode収録数",
   "Units per em": "emあたりのフォント単位",
   "Copyright": "著作権",
-  "標準化異体字列（SVS）": "標準化異体字列（SVS）",
+  "標準化異体字シーケンス（SVS）": "標準化異体字シーケンス（SVS）",
   "漢字異体字シーケンス（IVS）": "漢字異体字シーケンス（IVS）",
   "{{label}} ({{total}})": "{{label}} ({{total}})",
   "異体字シーケンス": "異体字シーケンス"

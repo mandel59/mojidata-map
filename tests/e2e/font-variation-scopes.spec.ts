@@ -27,7 +27,9 @@ for (const width of [1024, 390]) {
       ? page.getByRole('dialog', { name: 'グリフ情報' })
       : page.getByRole('complementary', { name: 'グリフの詳細' });
     await expect(scope.locator('option[value="@unmapped"]')).toHaveText('単一文字の割当なし (6)');
-    await expect(scope.locator('option[value="@svs"]')).toHaveText('標準化異体字列（SVS） (6)');
+    await expect(scope.locator('option[value="@svs"]')).toHaveText(
+      '標準化異体字シーケンス（SVS） (6)',
+    );
     await expect(scope.locator('option[value="@ivs"]')).toHaveText(
       '漢字異体字シーケンス（IVS） (5)',
     );
@@ -146,7 +148,9 @@ test('uses the current scope when sequence data finishes loading', async ({ page
   try {
     await openFont(page);
     const scope = page.getByLabel('表示範囲', { exact: true });
-    await expect(scope.locator('option[value="@svs"]')).toHaveText('標準化異体字列（SVS） (…)');
+    await expect(scope.locator('option[value="@svs"]')).toHaveText(
+      '標準化異体字シーケンス（SVS） (…)',
+    );
     await scope.selectOption('@svs');
     await expect(page.getByText('異体字列のデータを読み込み中…')).toBeVisible();
     await expect(page.getByRole('complementary', { name: 'グリフの詳細' })).toHaveCount(0);
