@@ -28,7 +28,9 @@ for (const width of [1024, 390]) {
       : page.getByRole('complementary', { name: 'グリフの詳細' });
     await expect(scope.locator('option[value="@unmapped"]')).toHaveText('単一文字の割当なし (6)');
     await expect(scope.locator('option[value="@svs"]')).toHaveText('標準化異体字列（SVS） (6)');
-    await expect(scope.locator('option[value="@ivs"]')).toHaveText('漢字異体字列（IVS） (5)');
+    await expect(scope.locator('option[value="@ivs"]')).toHaveText(
+      '漢字異体字シーケンス（IVS） (5)',
+    );
     await scope.selectOption('@svs');
     await expect(cells).toHaveCount(6);
     expect(
@@ -88,7 +90,9 @@ for (const width of [1024, 390]) {
     await expect(collection.locator('[data-glyph-id="0"]')).toHaveAttribute('aria-pressed', 'true');
     await page.locator('input[type=file]').setInputFiles('tests/fixtures/FallbackCollection.ttc');
     await expect(scope).toHaveValue('');
-    await expect(scope.locator('option[value="@ivs"]')).toHaveText('漢字異体字列（IVS） (0)');
+    await expect(scope.locator('option[value="@ivs"]')).toHaveText(
+      '漢字異体字シーケンス（IVS） (0)',
+    );
     await scope.selectOption('@ivs');
     await expect(collection.getByText('該当する異体字列がありません。')).toBeVisible();
     await expect(page.getByRole('complementary', { name: /グリフ/ })).toHaveCount(0);

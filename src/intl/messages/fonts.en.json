@@ -206,7 +206,7 @@
   "Units per em": "Units per em",
   "Copyright": "Copyright",
   "標準化異体字列（SVS）": "Standardized variation sequences (SVS)",
-  "漢字異体字列（IVS）": "Ideographic variation sequences (IVS)",
+  "漢字異体字シーケンス（IVS）": "Ideographic variation sequences (IVS)",
   "{{label}} ({{total}})": "{{label}} ({{total}})",
   "異体字シーケンス": "Variation sequences"
 }

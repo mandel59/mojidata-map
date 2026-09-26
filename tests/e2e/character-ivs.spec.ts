@@ -24,7 +24,7 @@ for (const width of [1024, 390]) {
     await expect(
       panel.getByText('標準化異体字シーケンス（SVS）・絵文字の表示形式 (1)', { exact: true }),
     ).toBeVisible();
-    const summary = panel.getByText('漢字異体字列（IVS） (3)', { exact: true });
+    const summary = panel.getByText('漢字異体字シーケンス（IVS） (3)', { exact: true });
     await summary.click();
     const section = summary.locator('..');
     await expect(section.getByRole('button')).toHaveCount(3);
@@ -42,7 +42,7 @@ for (const width of [1024, 390]) {
       String(0x4e38),
     );
     await goTo(page, '20000');
-    const supplementary = panel.getByText('漢字異体字列（IVS） (3)', { exact: true });
+    const supplementary = panel.getByText('漢字異体字シーケンス（IVS） (3)', { exact: true });
     if ((await supplementary.locator('..').getAttribute('open')) === null)
       await supplementary.click();
     const target = panel.getByRole('button', {
@@ -54,7 +54,7 @@ for (const width of [1024, 390]) {
     await expect(page.getByLabel('編集テキスト')).toHaveValue('\u4E38\u{E0101}\u{20000}\u{E0102}');
     expect(await panel.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
     await goTo(page, '0023');
-    await expect(panel.getByText(/^漢字異体字列（IVS）/)).toHaveCount(0);
+    await expect(panel.getByText(/^漢字異体字シーケンス（IVS）/)).toHaveCount(0);
     await panel
       .getByText('標準化異体字シーケンス（SVS）・絵文字の表示形式 (2)', { exact: true })
       .click();
@@ -84,7 +84,7 @@ test('uses the current character after delayed IVS loading and reuses the cached
   await started;
   await goTo(page, '4E41');
   release();
-  await page.getByText('漢字異体字列（IVS） (3)', { exact: true }).click();
+  await page.getByText('漢字異体字シーケンス（IVS） (3)', { exact: true }).click();
   await expect(
     page.getByRole('button', { name: 'IVS U+4E41 U+E0100 をバッファに追加', exact: true }),
   ).toContainText('CID+14303');
@@ -110,7 +110,7 @@ test('retries failed IVS data without losing standardized sequences', async ({ p
     page.getByText('標準化異体字シーケンス（SVS）・絵文字の表示形式 (1)', { exact: true }),
   ).toBeVisible();
   await page.getByRole('button', { name: '再読み込み', exact: true }).click();
-  await expect(page.getByText('漢字異体字列（IVS） (3)', { exact: true })).toBeVisible();
+  await expect(page.getByText('漢字異体字シーケンス（IVS） (3)', { exact: true })).toBeVisible();
   await expect(page.getByRole('alert')).toHaveCount(0);
   expect(requests).toBe(2);
 });
@@ -131,6 +131,6 @@ test('shows IVS that finish loading after an unrelated detail shard fails', asyn
   await page.goto('/?cp=4E38');
   await failed;
   release();
-  await expect(page.getByText('漢字異体字列（IVS） (3)', { exact: true })).toBeVisible();
+  await expect(page.getByText('漢字異体字シーケンス（IVS） (3)', { exact: true })).toBeVisible();
   await expect(page.getByRole('alert')).toContainText('unihan/004');
 });

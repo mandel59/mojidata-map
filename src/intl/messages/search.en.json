@@ -198,7 +198,7 @@
   "符号化": "Encodings",
   "名前の別名": "Name aliases",
   "標準化異体字シーケンス（SVS）・絵文字の表示形式 ({{count}})": "Standardized variation sequences (SVS) and emoji presentation ({{count}})",
-  "漢字異体字列（IVS） ({{count}})": "Ideographic variation sequences (IVS) ({{count}})",
+  "漢字異体字シーケンス（IVS） ({{count}})": "Ideographic variation sequences (IVS) ({{count}})",
   "IVS {{base}} {{selector}} をバッファに追加": "Add IVS {{base}} {{selector}} to buffer",
   "漢字の異体字・関連字 ({{count}})": "Han variants and related characters ({{count}})",
   "漢字の異体字 {{code}} へ移動": "Go to Han variant {{code}}",

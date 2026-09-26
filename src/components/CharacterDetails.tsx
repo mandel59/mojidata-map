@@ -193,7 +193,7 @@ export const CharacterDetails = memo(function CharacterDetails({
       )}
       {ivs.length > 0 && (
         <details>
-          <summary>{t('漢字異体字列（IVS） ({{count}})', { count: ivs.length })}</summary>
+          <summary>{t('漢字異体字シーケンス（IVS） ({{count}})', { count: ivs.length })}</summary>
           {ivs.map(([selector, registrations]) => (
             <button
               className="variant"

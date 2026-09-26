@@ -20,7 +20,7 @@ const glyphScopes: Record<string, string> = {
   '@glyphs': '全グリフ',
   '@unmapped': '単一文字の割当なし',
   '@svs': '標準化異体字列（SVS）',
-  '@ivs': '漢字異体字列（IVS）',
+  '@ivs': '漢字異体字シーケンス（IVS）',
 };
 export function FontCharacters({
   font,
