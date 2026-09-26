@@ -55,6 +55,7 @@ await writeFile(
   JSON.stringify(
     {
       appVersion: app.version,
+      appRepository: projectUrl({ repository: app.repository }),
       appLicense: await readFile(path.join(root, 'LICENSE'), 'utf8'),
       libraries,
     },

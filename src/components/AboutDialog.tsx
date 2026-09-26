@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { version as appVersion } from '../../package.json';
+import { version as appVersion, repository } from '../../package.json';
 import type { UnicodeDatabase } from '../core/unicode';
 import type { AboutSection } from '../platform';
+
+const repositoryUrl = repository.url.replace(/^git\+/, '').replace(/\.git$/, '');
+const repositoryName = new URL(repositoryUrl).pathname.slice(1);
 
 interface Library {
   name: string;
@@ -174,6 +177,10 @@ export function AboutDialog({ db, section, onSection, onClose }: Props) {
             <dd>{window.mojidata ? t('デスクトップ版') : t('Web 版')}</dd>
           </div>
           <div>
+            <dt>{t('開発リポジトリ')}</dt>
+            <dd>{link(repositoryUrl, repositoryName)}</dd>
+          </div>
+          <div>
             <dt>{t('アプリ本体のライセンス')}</dt>
             <dd>MIT License</dd>
           </div>
@@ -192,6 +199,9 @@ export function AboutDialog({ db, section, onSection, onClose }: Props) {
         <article className="credit-card">
           <h4>Mojidata Map</h4>
           <p>MIT License</p>
+          <p>
+            {t('開発リポジトリ')}: {link(repositoryUrl, repositoryName)}
+          </p>
           <p>{t('Mojidata Mapの開発にはCodexを使用しています。')}</p>
           {credits && (
             <details>

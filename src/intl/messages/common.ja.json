@@ -117,5 +117,6 @@
   "{{displayCount}} 文字_one": "{{displayCount}} 文字",
   "{{displayCount}} 文字_other": "{{displayCount}} 文字",
   "{{displayCount}} シーケンス_one": "{{displayCount}} シーケンス",
-  "{{displayCount}} シーケンス_other": "{{displayCount}} シーケンス"
+  "{{displayCount}} シーケンス_other": "{{displayCount}} シーケンス",
+  "開発リポジトリ": "開発リポジトリ"
 }

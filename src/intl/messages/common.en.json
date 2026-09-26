@@ -117,5 +117,6 @@
   "{{displayCount}} 文字_one": "{{displayCount}} character",
   "{{displayCount}} 文字_other": "{{displayCount}} characters",
   "{{displayCount}} シーケンス_one": "{{displayCount}} sequence",
-  "{{displayCount}} シーケンス_other": "{{displayCount}} sequences"
+  "{{displayCount}} シーケンス_other": "{{displayCount}} sequences",
+  "開発リポジトリ": "Development repository"
 }
