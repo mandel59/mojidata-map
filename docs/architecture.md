@@ -84,6 +84,8 @@ Node.js 24 LTS と npm の lockfile を用いる。Vitest でデータ処理、P
 
 `tools/patch-fontkit.mjs` は固定したfontkit 2.0.4のNode／ブラウザ用配布コードへ、GSUB type 8（逆順連鎖文脈単一置換）の修正を適用する。欠落していたbacktrackGlyphCountを読み取り、末尾から先頭へ走査して前後のCoverageを照合する。type 7経由の拡張形式も同じ方向で処理し、LookupFlagによる結合文字の除外を維持する。Nishiki-teki 4.0.5で発生した `Not a fixed size` と、読み取り修正後の未対応lookupエラーを解消する。仕様: [OpenType GSUB type 8](https://learn.microsoft.com/en-us/typography/opentype/spec/gsub#RCCS)。
 
+同じパッチでcmap format 14のUVS検索も修正する。fontkitはdefault UVSの検索結果でセレクター検索の位置を上書きし、defaultにない場合にnon-default UVSの検索を飛ばしていた。セレクターレコードの存在を確認してnon-defaultを独立に検索する。通常字形と代替字形が混在するSVS・IVSをフィクスチャで検証する。仕様: [OpenType cmap format 14](https://learn.microsoft.com/en-us/typography/opentype/spec/cmap#format-14-unicode-variation-sequences)。
+
 依存インストール後・開発サーバー起動前・ビルド前に適用し、適用済みの場合は何もしない。Viteの通常の依存キャッシュキーはパッチによる書き換えを検知しないため、パッチスクリプトのSHA-256をキャッシュディレクトリ名に含める。修正前の事前バンドルを開発サーバーで再利用しない。別バージョンや想定外の配布コードは失敗させ、依存更新時の見直しを必須にする。独自の幾何図形だけから生成した `ReverseChaining.ttf` で、逆順走査・文脈照合・拡張形式・無効化・結合文字・サンプル内の文字位置を検証する。Nishiki-tekiのフォントデータはリポジトリへ含めない。
 
 サンプル表のGlyph IDからグリフマップへの移動は、FontPanelが解析revision付きの要求を渡す。FontCharactersが全グリフ範囲・Glyph ID・128件単位のページを一緒に更新し、選択済みセルへフォーカスする。狭い画面ではFontGlyphDetailsの情報ダイアログを開く。要求は処理後に消費し、同じGlyph IDへの再移動も受け付け、再表示や別フォントで古い要求を繰り返さない。コードポイントから字形を引き直さず、合字・代替字形・.notdefも解析済みのIDで移動する。

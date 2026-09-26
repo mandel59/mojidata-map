@@ -1,11 +1,10 @@
-// fontkit 2.0.4 omits a GSUB type 8 field and does not apply reverse substitutions.
+// fontkit 2.0.4 needs GSUB type 8 and cmap format 14 compatibility fixes.
 // Keep this version-specific compatibility patch reproducible after npm ci.
 // https://learn.microsoft.com/en-us/typography/opentype/spec/gsub#RCCS
 import { readFile, writeFile } from 'node:fs/promises';
 const root = new URL('../node_modules/fontkit/', import.meta.url);
 const { version } = JSON.parse(await readFile(new URL('package.json', root), 'utf8'));
-if (version !== '2.0.4')
-  throw new Error('Review the GSUB compatibility patch for fontkit ' + version);
+if (version !== '2.0.4') throw new Error('Review the compatibility patches for fontkit ' + version);
 const marker = '// Mojidata: GSUB reverse chaining support';
 function replaceOnce(source, pattern, replacement) {
   let count = 0;
@@ -64,4 +63,20 @@ for (const file of ['module.mjs', 'main.cjs', 'browser-module.mjs', 'browser.cjs
 ` + end,
   );
   await writeFile(url, marker + '\n' + source);
+}
+
+// cmap format 14 keeps default and non-default UVS in separate tables.
+// A miss in defaultUVS must not prevent looking up nonDefaultUVS.
+// https://learn.microsoft.com/en-us/typography/opentype/spec/cmap#format-14-unicode-variation-sequences
+const uvsMarker = '// Mojidata: independent default and non-default UVS lookup';
+for (const file of ['module.mjs', 'main.cjs', 'browser-module.mjs', 'browser.cjs']) {
+  const url = new URL('dist/' + file, root);
+  let source = await readFile(url, 'utf8');
+  if (source.includes(uvsMarker)) continue;
+  source = replaceOnce(
+    source,
+    /if \(i !== -1 && sel\.nonDefaultUVS\)/g,
+    () => 'if (sel && sel.nonDefaultUVS)',
+  );
+  await writeFile(url, uvsMarker + '\n' + source);
 }

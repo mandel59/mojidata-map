@@ -273,3 +273,37 @@ for (const width of [1024, 390]) {
     );
   });
 }
+
+test('uses alternate UVS glyphs and selects the complete sequence in samples', async ({ page }) => {
+  await page.goto('/');
+  await fontSample(page);
+  await page.locator('input[type=file]').setInputFiles('tests/fixtures/VariationScopes.ttf');
+  const input = page.getByLabel('サンプルテキスト', { exact: true });
+  await input.fill('00\uFE00丸丸\uFE00');
+  const rows = page.locator('.sample-glyph-table tbody tr');
+  await expect(rows).toHaveCount(4);
+  expect(
+    await rows.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-glyph-id'))),
+  ).toEqual(['3', '9', '2', '5']);
+  const paths = await rows
+    .locator('svg path')
+    .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('d')));
+  expect(paths).toHaveLength(4);
+  expect(paths[0]).not.toBe(paths[1]);
+  expect(paths[2]).not.toBe(paths[3]);
+  await rows
+    .nth(3)
+    .getByRole('button', { name: 'U+4E38 U+FE00 をサンプルで選択', exact: true })
+    .click();
+  expect(
+    await input.evaluate((el: HTMLTextAreaElement) => [el.selectionStart, el.selectionEnd]),
+  ).toEqual([4, 6]);
+  await rows
+    .nth(3)
+    .getByRole('button', { name: 'Glyph ID 5 をグリフマップで表示', exact: true })
+    .click();
+  await expect(page.locator('.font-glyph-grid [data-glyph-id="5"]')).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+});

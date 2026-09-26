@@ -192,3 +192,31 @@ test('keeps Arabic marks and joiners with their script and offsets repeated run 
   }
   expect(mixed.runs[0].end).toBe(prefix.length);
 });
+
+test('uses non-default UVS when the same selector also has default UVS ranges', () => {
+  const f = font('VariationScopes.ttf');
+  // FE00 and E0100 both have default ranges and explicit alternate glyphs.
+  const text = '00\uFE00丸丸\uFE00A\uFE00A\u{E0100}\u{20000}\u{E0100}';
+  const result = sampleLayout(f, text, {}, db);
+  expect(result.run.glyphs.map((glyph) => glyph.id)).toEqual([3, 9, 2, 5, 2, 5, 7]);
+  expect(result.run.glyphs.map((glyph) => glyph.codePoints)).toEqual([
+    [0x30],
+    [0x30, 0xfe00],
+    [0x4e38],
+    [0x4e38, 0xfe00],
+    [0x41, 0xfe00],
+    [0x41, 0xe0100],
+    [0x20000, 0xe0100],
+  ]);
+  expect(result.sourceRanges).toEqual([
+    { start: 0, end: 1 },
+    { start: 1, end: 3 },
+    { start: 3, end: 4 },
+    { start: 4, end: 6 },
+    { start: 6, end: 8 },
+    { start: 8, end: 11 },
+    { start: 11, end: 15 },
+  ]);
+  // Unknown selectors/pairs must still fall back to the base cmap.
+  expect(f.glyphsForString('A\uFE01A\uFE02').map((glyph) => glyph.id)).toEqual([2, 2]);
+});
