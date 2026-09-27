@@ -211,9 +211,6 @@ export function FontSample({
             <option value="logical">{t('論理順（入力順）')}</option>
           </select>
         </label>
-        <span className="muted">
-          {t('表示順はブラウザの双方向配置に従い、段落内を左から並べます。')}
-        </span>
         <button popoverTarget={`${id}-features`}>{t('OpenType設定')}</button>
         <button
           aria-label={t('レイアウト結果を保存')}
