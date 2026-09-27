@@ -1625,6 +1625,16 @@ td button {
   resize: vertical;
   background: var(--sidebar);
 }
+.sample-order-probe {
+  position: fixed;
+  top: 0;
+  left: -100000px;
+  width: max-content;
+  visibility: hidden;
+  white-space: pre;
+  unicode-bidi: plaintext;
+  pointer-events: none;
+}
 .sample-coverage,
 .sample-toolbar {
   display: flex;
@@ -1642,6 +1652,11 @@ td button {
 }
 .sample-toolbar {
   border-bottom: 1px solid var(--border);
+  font-size: 11px;
+}
+.sample-toolbar select {
+  font-size: 11px;
+  padding: 2px 4px;
 }
 .sample-features .note {
   overflow-wrap: anywhere;

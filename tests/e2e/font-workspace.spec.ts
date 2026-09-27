@@ -4,6 +4,32 @@ import { expect, test } from '@playwright/test';
 import { create } from 'fontkit';
 import { readFileSync } from 'node:fs';
 
+test('switches mixed-direction glyphs between visual and logical order', async ({ page }) => {
+  await page.goto('/');
+  await fontSample(page);
+  await page.locator('input[type=file]').setInputFiles('tests/fixtures/ArabicSample.ttf');
+  const input = page.getByLabel('サンプルテキスト', { exact: true });
+  await input.fill('A ببب A');
+  const rows = page.locator('.sample-glyph-table tbody tr');
+  const glyphIds = () =>
+    rows.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-glyph-id')));
+
+  await expect(rows).toHaveCount(7);
+  await expect(page.getByLabel('グリフの並び順', { exact: true })).toHaveValue('visual');
+  await expect.poll(glyphIds).toEqual(['2', '1', '9', '8', '7', '1', '2']);
+  await rows.nth(2).getByRole('button', { name: 'U+0628 をサンプルで選択', exact: true }).click();
+  expect(
+    await input.evaluate((el: HTMLTextAreaElement) => [el.selectionStart, el.selectionEnd]),
+  ).toEqual([4, 5]);
+
+  await page.getByLabel('グリフの並び順', { exact: true }).selectOption('logical');
+  await expect.poll(glyphIds).toEqual(['2', '1', '7', '8', '9', '1', '2']);
+  await rows.nth(2).getByRole('button', { name: 'U+0628 をサンプルで選択', exact: true }).click();
+  expect(
+    await input.evaluate((el: HTMLTextAreaElement) => [el.selectionStart, el.selectionEnd]),
+  ).toEqual([2, 3]);
+});
+
 for (const width of [1024, 390]) {
   test(`integrates coverage and exact glyphs into the editable sample at ${width}px`, async ({
     page,
@@ -89,6 +115,7 @@ for (const width of [1024, 390]) {
     const exported = JSON.parse(Buffer.concat(chunks).toString());
     expect(exported.text).toBe('12');
     expect(exported.glyphs[0]).toBe(glyphId);
+    expect(exported.tableOrder).toEqual({ type: 'visual', glyphIndices: [0, 1] });
     await sampleTab.press('ArrowRight');
     await expect(tabs.getByRole('tab', { name: 'フォント情報', exact: true })).toBeFocused();
     await page.keyboard.press('End');

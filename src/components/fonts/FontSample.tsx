@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { useId, useMemo, useRef, useState } from 'react';
+import { useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Font } from 'fontkit';
 import { bufferCoverage } from '../../core/bufferCoverage';
 import { codeLabel, isScalar, type UnicodeDatabase } from '../../core/unicode';
@@ -35,7 +35,9 @@ export function FontSample({
   const { t, i18n } = useTranslation('fonts');
   const id = useId();
   const input = useRef<HTMLTextAreaElement>(null);
+  const orderProbe = useRef<HTMLSpanElement>(null);
   const [features, setFeatures] = useState('kern, liga');
+  const [order, setOrder] = useState<'visual' | 'logical'>('visual');
   const [page, setPage] = useState(0);
   const tags = useMemo(() => featureSettings(features), [features]);
   const covered = useMemo(
@@ -58,6 +60,8 @@ export function FontSample({
       return { counts, layout: null, error: String(error) };
     }
   }, [active, sample, covered, db, font, tags]);
+  const counts = analysis?.counts;
+  const layout = analysis?.layout;
   const rows = useMemo(
     () =>
       (analysis?.layout?.run.glyphs ?? []).map((glyph, i) => {
@@ -82,6 +86,52 @@ export function FontSample({
       }),
     [analysis, db],
   );
+  const logicalRows = useMemo(() => {
+    const mapped = rows.filter((row) => row.sourceRange);
+    const unmapped = rows.filter((row) => !row.sourceRange);
+    mapped.sort(
+      (a, b) =>
+        a.sourceRange!.start - b.sourceRange!.start ||
+        a.sourceRange!.end - b.sourceRange!.end ||
+        a.index - b.index,
+    );
+    return [...mapped, ...unmapped];
+  }, [rows]);
+  const [measuredOrder, setMeasuredOrder] = useState<{
+    layout: typeof layout;
+    indices: number[];
+  } | null>(null);
+  useLayoutEffect(() => {
+    const textNode = orderProbe.current?.firstChild;
+    if (!layout || !textNode || textNode.nodeType !== Node.TEXT_NODE) return;
+    const measured: { index: number; top: number; left: number }[] = [];
+    const unmapped: number[] = [];
+    for (const row of rows) {
+      if (!row.sourceRange) {
+        unmapped.push(row.index);
+        continue;
+      }
+      const range = document.createRange();
+      range.setStart(textNode, row.sourceRange.start);
+      range.setEnd(textNode, row.sourceRange.end);
+      const rect = [...range.getClientRects()].find((entry) => entry.width || entry.height);
+      if (rect) measured.push({ index: row.index, top: rect.top, left: rect.left });
+      else unmapped.push(row.index);
+    }
+    measured.sort(
+      (a, b) =>
+        (Math.abs(a.top - b.top) > 0.5 ? a.top - b.top : a.left - b.left) || a.index - b.index,
+    );
+    setMeasuredOrder({ layout, indices: [...measured.map((entry) => entry.index), ...unmapped] });
+  }, [layout, rows]);
+  const currentMeasuredOrder = measuredOrder;
+  const visualRows =
+    currentMeasuredOrder &&
+    currentMeasuredOrder.layout === layout &&
+    currentMeasuredOrder.indices.length === rows.length
+      ? currentMeasuredOrder.indices.map((index) => rows[index])
+      : rows;
+  const orderedRows = order === 'visual' ? visualRows : logicalRows;
   const [previous, setPrevious] = useState(rows);
   if (rows !== previous) {
     setPrevious(rows);
@@ -92,8 +142,6 @@ export function FontSample({
     input.current?.focus();
     input.current?.setSelectionRange(range.start, range.end);
   }
-  const counts = analysis?.counts;
-  const layout = analysis?.layout;
   return (
     <div className="font-sample-view">
       <div className="sample-editor">
@@ -118,6 +166,15 @@ export function FontSample({
               .join(', '),
           }}
         />
+        <span
+          ref={orderProbe}
+          className="sample-order-probe"
+          aria-hidden="true"
+          dir="auto"
+          style={{ fontFamily: family }}
+        >
+          {layout?.text}
+        </span>
       </div>
       {counts && (
         <div className="sample-coverage" aria-live="polite">
@@ -140,6 +197,23 @@ export function FontSample({
         </div>
       )}
       <div className="sample-toolbar">
+        <label>
+          {t('並び順')}{' '}
+          <select
+            aria-label={t('グリフの並び順')}
+            value={order}
+            onChange={(event) => {
+              setOrder(event.target.value as typeof order);
+              setPage(0);
+            }}
+          >
+            <option value="visual">{t('表示順（左から）')}</option>
+            <option value="logical">{t('論理順（入力順）')}</option>
+          </select>
+        </label>
+        <span className="muted">
+          {t('表示順はブラウザの双方向配置に従い、段落内を左から並べます。')}
+        </span>
         <button popoverTarget={`${id}-features`}>{t('OpenType設定')}</button>
         <button
           aria-label={t('レイアウト結果を保存')}
@@ -152,6 +226,10 @@ export function FontSample({
                   {
                     text: layout.text,
                     features,
+                    tableOrder: {
+                      type: order,
+                      glyphIndices: orderedRows.map((row) => row.index),
+                    },
                     runs: layout.runs,
                     glyphs: layout.run.glyphs.map((g) => g.id),
                     codePoints: layout.run.glyphs.map((g) => g.codePoints),
@@ -210,7 +288,7 @@ export function FontSample({
               </tr>
             </thead>
             <tbody>
-              {rows
+              {orderedRows
                 .slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
                 .map(({ glyph, position, sourceRange, missing, invalid, control, index }) => (
                   <tr
